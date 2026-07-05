@@ -1,0 +1,81 @@
+/* ============ TEMA ============ */
+:root{
+  --bg:#070b14;          /* gece laciverti */
+  --bg2:#0b1120;
+  --panel:#0e1526;
+  --line:#1c2740;
+  --ink:#dbe2f0;
+  --muted:#5f6b85;
+  --gold:#d4a940;        /* başkanlık altını */
+  --gold2:#f0cd6e;
+  --green:#123a24;       /* çim koyusu */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+  overflow:hidden;
+}
+
+/* ============ EKRAN YÖNETİCİSİ ============ */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;opacity:0;transition:opacity .45s ease}
+.screen.on{display:flex;opacity:1}
+
+/* ============ AÇILIŞ EKRANI ============ */
+#scr-title{align-items:center;justify-content:center;gap:0}
+
+.backdrop{position:absolute;inset:0;z-index:0;pointer-events:none}
+.backdrop svg{width:100%;height:100%;display:block}
+.vignette{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 42%,transparent 30%,rgba(4,7,13,.78) 100%)}
+
+.titlewrap{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:26px;transform:translateY(-16px)}
+
+/* arma */
+.crest{width:92px;height:92px;position:relative;filter:drop-shadow(0 0 22px rgba(212,169,64,.28))}
+.crest svg{width:100%;height:100%}
+
+.titleblock{text-align:center}
+.overline{font-size:11px;letter-spacing:.55em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;padding-left:.55em}
+h1{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(40px,7vw,68px);
+  font-weight:700;letter-spacing:.06em;line-height:1;
+  color:var(--gold2);
+  text-shadow:0 0 34px rgba(212,169,64,.30),0 2px 0 rgba(0,0,0,.5);
+}
+.tagline{margin-top:12px;font-size:13px;color:var(--muted);letter-spacing:.14em}
+
+/* menü */
+.menu{display:flex;flex-direction:column;gap:10px;width:min(320px,86vw);margin-top:8px}
+.mbtn{
+  position:relative;
+  padding:15px 22px;text-align:center;cursor:pointer;
+  background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,0)),var(--panel);
+  border:1px solid var(--line);color:var(--ink);
+  font-family:inherit;font-size:13.5px;letter-spacing:.28em;text-transform:uppercase;
+  transition:border-color .18s,color .18s,transform .12s;
+}
+.mbtn::before,.mbtn::after{content:"";position:absolute;top:-1px;bottom:-1px;width:2px;background:transparent;transition:background .18s}
+.mbtn::before{left:-1px} .mbtn::after{right:-1px}
+.mbtn:hover{border-color:rgba(212,169,64,.55);color:var(--gold2);transform:translateY(-1px)}
+.mbtn:hover::before,.mbtn:hover::after{background:var(--gold)}
+.mbtn:disabled{opacity:.34;cursor:not-allowed;transform:none}
+.mbtn:disabled:hover{border-color:var(--line);color:var(--ink)}
+.mbtn small{display:block;font-size:9px;letter-spacing:.2em;color:var(--muted);margin-top:4px}
+
+.footer{position:absolute;bottom:18px;left:0;right:0;z-index:2;display:flex;justify-content:center;gap:18px;
+  font-size:10px;color:#3c4763;letter-spacing:.22em;text-transform:uppercase}
+
+/* animasyonlar */
+.star{animation:tw 3.2s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.9}50%{opacity:.25}}
+.flglow{animation:fg 5s ease-in-out infinite}
+@keyframes fg{0%,100%{opacity:.85}50%{opacity:.55}}
+
+/* ============ YER TUTUCU EKRAN ============ */
+#scr-next{align-items:center;justify-content:center;gap:18px;background:var(--bg)}
+#scr-next .ph{font-family:Georgia,serif;font-size:22px;color:var(--gold2);letter-spacing:.08em}
+#scr-next p{color:var(--muted);font-size:13px;max-width:420px;text-align:center;line-height:1.6}
+#scr-next .mbtn{width:min(280px,80vw)}
