@@ -4,6 +4,7 @@
 // direktif hücreleri, LED kalan bütçe. Tam ekran, kaydırma yok.
 import { TUNING } from '../config.js';
 import { esc, fmt } from './frame.js';
+import { shownRating } from '../engines/market.js';
 
 const lineTr = { genc: 'Gençlere yatır', hazir: 'Hazır oyuncu', yildiz: 'Yıldız istiyorum' };
 const POS_TR = { GK: 'Kaleci', DEF: 'Stoper', MID: 'Orta saha', FWD: 'Forvet' };
@@ -104,7 +105,9 @@ export function render(G) {
   const hak = G.sorguHak ?? 0;
   const filtre = G._trFiltre || 'hepsi';
   const askOf = (p) => Math.round((p.fee || p.marketValue || 0) * (1 + (p._ilgi || 0) * 0.12)); // ilgi bedeli şişirir
-  let list = (G.market || []).slice().sort((a, b) => b.overall - a.overall);
+  // GİZLİ REYTİNG: liste GÖRÜNEN güce göre sıralanır (gerçek güce göre sıralamak gerçeği sızdırırdı)
+  const gorun = (p) => (p._sorgu ? p._sorgu.guc : shownRating(p, G.facilities.scout, G.meta.week).deger);
+  let list = (G.market || []).slice().sort((a, b) => gorun(b) - gorun(a));
   const nButce = list.filter((p) => askOf(p) <= kalan).length;
   const nMevki = list.filter((p) => p.pos === zayif).length;
   const nToplam = list.length;
@@ -125,14 +128,16 @@ export function render(G) {
     <button class="cx-btn ${filtre === 'hepsi' ? 'on' : ''}" data-act="trFiltre" data-arg="hepsi">Hepsi (${nToplam})</button>
   </div>`;
   const tiles = pageList.map((p) => {
-    const tier = p.overall >= 75 ? 't1' : p.overall >= 60 ? 't2' : p.overall >= 45 ? 't3' : 't4';
+    const sr = gorun(p); // GÖRÜNEN güç — gerçek (p.overall) UI'a asla basılmaz
+    const srH = p._sorgu ? (p._sorgu.h ?? 1) : h;
+    const tier = sr >= 75 ? 't1' : sr >= 60 ? 't2' : sr >= 45 ? 't3' : 't4';
     const s = p._sorgu;
     const ask = askOf(p);
     const durum = ask <= kalan * 0.85 ? 'in' : ask <= kalan ? 'sinir' : 'dis';
     const durumEt = { in: '✔ bütçe içi', sinir: '⚠ sınırda', dis: '✖ bütçe dışı' }[durum];
     const lo = Math.round(ask * (1 - 0.03 * h)), hi = Math.round(ask * (1 + 0.03 * h));
     return `<div class="tr-tile ${tier} ${s ? 'sorgulandi' : ''} bt-${durum} ${p.pos === zayif ? 'ihtiyac' : ''}" style="--pc:${POS_COL[p.pos]}">
-      <div class="kad-rate" data-tip="Görünen güç ${p.overall - h}–${p.overall + h} (sis ±${h})"><b>${p.overall}</b><i>±${h}</i></div>
+      <div class="kad-rate" data-tip="${s ? (srH === 0 ? 'DERİN RAPOR: kesin güç' : 'Sorgulandı: güç ±' + srH) : `Gözlem tahmini ±${h} — gerçek güç imzadan sonra sahada belli olur`}"><b>${sr}</b><i>${srH === 0 ? '✓' : '±' + srH}</i></div>
       <div class="tr-tile-mid">
         <b>${esc(p.name)}</b>
         <span><span class="tr-pos-chip" style="--pc:${POS_COL[p.pos]}">${p.pos}</span> ${p.age} yaş · söz. ${p.contractYears ?? '—'}y
@@ -143,10 +148,14 @@ export function render(G) {
       <span class="tr-bedel"><i>TAHMİNİ BEDEL</i><b>~${fmt(ask)}mn</b><em class="tr-aralik">(${lo}–${hi})</em><span class="tr-bt-et ${durum}">${durumEt}</span></span>
       ${s
       ? `<button class="cx-btn tr-teklif" data-act="reqOffer" data-arg="${p.id}" data-tip="GM bu oyuncu için onay dosyası hazırlar (inbox)">Teklif İste →</button>
-         <div class="tr-sorgu">Net güç <b>${s.guc}</b> · maaş <b>${fmt(s.maas)}mn</b> · bonservis <b>~${fmt(s.bonservis)}mn</b> <span class="tr-sorgu-tavir tavir-${s.tavir.toLowerCase()}">menajer: ${s.tavir}</span><br><span class="muted">Karakter: ${esc(s.karakter || '—')} · sakatlık geçmişi: ${esc(s.sakatlik || '—')} · ilgilenen kulüp: ${s.ilgi ?? 0} · ${esc(s.whisper)}</span></div>`
+         <div class="tr-sorgu">Güç <b>${s.guc}${s.h === 0 ? ' (kesin)' : ' ±' + (s.h ?? 1)}</b> · maaş <b>${fmt(s.maas)}mn</b> · bonservis <b>~${fmt(s.bonservis)}mn</b> <span class="tr-sorgu-tavir tavir-${s.tavir.toLowerCase()}">menajer: ${s.tavir}</span>
+           ${p._derin ? `<span class="tr-derin">🔬 Gelişim: ${esc(p._derin.pot)} · İlgilenen: ${p._derin.kulupler.length ? esc(p._derin.kulupler.join(', ')) : 'yok'}</span>` : `<button class="cx-btn tr-derin-btn" data-act="derinRapor" data-arg="${p.id}" ${G.economy.kasa < 0.8 ? 'disabled' : ''} data-tip="Dış büro: KESİN güç + gelişim bandı + İSİMLİ rakip ilgisi">🔬 Derin Rapor (0,8mn)</button>`}
+           <br><span class="muted">Karakter: ${esc(s.karakter || '—')} · sakatlık: ${esc(s.sakatlik || '—')} · ilgilenen kulüp: ${s.ilgi ?? 0} · ${esc(s.whisper)}</span></div>`
       : durum === 'dis'
         ? `<button class="cx-btn tr-gm-itiraz" data-act="gmItiraz" data-arg="${p.id}" data-tip="Bütçe dışı — GM'in görüşünü al">💬 GM görüşü</button>`
-        : `<button class="cx-btn tr-sorgula" data-act="sorgula" data-arg="${p.id}" ${hak <= 0 ? 'disabled' : ''} data-tip="${hak <= 0 ? 'Haftalık sorgu hakkın doldu' : 'Derin rapor: maaş, bonservis, karakter, sakatlık, menajer'}">🔍 Sorgula (${hak} hak)</button>`}
+        : hak <= 0
+          ? `<button class="cx-btn tr-sorgula" data-act="sorgula" data-arg="${p.id}|ucret" ${G.economy.kasa < 0.2 ? 'disabled' : ''} data-tip="Haftalık hak doldu — dış büroya ücretli sorgu">🔍 Sorgula (0,2mn)</button>`
+          : `<button class="cx-btn tr-sorgula" data-act="sorgula" data-arg="${p.id}" data-tip="Rapor: güç ±1, maaş, bonservis, karakter, sakatlık, menajer">🔍 Sorgula (${hak} hak)</button>`}
     </div>`;
   }).join('');
   const scoutPanel = `<div class="tr-panel tr-scout">

@@ -26,8 +26,8 @@ console.log('\n── Sorgula + Teklif İste ──');
   const p = G.market[0];
   const inbox0 = G.inbox.length;
   const ok = A.sorgulaPlayer(G, p.id);
-  check('sorgula: şartlar açığa çıkar (güç/maaş/bonservis/tavır)', ok === true && p._sorgu && p._sorgu.guc === p.overall && p._sorgu.bonservis > 0 && ['Zor', 'Makul', 'İstekli'].includes(p._sorgu.tavir), p._sorgu ? `${p._sorgu.tavir}` : '');
-  check('sorgu inbox notu düşer (derin rapor)', G.inbox.length > inbox0 && G.inbox.some((m) => m.t.startsWith('Derin rapor:')));
+  check('sorgula: şartlar açığa çıkar — GÜÇ ±1 (gerçek DEĞİL, gizli reyting)', ok === true && p._sorgu && Math.abs(p._sorgu.guc - p.overall) <= 1 && p._sorgu.h === 1 && p._sorgu.bonservis > 0 && ['Zor', 'Makul', 'İstekli'].includes(p._sorgu.tavir), `gerçek ${p.overall} → rapor ${p._sorgu.guc} ±1`);
+  check('sorgu inbox notu düşer', G.inbox.length > inbox0 && G.inbox.some((m) => m.t.startsWith('Sorgu raporu:')));
   check('render sorgulanan tile\'ı gösterir (şart satırı + teklif butonu)', tv.render(G).includes('tr-sorgu') && tv.render(G).includes('reqOffer'));
   // ikinci sorgu idempotent
   const before = JSON.stringify(p._sorgu);
@@ -123,6 +123,47 @@ console.log('\n── Transfer A8: 80+ havuz + sekmeler + sayfalama + kurul büt
   const onceDEF = G.market.filter((p) => p.pos === 'DEF').length;
   A.ilanVer(G, { pos: 'DEF', yasMax: 28, tavan: 30 });
   check('ilan → o mevkide +4 yeni isim + moral sızıntısı notu', G.market.filter((p) => p.pos === 'DEF').length === onceDEF + 4 && G.inbox.some((m) => m.t.includes('İlan verildi')), `DEF ${onceDEF} → ${G.market.filter((p) => p.pos === 'DEF').length}`);
+}
+
+console.log('\n── GİZLİ REYTİNG + ücretli sorgu + derin rapor ──');
+{
+  const { shownRating, publicView } = await import('../src/engines/market.js');
+  const G = fresh();
+  const p = G.market[3];
+  const a = shownRating(p, 2, 5), b = shownRating(p, 2, 5), c = shownRating(p, 2, 6);
+  check('görünen güç: aynı hafta SABİT (render zıplamaz)', a.deger === b.deger);
+  check('görünen güç gerçek etrafında ±h bandında', Math.abs(a.deger - p.overall) <= a.h, `gerçek ${p.overall} · görünen ${a.deger} ±${a.h}`);
+  check('yeni haftada gözlem değişebilir (deterministik ama canlı)', typeof c.deger === 'number');
+  const pv = publicView(p, 2, 5);
+  check('publicView gerçek yerine GÖRÜNENİ verir', pv.shownRating === a.deger);
+}
+{
+  // ÜCRETLİ SORGU: hak bitince 0,2mn ile çalışır
+  const G = fresh();
+  G.sorguHak = 0;
+  const p = G.market[0];
+  const k0 = G.economy.kasa;
+  check('hak=0 + ücretsiz → RET', A.sorgulaPlayer(G, p.id) === false && !p._sorgu);
+  check('hak=0 + ÜCRETLİ (0,2mn) → çalışır, hak harcamaz', A.sorgulaPlayer(G, p.id, { ucretli: true }) === true && !!p._sorgu && Math.abs(G.economy.kasa - (k0 - 0.2)) < 1e-9 && G.sorguHak === 0);
+}
+{
+  // DERİN RAPOR: 0,8mn → kesin güç + isimli ilgi + gelişim bandı; sis tamamen kalkar
+  const G = fresh();
+  const p = G.market[1];
+  check('derin rapor sorgusuz ÇALIŞMAZ', A.derinRapor(G, p.id) === false);
+  A.sorgulaPlayer(G, p.id);
+  const k0 = G.economy.kasa;
+  check('derin rapor: −0,8mn + KESİN güç + sis 0', A.derinRapor(G, p.id) === true && Math.abs(G.economy.kasa - (k0 - 0.8)) < 1e-9 && p._sorgu.guc === p.overall && p._sorgu.h === 0 && p._derin.kesin === p.overall);
+  check('derin rapor: isimli rakip ilgisi (ilgi kadar kulüp adı)', Array.isArray(p._derin.kulupler) && p._derin.kulupler.length === (p._ilgi || 0), p._derin.kulupler.join(', ') || 'ilgi yok');
+  check('ikinci derin rapor para YAKMAZ', A.derinRapor(G, p.id) === false && Math.abs(G.economy.kasa - (k0 - 0.8)) < 1e-9);
+}
+{
+  // İMZA SONRASI GERÇEK: rapor yanılmışsa imza mesajında saha gerçeği yazar
+  const G = fresh();
+  G.inbox.push({ id: 'gz1', cat: 'transfer', t: 'dosya', b: '', action: 'tfile', file: { player: { id: 'gz-p', name: 'Gizli Test', pos: 'MID', overall: 74, age: 25, wage: 5, marketValue: 20 }, fee: 10, shown: 70, gerekce: '', range: [68, 72], sartTried: true } });
+  A.resolveTransferFile(G, 'gz1', 'onay');
+  const msg = G.inbox.find((m) => m.t === 'İmza atıldı: Gizli Test');
+  check('imzada saha gerçeği: rapor 70 → gerçek 74 (+4 sürpriz)', !!msg && msg.b.includes('gerçek güç 74') && msg.b.includes('+4'), '');
 }
 
 console.log('\n── Çok-turlu pazarlık (2 şart hakkı) ──');

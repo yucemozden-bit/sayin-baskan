@@ -12,7 +12,7 @@ import { simulateMatch, postMatch } from './engines/match.js';
 import { createLeague, playWeek, standings, simulateLeagueMatch, applyResult } from './engines/league.js';
 import { applyEconomy, payDebt, sponsorSlotWeekly } from './engines/economy.js';
 import { generateSponsorOffer } from './engines/sponsorGen.js';
-import { extendMarketDet } from './engines/market.js';
+import { extendMarketDet, shownRating } from './engines/market.js';
 import { MUHABIRLER } from './data/pressPool.js';
 import { computeTargets, applyInertia } from './engines/gauges.js';
 import { checkThresholdEvents, tickEventFlags } from './engines/events.js';
@@ -1604,20 +1604,27 @@ function gmMakeFile(G, budgetLeft) {
   // Scout sisi: iyi GM daha dar aralıklı dosya getirir
   const fog = Math.max(1, TUNING.FOG_BASE - G.facilities.scout * TUNING.FOG_PER_SCOUT - Math.floor((G.gm.skill - 50) / 10));
   const h = Math.ceil(fog / 2);
-  return { player: p, fee, gerekce, range: [p.overall - h, p.overall + h], sartTried: false };
+  // GİZLİ REYTİNG: GM dosyası da GÖRÜNENİ yazar (gözlem hatası dosyaya işler) — imza sonrası saha konuşur
+  const gmShown = shownRating(p, G.facilities.scout, G.meta.week).deger;
+  return { player: p, fee, gerekce, range: [gmShown - h, gmShown + h], shown: gmShown, sartTried: false };
 }
 
-// ── SORGULA: haftalık HAK ile sınırlı (scout Lv → hak) — kaynak yönetimi kararı.
-// Sorgu DERİN RAPOR açar: net güç, maaş, bonservis, menajer tavrı, karakter, sakatlık, rakip ilgisi.
-export function sorgulaPlayer(G, id) {
+// ── SORGULA: haftalık HAK ile sınırlı (scout Lv → hak); hak bitince ÜCRETLİ (0,2mn).
+// Sorgu sisi ±1'e DARALTIR (kesin değil!): gözlemci yakından bakar ama saha başka konuşabilir.
+export function sorgulaPlayer(G, id, { ucretli = false } = {}) {
   const p = (G.market || []).find((x) => x.id === id);
   if (!p) return false;
   if (p._sorgu) return true;
-  if ((G.sorguHak ?? 1) <= 0) {
-    pushInbox(G, { cat: 'transfer', t: 'Sorgu hakkı bitti', b: `Gözlemci ağının haftalık kapasitesi doldu (hak: ${1 + (G.facilities.scout || 0)}/hafta). Scout tesisini büyüt ya da gelecek haftayı bekle — kimi sorgulayacağın da bir karar.`, noQueue: true });
+  if (!ucretli && (G.sorguHak ?? 1) <= 0) {
+    pushInbox(G, { cat: 'transfer', t: 'Sorgu hakkı bitti', b: `Gözlemci ağının haftalık kapasitesi doldu (hak: ${1 + (G.facilities.scout || 0)}/hafta). Ücretli sorgu (0,2mn) hâlâ açık — ya da scout tesisini büyüt.`, noQueue: true });
     return false;
   }
-  G.sorguHak = (G.sorguHak ?? 1) - 1;
+  if (ucretli) {
+    if (G.economy.kasa < 0.2) return false;
+    G.economy.kasa -= 0.2; // dış büro faturası — hak harcamaz
+  } else {
+    G.sorguHak = (G.sorguHak ?? 1) - 1;
+  }
   const bonservis = Math.round((p.fee || p.marketValue || 0) * (0.95 + (p.overall % 10) / 100));
   const tavir = (p.overall >= 75 && p.age <= 28) ? 'Zor' : (p.age >= 30 || p.overall < 58) ? 'İstekli' : 'Makul';
   const whisper = tavir === 'Zor' ? 'Menajeri masaya geç oturur, rakamı yukarı çeker.'
@@ -1628,8 +1635,26 @@ export function sorgulaPlayer(G, id) {
   const karakter = K[mh % K.length];
   const sakatlik = ((mh >>> 3) % 10) < 2 ? 'riskli' : 'temiz';
   const ilgi = p._ilgi ?? (mh % 4);
-  p._sorgu = { guc: p.overall, maas: Math.round((p.wage || 0) * 10) / 10, bonservis, tavir, whisper, karakter, sakatlik, ilgi };
-  pushInbox(G, { cat: 'transfer', t: `Derin rapor: ${p.name}`, b: `Net güç ${p.overall} · maaş talebi ${fmt1(p.wage || 0)}mn/sezon · bonservis ~${fmt1(bonservis)}mn. Karakter: ${karakter}. Sakatlık geçmişi: ${sakatlik}. Menajer: ${tavir} — ${whisper} İlgilenen kulüp: ${ilgi}.`, noQueue: true });
+  // GİZLİ REYTİNG: sorgu GERÇEĞİ vermez — sisi ±1'e daraltır (guc = gerçek ±1, deterministik)
+  const guc = Math.max(30, Math.min(99, p.overall + (((mh >>> 6) % 3) - 1)));
+  p._sorgu = { guc, h: 1, maas: Math.round((p.wage || 0) * 10) / 10, bonservis, tavir, whisper, karakter, sakatlik, ilgi };
+  pushInbox(G, { cat: 'transfer', t: `Sorgu raporu: ${p.name}`, b: `Güç ${guc} ±1 · maaş talebi ${fmt1(p.wage || 0)}mn/sezon · bonservis ~${fmt1(bonservis)}mn. Karakter: ${karakter}. Sakatlık geçmişi: ${sakatlik}. Menajer: ${tavir} — ${whisper} İlgilenen kulüp: ${ilgi}.${ucretli ? ' (Ücretli sorgu: −0,2mn)' : ''}`, noQueue: true });
+  return true;
+}
+// DERİN RAPOR (0,8mn): dış istihbarat bürosu — KESİN güç, potansiyel bandı, İSİMLİ rakip ilgisi.
+export function derinRapor(G, id) {
+  const p = (G.market || []).find((x) => x.id === id);
+  if (!p || !p._sorgu || p._derin) return false;
+  if (G.economy.kasa < 0.8) { pushInbox(G, { cat: 'transfer', t: 'Derin rapor bekliyor', b: 'Büro 0,8mn istiyor — kasa yetmiyor.', noQueue: true }); return false; }
+  G.economy.kasa -= 0.8;
+  const rakipler = Object.values(G.league?.table || {}).filter((t) => t && t.name && t.id !== MY);
+  const ilgi = p._ilgi || 0;
+  const isimler = Array.from({ length: ilgi }, (_, i) => rakipler.length ? rakipler[(mh32(p.name) + i * 7) % rakipler.length].name : 'bir kulüp');
+  const potBand = p.age < 24 && (p.potential || p.overall) > p.overall
+    ? `${p.overall + 1}-${p.potential}` : 'tavanına yakın';
+  p._derin = { kesin: p.overall, pot: potBand, kulupler: isimler };
+  p._sorgu.guc = p.overall; p._sorgu.h = 0; // sis tamamen kalkar
+  pushInbox(G, { cat: 'transfer', t: `DERİN RAPOR: ${p.name}`, b: `Büro kesin konuştu: gerçek güç ${p.overall}. Gelişim bandı: ${potBand}. İlgilenenler: ${isimler.length ? isimler.join(', ') : 'yok — masada yalnızsın'}. (−0,8mn)`, noQueue: true });
   return true;
 }
 // Bütçe dışı isme tıklanınca GM İTİRAZ EDER — satış mekaniğini doğal öne çıkarır
@@ -1648,9 +1673,10 @@ export function requestOffer(G, id) {
   if (G.inbox.some((m) => m.action === 'tfile' && !m.resolved && m.file && m.file.player && m.file.player.id === p.id)) return false; // zaten açık dosya
   // İlgi arttıkça bedel yükselir (rakip baskısı): fee = taban × (1 + ilgi×0.12)
   const fee = Math.round((p._sorgu ? p._sorgu.bonservis : (p.fee || p.marketValue || 0)) * (1 + (p._ilgi || 0) * 0.12));
-  const fog = Math.max(1, TUNING.FOG_BASE - G.facilities.scout * TUNING.FOG_PER_SCOUT);
-  const h = Math.ceil(fog / 2);
-  const file = { player: p, fee, gerekce: `Başkanım, sorguladığınız ${p.name} için dosyayı hazırladım.`, range: [p.overall - h, p.overall + h], sartTried: false, direct: true };
+  // GİZLİ REYTİNG: dosya SORGUNUN gördüğünü yazar (gerçeği değil) — imzadan sonra saha konuşur
+  const sGuc = p._sorgu ? p._sorgu.guc : shownRating(p, G.facilities.scout, G.meta.week).deger;
+  const sH = p._sorgu ? (p._sorgu.h ?? 1) : shownRating(p, G.facilities.scout, G.meta.week).h;
+  const file = { player: p, fee, gerekce: `Başkanım, sorguladığınız ${p.name} için dosyayı hazırladım.`, range: [sGuc - sH, sGuc + sH], shown: sGuc, sartTried: false, direct: true };
   G.market = G.market.filter((x) => x !== p);
   pushInbox(G, { cat: 'transfer', t: `${G.gm?.name || 'GM'} (GM): Onay dosyası — ${p.name}`, b: `${file.gerekce} Bedel ${fmt1(fee)}mn · maaş ${fmt1(p.wage || 0)}mn/sezon · görünen güç ${file.range[0]}-${file.range[1]}.`, action: 'tfile', file });
   return true;
@@ -1716,7 +1742,16 @@ export function resolveTransferFile(G, msgId, choice) {
   m.resolved = true;
   registerDecision(G, 'onay');
   if (G.windowStats) G.windowStats.onay++;
-  pushInbox(G, { cat: 'transfer', t: 'İmza atıldı: ' + f.player.name, b: `${posTr(f.player.pos)} · ${fmt1(f.fee)}mn. GM: "Hayırlı olsun Başkanım." Kimya bir süre sarsılacak.` });
+  // GİZLİ REYTİNG: saha gerçeği konuşur — rapor yanıldıysa imza mesajının İÇİNDE açığa çıkar
+  // (ayrı push DEĞİL: inbox sayısı/tahliye ritmi değişirse olay zamanlaması kayar — determinizm)
+  let sahaGercek = '';
+  if (f.shown != null && Math.abs(f.player.overall - f.shown) >= 2) {
+    const fark = f.player.overall - f.shown;
+    sahaGercek = fark > 0
+      ? ` ⚡ İlk idman SÜRPRİZİ: gerçek güç ${f.player.overall} — rapor ${f.shown} demişti (+${fark}), cevheri ucuza yakaladık!`
+      : ` 🩹 İlk idman GERÇEĞİ: güç ${f.player.overall} — rapor ${f.shown} demişti (${fark}). Derin Rapor olsaydı görürdün.`;
+  }
+  pushInbox(G, { cat: 'transfer', t: 'İmza atıldı: ' + f.player.name, b: `${posTr(f.player.pos)} · ${fmt1(f.fee)}mn. GM: "Hayırlı olsun Başkanım." Kimya bir süre sarsılacak.${sahaGercek}` });
   if (f.fee >= 25) anKarti(G, { t: `Dev imza: ${f.player.name}`, b: `${fmt1(f.fee)}mn — kulüp tarihinin büyük çeklerinden.`, etki: 6 }); // M5
   if (f.player.overall >= TUNING.STAR_THRESHOLD) nudgeBoyut(G, 'yildizGeldi', 3); // B2a
   return { ok: true, outcome: 'onay' };
@@ -1775,9 +1810,9 @@ function deadlineTick(G, wk) {
       ringPhone(G, {
         kind: 'dlbuy', caller: 'gm', callerName: `${G.gm.name} (GM)`, deadline: true,
         title: `⏱ Panik satış: ${p.name}`,
-        body: `Kriz kulübü BUGÜN nakit istiyor — ${fmt1(fee)}mn (piyasa altı). Güç ${p.overall - Math.ceil(fog / 2)}-${p.overall + Math.ceil(fog / 2)} · ${posTrPhone(p.pos)} · ${p.age} yaş. Hat açık, karar senin.`,
+        body: (() => { const s = shownRating(p, G.facilities.scout, G.meta.week); return `Kriz kulübü BUGÜN nakit istiyor — ${fmt1(fee)}mn (piyasa altı). Güç ${s.deger - s.h}-${s.deger + s.h} · ${posTrPhone(p.pos)} · ${p.age} yaş. Hat açık, karar senin.`; })(),
         options: [{ key: 'onay', label: `ONAYLA (${fmt1(fee)}mn)` }, { key: 'red', label: 'REDDET' }, { key: 'beklet', label: '⏳ Beklet (%20 dosya kalır, %80 kaçar)' }],
-        file: { player: p, fee },
+        file: { player: p, fee, shown: shownRating(p, G.facilities.scout, G.meta.week).deger },
       });
     } else if (r < 0.75) { // DEV panik alıcı → TELEFON (menajer çerçevesi)
       const cands = G.squad.filter((p) => p.overall >= 55);
@@ -2672,7 +2707,12 @@ function applyPhoneChoice(G, ph, opt) {
       G.club.kadroDeger = squadMarketValue(G.squad);
       G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G);
       if (G.windowStats) G.windowStats.onay++;
-      pushInbox(G, { cat: 'transfer', t: 'Gece yarısı imza: ' + f.player.name, b: `Telefon kapanmadan el sıkışıldı — ${fmt1(f.fee)}mn.` });
+      { let gy = '';
+        if (f.shown != null && Math.abs(f.player.overall - f.shown) >= 2) {
+          const fark = f.player.overall - f.shown;
+          gy = fark > 0 ? ` ⚡ Sürpriz: gerçek güç ${f.player.overall} (telefonda ${f.shown}, +${fark}).` : ` 🩹 Acelenin faturası: gerçek güç ${f.player.overall} (telefonda ${f.shown}, ${fark}).`;
+        }
+        pushInbox(G, { cat: 'transfer', t: 'Gece yarısı imza: ' + f.player.name, b: `Telefon kapanmadan el sıkışıldı — ${fmt1(f.fee)}mn.${gy}` }); }
       break;
     }
     case 'dlbuy:beklet': case 'kriz:beklet': { // riskli bekletme: %20 dosya inbox'ta kalır, %80 kaçar
@@ -2897,7 +2937,7 @@ function maybePhone(G, tension) {
     p.potential = p.overall; p.wage *= (G.marketMult || 1);
     const fee = transferFee(p) * (G.marketMult || 1) * 0.85;
     const fogK = Math.max(1, TUNING.FOG_BASE - G.facilities.scout), hK = Math.ceil(fogK / 2);
-    ringPhone(G, { kind: 'kriz', caller: 'gm', callerName: `${G.gm.name} (GM)`, title: 'GECE YARISI FIRSATI', body: `Kriz kulübü nakit sıkışmış — ${p.name} (${posTrPhone(p.pos)}, ${p.age} yaş, güç ${p.overall - hK}-${p.overall + hK}) piyasa altına verilir: ${fmt1(fee)}mn. Sabaha kadar geçerli.`, options: [{ key: 'onay', label: `ONAYLA (${fmt1(fee)}mn)` }, { key: 'red', label: 'REDDET' }, { key: 'beklet', label: '⏳ Beklet (%20 dosya kalır, %80 kaçar)' }], file: { player: p, fee } });
+    ringPhone(G, { kind: 'kriz', caller: 'gm', callerName: `${G.gm.name} (GM)`, title: 'GECE YARISI FIRSATI', body: (() => { const s = shownRating(p, G.facilities.scout, G.meta.week); return `Kriz kulübü nakit sıkışmış — ${p.name} (${posTrPhone(p.pos)}, ${p.age} yaş, güç ${s.deger - s.h}-${s.deger + s.h}) piyasa altına verilir: ${fmt1(fee)}mn. Sabaha kadar geçerli.`; })(), options: [{ key: 'onay', label: `ONAYLA (${fmt1(fee)}mn)` }, { key: 'red', label: 'REDDET' }, { key: 'beklet', label: '⏳ Beklet (%20 dosya kalır, %80 kaçar)' }], file: { player: p, fee, shown: shownRating(p, G.facilities.scout, G.meta.week).deger } });
   }
 }
 const posTrPhone = (p) => ({ GK: 'kaleci', DEF: 'stoper', MID: 'orta saha', FWD: 'forvet' }[p] || p);

@@ -2408,3 +2408,7 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 .belge-alinti { font-size: 13.5px; padding: 6px; }
 .belge-alt { margin-top: 8px; }
 .muhurle-btn { padding: 10px 26px; font-size: 14px; }
+
+/* Gizli reyting: derin rapor rozet/buton */
+.tr-derin { display: inline-block; margin-left: 6px; font-size: 10px; color: var(--club-2); }
+.tr-derin-btn { padding: 2px 8px; font-size: 10px; margin-left: 6px; border-color: var(--club-glow) !important; color: var(--club-2); }

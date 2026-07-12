@@ -12,17 +12,27 @@ export function askingFee(p) {
   return Math.round((p.fee || p.marketValue || 0) * (1 + (p._ilgi || 0) * 0.12));
 }
 
-// TEK GÖRÜNÜM TÜRETİCİ: UI ham veriyi değil bunu okur (gerçek reyting sızmaz; MVP'de
-// trueRating==overall, sis GÖRÜNÜMDE — ileride gizli reyting bu tek noktadan açılır).
-export function publicView(p, scoutLv = 0) {
+// GERÇEK GİZLİ REYTİNG: scout'un GÖRDÜĞÜ güç ≠ gerçek güç. Sapma deterministik
+// (oyuncu|hafta|scoutLv) — aynı hafta aynı sayı (render'da zıplamaz, kayıt bozulmaz);
+// yeni haftada gözlemci yeniden bakar, sayı hafif oynayabilir. Sorgu ±1'e daraltır,
+// Derin Rapor gerçeği verir, GERÇEK ancak İMZADAN SONRA sahada ortaya çıkar.
+export function shownRating(p, scoutLv = 0, week = 0) {
   const fog = Math.max(1, TUNING.FOG_BASE - scoutLv * TUNING.FOG_PER_SCOUT);
   const h = Math.ceil(fog / 2);
+  const n = h32(String(p.id) + '|' + week + '|' + scoutLv);
+  const sapma = (n % (2 * h + 1)) - h; // -h..+h deterministik gözlem hatası
+  return { deger: Math.max(30, Math.min(99, p.overall + sapma)), h, sapma };
+}
+
+// TEK GÖRÜNÜM TÜRETİCİ: UI ham veriyi değil bunu okur — gerçek reyting UI'a SIZMAZ.
+export function publicView(p, scoutLv = 0, week = 0) {
+  const sr = shownRating(p, scoutLv, week);
   const ask = askingFee(p);
   return {
     id: p.id, name: p.name, pos: p.pos, age: p.age, contractYears: p.contractYears,
-    shownRating: p.overall, ratingLo: p.overall - h, ratingHi: p.overall + h, sis: h,
-    ask, askLo: Math.round(ask * (1 - 0.03 * h)), askHi: Math.round(ask * (1 + 0.03 * h)),
-    ilgi: p._ilgi || 0, kalan: p._kalan ?? null, sorgu: p._sorgu || null,
+    shownRating: sr.deger, ratingLo: sr.deger - sr.h, ratingHi: sr.deger + sr.h, sis: sr.h,
+    ask, askLo: Math.round(ask * (1 - 0.03 * sr.h)), askHi: Math.round(ask * (1 + 0.03 * sr.h)),
+    ilgi: p._ilgi || 0, kalan: p._kalan ?? null, sorgu: p._sorgu || null, derin: p._derin || null,
   };
 }
 

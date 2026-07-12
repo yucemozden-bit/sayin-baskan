@@ -440,7 +440,8 @@ function dispatch(act, arg) {
     case 'kadinTakim': A.kadinTakimiKur(G); break;                                             // P11: kadın futbol şubesi
     case 'yurtOfis': A.yurtdisiOfisAc(G); break;                                               // P20: uluslararası ofis
     case 'gmItiraz': A.gmBudgetItiraz(G, arg); break;                                          // bütçe dışı isim → GM görüşü
-    case 'sorgula': A.sorgulaPlayer(G, arg); break;                                            // teklif öncesi şart öğren
+    case 'sorgula': { const [pid, uc] = arg.split('|'); A.sorgulaPlayer(G, pid, { ucretli: uc === 'ucret' }); break; } // hak ya da 0,2mn
+    case 'derinRapor': A.derinRapor(G, arg); break;                                            // 0,8mn: kesin güç + isimli ilgi
     case 'reqOffer': A.requestOffer(G, arg); break;                                            // GM'e dosya iste
     case 'tfile': { const [id, c] = arg.split('|'); A.resolveTransferFile(G, id, c); break; } // §1 onay dosyası
     case 'sfile': { const [id, c] = arg.split('|'); A.resolveSaleFile(G, id, c); break; }     // §1 satış aynası
