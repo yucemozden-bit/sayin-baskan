@@ -92,7 +92,7 @@ console.log('\n── Sahne 3: Direktif ──');
   // MAKAM ODASI kurgusu: GM açılışı GERÇEK rakamlarla konuşur, kararlar başkan repliği, tutanak satırı
   check('3d: GM açılış repliği kasadaki gerçek parayla konuşur', html.includes('gm-balon') && html.includes('Hayırlı olsun') && html.includes('milyon borç'), '');
   check('3d: SEÇİLİ karar başkan repliğini taşır (yuksek+yildiz seçili)', html.includes('btn replik') && html.includes('Gerekeni harca') && html.includes('gelişi manşet olsun'), '');
-  check('3d: sağ panel çerçeveyi özetler (tutanak + mühürlü sözler)', html.includes('Tutanak') && html.includes('Mühürlü Sözler'), '');
+  check('3d: TAM GENİŞLİK tutanak belgesi + MÜHÜRLE CTA + mühürlü sözler rayı', html.includes('DÖNEM SÖZLEŞMESİ') && html.includes('MÜHÜRLE') && html.includes('Mühürlü Sözler') && html.includes('Basına ne diyeyim'), '');
   check('3d: zafer barında başkanın ADI yazar (SEN değil)', readFileSync(new URL('../src/main.js', import.meta.url), 'utf8').includes('z.baskanAd'), '');
 }
 

@@ -125,8 +125,9 @@ function render() {
       if (G.ritual && !G.ritual.done) { html = shell(G, { content: ritualScene(G), center: true }); break; }
       // v4.3-4: iki adım — 1/2 vaat, 2/2 direktif; buton her adımda sticky (devam-wrap)
       const step = G._setupStep || 1;
-      const label = step === 1 ? `Sözleri Mühürle (${(G._sel || []).length}/${TUNING.MAX_PROMISES}) → Direktif ►` : 'Sözleşmeyi İmzala ►';
-      html = shell(G, { content: promiseSelect.render(G), devam: { label, disabled: false, pulse: true } });
+      // step 2'de alt bar YOK — CTA belgenin üstündeki "● MÜHÜRLE" (tutanak finaldir)
+      const label = `Sözleri Mühürle (${(G._sel || []).length}/${TUNING.MAX_PROMISES}) → Direktif ►`;
+      html = shell(G, { content: promiseSelect.render(G), devam: step === 1 ? { label, disabled: false, pulse: true } : null });
       break;
     }
     case 'OPPOSITION': {
@@ -447,6 +448,16 @@ function dispatch(act, arg) {
     case 'fireCoach': A.fireCoach(G); break;                                                   // §2 kovma
     case 'dirBudget': G._dir = { ...(G._dir || { line: 'hazir' }), budgetKey: arg }; break;    // §1 direktif
     case 'dirLine': G._dir = { ...(G._dir || { budgetKey: 'orta' }), line: arg }; break;
+    case 'dirPress': G._dir = { ...(G._dir || { budgetKey: 'orta', line: 'hazir' }), press: arg }; break; // 3. karar: basın hattı
+    case 'muhurBas': { // BELGE MÜHÜRLE: damga otursun ('tak'), sonra dönem başlasın
+      const belge = app.querySelector('.tutanak-belge-tam');
+      if (belge && !belge.querySelector('.belge-damga')) {
+        belge.insertAdjacentHTML('beforeend', '<span class="belge-damga">MÜHÜR</span>');
+        try { FX.muhur(); } catch {}
+        setTimeout(() => { onDevam(); autoSave(); }, 520);
+      } else { onDevam(); autoSave(); }
+      return;
+    }
     case 'setupBack': G._setupStep = 1; break;                                                 // v4.3-4: adım 2→1
     case 'setupToClub': G.phase = 'CLUB_SELECT'; G._sel = []; G._dir = null; G._setupStep = 1; break; // adım 1 → kulüp seçimi
     case 'upgrade': A.upgradeFacility(G, arg); break;
@@ -512,10 +523,9 @@ function onDevam() {
   switch (G.phase) {
     case 'TERM_SETUP': {
       if ((G._setupStep || 1) === 1) { G._setupStep = 2; render(); break; } // 1/2 → 2/2
-      FX.muhur(); // İmzala anında 'tak' — mühür töreni sahnesi hemen ardından gelir
-      const d = G._dir || { budgetKey: 'orta', line: 'hazir' };
+      const d = G._dir || { budgetKey: 'orta', line: 'hazir' }; // 'tak' sesi muhurBas'ta çaldı
       const budget = Math.round(G.economy.kasa * (TUNING.APPROVAL.BUDGET_PRESET[d.budgetKey] ?? 0.5));
-      A.startTerm(G, G._sel || [], { budget, line: d.line, budgetKey: d.budgetKey });
+      A.startTerm(G, G._sel || [], { budget, line: d.line, budgetKey: d.budgetKey, press: d.press });
       G._sel = []; G._dir = null; G._setupStep = 1; render(); break;
     }
     case 'SEASON_LOOP':

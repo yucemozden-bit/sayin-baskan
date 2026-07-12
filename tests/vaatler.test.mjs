@@ -97,6 +97,32 @@ console.log('\n── Koşul kur → söz tutulur (kalan tuzak adayları) ──
   check('22/22 söz mekanikli — tuzak vaat YOK', eksik.length === 0, eksik.join(',') || 'tam kapsama');
 }
 
+console.log('\n── Basın hattı (3. karar — beklenti yönetimi) ──');
+{
+  setSeed(42);
+  const G = A.newGame(data, 'normal');
+  A.selectClub(G, 'orta');
+  const h0 = G.club.hedefSira;
+  A.startTerm(G, ['P15'], { budget: 60, line: 'hazir', press: 'iddiali' });
+  check('İDDİALI: kurul hedefi YÜKSELTİR (sıra küçülür) + manşet', G.club.hedefSira === Math.max(1, h0 - 1) && G.inbox.some((m) => m.t.includes('Eyvallahımız yok')), `${h0}. → ${G.club.hedefSira}.`);
+}
+{
+  setSeed(42);
+  const G = A.newGame(data, 'normal');
+  A.selectClub(G, 'orta');
+  const h0 = G.club.hedefSira;
+  A.startTerm(G, ['P15'], { budget: 60, line: 'hazir', press: 'alcak' });
+  check('ALÇAKGÖNÜLLÜ: çıta gevşer (sıra büyür)', G.club.hedefSira === Math.min(17, h0 + 1), `${h0}. → ${G.club.hedefSira}.`);
+}
+{
+  setSeed(42);
+  const G = A.newGame(data, 'normal');
+  A.selectClub(G, 'orta');
+  const h0 = G.club.hedefSira, mt0 = G.mediaTone || 0;
+  A.startTerm(G, ['P15'], { budget: 60, line: 'hazir' }); // press verilmedi → sessiz
+  check('SESSİZ: hedef sabit + medya izi (köşe yazarı not etti)', G.club.hedefSira === h0 && (G.mediaTone || 0) < mt0 + 0.001 && G.inbox.some((m) => m.t.includes('Başkan konuşmadı')));
+}
+
 console.log('\n' + '─'.repeat(48));
 console.log(`SONUÇ: ${pass} geçti, ${fail} kaldı`);
 process.exit(fail ? 1 : 0);

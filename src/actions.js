@@ -205,6 +205,21 @@ export function startTerm(G, promiseIds, directive = null) {
     G.gauges.taraftar = clamp(G.gauges.taraftar + 3, 0, 100);
     G.transferHype = 72; // sönümlenir: açılış coşkusu
   } else { G.transferHype = 50; }
+  // 3. KARAR — BASIN HATTI (beklenti yönetimi): iddia kurulun hedef çıtasını GERÇEKTEN oynatır
+  const pk = G.directive.press || 'sessiz';
+  if (pk === 'iddiali') {
+    G.club.hedefSira = Math.max(1, G.club.hedefSira - 1);
+    G.gauges.taraftar = clamp(G.gauges.taraftar + 2, 0, 100);
+    G.transferHype = Math.max(G.transferHype ?? 50, 68);
+    pushInbox(G, { cat: 'medya', t: 'Manşet: "Eyvallahımız yok!"', b: `İddialı çıkışın kurul beklentisini yükseltti — hedef artık ${G.club.hedefSira}. sıra. Tribün coştu; tutturamazsan bu manşet kongrede karşına çıkar.`, noQueue: true });
+  } else if (pk === 'alcak') {
+    G.club.hedefSira = Math.min(17, G.club.hedefSira + 1);
+    G.transferHype = Math.min(G.transferHype ?? 50, 44);
+    pushInbox(G, { cat: 'medya', t: 'Basın notu: alçakgönüllü açılış', b: `Beklenti yönetimi: kurul çıtayı ${G.club.hedefSira}. sıraya çekti, tribün "iddiasız mıyız?" diye söylendi. Sessiz başla, sonunda konuş.`, noQueue: true });
+  } else {
+    G.mediaTone = (G.mediaTone || 0) - 0.15;
+    pushInbox(G, { cat: 'medya', t: '"Başkan konuşmadı"', b: 'Sezon açılışında basına tek cümle yok. Köşe yazarları bunu not etti — sorular sahada cevap bekleyecek.', noQueue: true });
+  }
   initSeason(G);
   G.phase = 'SEASON_LOOP'; G.nav = 'cockpit';
   // B4c-VİTRİN: kurul zorunlu hedef dayatır (kulüp durumundan seçilir)

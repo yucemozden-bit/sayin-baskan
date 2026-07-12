@@ -116,7 +116,7 @@ export function shell(G, opts) {
   // SABİT ALT AKSİYON ŞERİDİ: sol = hafta bilgisi + fısıltı/uyarı, sağ = CTA (havada durmaz)
   const devamHtml = devam ? `<div class="devam-wrap">
     <div class="devam-info">
-      ${G.meta ? `<span class="devam-hafta tnum">Sezon ${G.meta.season} · ${(G.hazirlik || 0) > 0 ? 'Hazırlık' : 'Hafta ' + Math.min(G.meta.week, G.SEASON_WEEKS || 34)} · Dönem ${G.meta.term}</span>` : ''}
+      ${G.meta && G.phase === 'SEASON_LOOP' ? `<span class="devam-hafta tnum">Sezon ${G.meta.season} · ${(G.hazirlik || 0) > 0 ? 'Hazırlık' : 'Hafta ' + Math.min(G.meta.week, G.SEASON_WEEKS || 34)} · Dönem ${G.meta.term}</span>` : ''}
       ${devam.sub ? `<span class="muted devam-sub">${esc(devam.sub)}</span>` : ''}
     </div>
     <button class="devam ${devam.pulse ? 'pulse' : ''}" data-act="devam" ${devam.disabled ? 'disabled' : ''}>${devam.label || 'DEVAM ►'}</button>

@@ -158,6 +158,10 @@ export function render(G) {
   const soz = ((G.data.media || {}).gmDirektif || {})[`${dir.budgetKey}|${dir.line}`] || 'Siz çerçeveyi çizin Başkanım, gerisi bana ait.';
   const bReplik = { dusuk: 'Bu rakamı bir kuruş geçme. Kasa kimseye ihale değil.', orta: 'Ne cimri ol ne savurgan. Ölçüyü tuttur.', yuksek: 'Gerekeni harca. Hesabını sonra veririz — verirsek.' };
   const lReplik = { genc: 'Genç olsun, aç olsun. Bugünü değil yarını alıyoruz.', hazir: 'Bana pişmiş adam getir. Deneme yapacak vaktimiz yok.', yildiz: 'Bir isim getir ki gelişi manşet olsun, tribün yerinden oynasın.' };
+  // 3. KARAR — "Basına ne diyeyim?" (beklenti yönetimi: iddia kurul hedefini OYNATIR)
+  const pReplik = { alcak: 'Hedefimiz sağlam bir sezon — fazlası söz değil, iştir.', iddiali: 'Bu sene kimseye eyvallahımız yok.', sessiz: 'Konuşmayı sahaya bırakıyorum.' };
+  const pFx = { alcak: '<b class="p">+ Kurul rahat (hedef sıra ↓)</b><b class="m">− Tribün heyecansız</b>', iddiali: '<b class="p">+ Tribün coşar</b><b class="m">− Kurul hedefi YÜKSELTİR</b>', sessiz: '<b class="n">± Etki yok · basın seni sıkıştırır (medya izi)</b>' };
+  const pAd = { alcak: 'Alçakgönüllü', iddiali: 'İddialı', sessiz: 'Sessiz kal' };
   const bFx = { dusuk: '<b class="p">+ Kurul rahatlar</b><b class="m">− Tribün somurtur</b>', orta: '<b class="n">± Yan etki yok</b>', yuksek: '<b class="p">+ Tribün coşar</b><b class="m">− Kurul huzursuz</b>' };
   const lFx = { genc: '<b class="p">+ Kadro değeri uzun vadede ↑</b><b class="m">− Bu sezon güç kazancı düşük</b>', hazir: '<b class="n">± Bugünü alırsın, yarını değil</b>', yildiz: '<b class="p">+ Tribün coşar, marka ↑</b><b class="m">− Maaş yükü ağır, tek atış</b>' };
   const lDosya = { genc: '17-21 yaş · güç 50-62', hazir: '24-28 yaş · güç 65-72', yildiz: '1 isim · güç 78-85 · maaş yüksek' };
@@ -168,17 +172,23 @@ export function render(G) {
   const lBtn = (k, label) => `<button class="btn replik ${dir.line === k ? 'on' : ''}" data-act="dirLine" data-arg="${k}">
       <span class="rk-ad">${label}</span><span class="dir-dosya">📁 Gelecek dosyalar: ${lDosya[k]}</span>
       ${dir.line === k ? `<i>«${lReplik[k]}»</i>` : ''}<span class="dir-fx">${lFx[k]}</span></button>`;
-  // CANLI SONUÇ önizlemesi — kasa/kurul/taraftar: şu an → sonra (startTerm mantığıyla)
+  const press = dir.press || 'sessiz';
+  const pBtn = (k) => `<button class="btn replik ${press === k ? 'on' : ''}" data-act="dirPress" data-arg="${k}">
+      <span class="rk-ad">${pAd[k]}</span>
+      ${press === k ? `<i>«${pReplik[k]}»</i>` : ''}<span class="dir-fx">${pFx[k]}</span></button>`;
+  // CANLI SONUÇ önizlemesi — DEĞİŞENLER vurgulu (+delta), değişmeyenler SOLUK; kasa dili
+  // "harcandı" değil "AYRILDI" (henüz transfer yok — kese ayrılıyor)
   const budgetCap = rakam(dir.budgetKey);
   const kasaSonra = Math.round(G.economy.kasa - budgetCap);
   const promiseHope = sel.reduce((a, id) => { const p = G.data.promises.find((x) => x.id === id); return a + (p ? p.difficulty * TUNING.HOPE_MULT : 0); }, 0);
   const maliNow = Math.round(G.gauges.mali), maliSonra = cl(maliNow + (dir.budgetKey === 'dusuk' ? 4 : dir.budgetKey === 'yuksek' ? -4 : 0), 0, 100);
-  const tarNow = Math.round(G.gauges.taraftar), tarSonra = cl(Math.round(tarNow + promiseHope + (dir.budgetKey === 'yuksek' ? 3 : 0)), 0, 92);
+  const tarNow = Math.round(G.gauges.taraftar), tarSonra = cl(Math.round(tarNow + promiseHope + (dir.budgetKey === 'yuksek' ? 3 : 0) + (press === 'iddiali' ? 2 : 0)), 0, 92);
+  const hedefNow = G.club.hedefSira, hedefSonra = press === 'iddiali' ? Math.max(1, hedefNow - 1) : press === 'alcak' ? Math.min(17, hedefNow + 1) : hedefNow;
   const kasaTehlike = kasaSonra < 10;
-  const dRow = (ad, now, sonra, unit = '') => {
-    const d = sonra - now, ar = d > 0 ? '<span class="pos">↑</span>' : d < 0 ? '<span class="neg">↓</span>' : '';
-    const cls = ad === 'Kasa' && sonra < 10 ? 'neg' : '';
-    return `<div class="onizleme-satir"><span>${ad}</span><b class="tnum ${cls}">${now}${unit} → ${sonra}${unit} ${ar}</b></div>`;
+  const dRow = (ad, now, sonra, unit = '', tip = '') => {
+    const d = Math.round(sonra - now);
+    const ar = d > 0 ? `<span class="pos">(+${d})</span>` : d < 0 ? `<span class="neg">(${d})</span>` : '';
+    return `<div class="onizleme-satir ${d === 0 ? 'sonuk' : ''}"${tip ? ` data-tip="${esc(tip)}"` : ''}><span>${ad}</span><b class="tnum">${now}${unit} → ${sonra}${unit} ${ar}</b></div>`;
   };
   // GM çelişki İTİRAZI / ONAYI — verdiğin sözlerle seçimini bağlar
   const disiplin = sel.includes('P15') || sel.includes('P02');
@@ -187,9 +197,13 @@ export function render(G) {
   else if (disiplin && dir.budgetKey === 'dusuk') { gmUyari = 'Sözünüzün arkasında durdunuz — kurul bunu görür, itibarınıza yazılır.'; gmUyariCls = 'onay'; }
   else if (sel.includes('P21') && dir.line === 'yildiz') { gmUyari = 'Söz verdiğiniz gibi yıldız avındayız; tutanak tutarlı, hoşuma gitti.'; gmUyariCls = 'onay'; }
   else if (kasaTehlike) { gmUyari = "Bu rakamla Şubat'ta maaş sıkıntısı çekeriz Başkanım, şimdiden söyleyeyim."; gmUyariCls = 'itiraz'; }
-  // GM yetenek çubukları — Ağ / Pazarlık / Göz (gmSkill'den türetilir; dosya kalitesine bağlanır)
-  const bars = { 'Ağ': cl(gmSkill + 8, 5, 99), 'Pazarlık': cl(gmSkill - 6, 5, 99), 'Göz': cl(gmSkill + 1, 5, 99) };
-  const barHtml = Object.entries(bars).map(([k, v]) => `<div class="gm-bar"><span>${k}</span><div class="track"><div class="fill" style="width:${v}%"></div></div></div>`).join('');
+  // GM yetenek çubukları — Ağ / Pazarlık / Göz (tooltip: neyi etkilediği yazar)
+  const bars = [
+    ['Ağ', cl(gmSkill + 8, 5, 99), 'Gelen dosyaların kalitesi — ağı genişse iyi isimler masaya düşer'],
+    ['Pazarlık', cl(gmSkill - 6, 5, 99), 'Şartlı pazarlıkta bedeli kırma şansı'],
+    ['Göz', cl(gmSkill + 1, 5, 99), 'Dosyalardaki güç sisinin darlığı — göz keskinse yanılmazsın'],
+  ];
+  const barHtml = bars.map(([k, v, tip]) => `<div class="gm-bar" data-tip="${esc(tip)}"><span>${k}</span><div class="track"><div class="fill" style="width:${v}%"></div></div></div>`).join('');
   // Mühürlü sözler — madde madde (tek paragraf değil)
   const sozMad = sel.length ? sel.map((id) => `<div class="tut-soz">▸ ${esc((G.data.promises.find((x) => x.id === id) || {}).name || id)}</div>`).join('') : '<div class="muted" style="font-size:11px">Söz yok — "Laf değil, iş" düşülecek.</div>';
   const lineTr = { genc: 'gençlik yatırımı', hazir: 'pişmiş adam', yildiz: 'yıldız avı' }[dir.line] || dir.line;
@@ -214,26 +228,41 @@ export function render(G) {
           <div class="karar-uc">${bBtn('dusuk', 'Kemer Sıkı')}${bBtn('orta', 'Ölçülü')}${bBtn('yuksek', 'Kese Ağzı Açık')}</div></div>
         <div class="karar-blok"><div class="overline">“Gözüm kimde olsun?”</div>
           <div class="karar-uc">${lBtn('genc', 'Gençlere yatır')}${lBtn('hazir', 'Hazır adam')}${lBtn('yildiz', 'Bana yıldız bul')}</div></div>
+        <div class="karar-blok"><div class="overline">“Basına ne diyeyim?”</div>
+          <div class="karar-uc">${pBtn('alcak')}${pBtn('iddiali')}${pBtn('sessiz')}</div></div>
         <div class="gm-balon tepki kuyruk">${esc(soz)}</div>
         ${gmUyari ? `<div class="gm-uyari ${gmUyariCls}">${gmUyariCls === 'itiraz' ? '⚠' : '✓'} <b>${esc(gmAd)}:</b> ${esc(gmUyari)}</div>` : ''}
       </div>
       <aside class="makam-sag">
         <div class="overline">Canlı Sonuç</div>
         <div class="onizleme">
-          ${dRow('Kasa', Math.round(G.economy.kasa), kasaSonra, 'mn')}
+          <div class="onizleme-satir ${kasaTehlike ? 'tehlike' : ''}" data-tip="Kese AYRILIR — para henüz harcanmadı; transferler bu tavandan onaylanır"><span>Kasa</span><b class="tnum">${Math.round(G.economy.kasa)}mn · kese −${fmt(budgetCap)} · kalan ${kasaSonra}mn</b></div>
           ${dRow('Borç', Math.round(G.economy.borc), Math.round(G.economy.borc), 'mn')}
           ${dRow('Kurul', maliNow, maliSonra)}
           ${dRow('Taraftar', tarNow, tarSonra)}
-          ${kasaTehlike ? '<div class="onizleme-uyari">⚠ Kasa kritik — Şubat riskli</div>' : ''}
+          ${dRow('Hedef sıra', hedefNow, hedefSonra, '.', 'Basın hattı kurulun beklentisini oynatır — iddia edersen çıta yükselir')}
+          ${kasaTehlike ? '<div class="onizleme-uyari">⚠ Kasa kritik — Şubat’ta maaş sıkıntısı riski</div>' : ''}
         </div>
         <div class="overline" style="margin-top:4px">Mühürlü Sözler</div>
         <div class="tut-sozler">${sozMad}</div>
-        <div class="tutanak-belge">
-          <div class="micro">Tutanak</div>
-          <div class="tut-line">Kese ≈${fmt(budgetCap)}mn · ${lineTr} · ${sel.length} söz</div>
-          <div class="muted" style="font-size:10.5px;margin-top:4px">Aşağıdaki “Sözleşmeyi İmzala” ile mühür basılır.</div>
-        </div>
       </aside>
+    </div>
+    <div class="tutanak-belge-tam">
+      <div class="belge-ust">DÖNEM SÖZLEŞMESİ · TUTANAK — ${esc(G.club.name).toUpperCase()} · SEZON ${G.meta.season}</div>
+      <div class="belge-govde">
+        <div class="belge-satirlar">
+          <div class="belge-satir"><span>Transfer kesesi</span><i class="belge-dots"></i><b>≈${fmt(budgetCap)}mn</b></div>
+          <div class="belge-satir"><span>Aranan profil</span><i class="belge-dots"></i><b>${lineTr}</b></div>
+          <div class="belge-satir"><span>Basın hattı</span><i class="belge-dots"></i><b>${pAd[press]}</b></div>
+          <div class="belge-satir"><span>Sportif Direktör</span><i class="belge-dots"></i><b>${esc(gmAd)}</b></div>
+          <div class="belge-satir"><span>Kongreye verilen söz</span><i class="belge-dots"></i><b>${sel.length ? sel.length + ' söz mühürlü' : '— yok —'}</b></div>
+        </div>
+        <div class="belge-alinti">${sel.length ? `“${esc((G.data.promises.find((x) => x.id === sel[0]) || {}).name || '')}”${sel.length > 1 ? ` +${sel.length - 1}` : ''}` : '“Laf değil, iş.”'}</div>
+      </div>
+      <div class="belge-alt">
+        <div class="belge-imza"><span class="belge-cizgi"></span><span class="micro">${esc(G.baskan?.name || 'Başkan')} / imza</span></div>
+        <button class="muhurle-btn" data-act="muhurBas" data-tip="Tutanağı mühürle — dönem başlar (geri dönüşü yok)">● MÜHÜRLE</button>
+      </div>
     </div>
   </div>`;
 }
