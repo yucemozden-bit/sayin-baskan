@@ -24,11 +24,16 @@ console.log('\n── Yeni aksiyonlar (P10/P11/P20) ──');
 {
   const G = fresh(['P10']);
   const k0 = G.economy.kasa, t0 = G.gauges.taraftar;
-  A.sosyalProje(G); A.sosyalProje(G);
-  check('sosyal proje: kasa −2/proje + taraftar +1 + sayaç', G.term.socialProjects === 2 && G.economy.kasa === k0 - 4 && G.gauges.taraftar === Math.min(100, t0 + 2));
+  check('sosyal proje 1 çalışır', A.sosyalProje(G) === true && G.term.socialProjects === 1);
+  check('SPAM KORUMASI: aynı hafta 2. proje REDDEDİLİR', A.sosyalProje(G) === false && G.term.socialProjects === 1 && G.inbox.some((m) => m.t === 'Ekip zaten sahada'));
+  G.meta.week++; A.sosyalProje(G);
+  G.meta.week++;
+  check('haftada 1 ritmiyle sayaç ilerler: kasa −2/proje + taraftar +1', G.term.socialProjects === 2 && G.economy.kasa === k0 - 4 && G.gauges.taraftar === Math.min(100, t0 + 2));
   check('P10 iki projede HENÜZ tutulmaz', !sağlanıyor(G, 'P10'));
   A.sosyalProje(G);
   check('P10 üçüncü projede TUTULUR', sağlanıyor(G, 'P10'));
+  G.meta.week++;
+  check('SPAM KORUMASI: dönemde 3 tavan — 4. proje REDDEDİLİR', A.sosyalProje(G) === false && G.term.socialProjects === 3 && G.inbox.some((m) => m.t === 'Sosyal program TAMAM'));
 }
 {
   const G = fresh(['P11']);

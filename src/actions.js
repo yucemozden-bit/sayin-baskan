@@ -2374,12 +2374,23 @@ function evaluatePromise(pr, G) {
 // ── VAAT MEKANİĞİ AKSİYONLARI: sosyal proje / kadın takımı / yurt dışı ofisi ──
 export function sosyalProje(G) {
   const BEDEL = 2;
+  // SPAM KORUMASI: dönemde en fazla 3 proje (hedef zaten 3) + haftada 1 (program zaman alır)
+  if ((G.term.socialProjects || 0) >= 3) {
+    pushInbox(G, { cat: 'kongre', t: 'Sosyal program TAMAM', b: 'Bu dönemki 3 proje yürüyor — mahalle daha fazlasını kaldırmaz, samimiyetsiz görünür. Söz zaten yolunda.', noQueue: true });
+    return false;
+  }
+  const haftaKey = (G.meta?.season || 1) + '|' + (G.meta?.week || 1);
+  if (G._sosyalHafta === haftaKey) {
+    pushInbox(G, { cat: 'kongre', t: 'Ekip zaten sahada', b: 'Bu hafta bir proje yürüyor — üst üste basınç şov gibi durur. Gelecek hafta devam.', noQueue: true });
+    return false;
+  }
   if (G.economy.kasa < BEDEL) { pushInbox(G, { cat: 'kongre', t: 'Sosyal proje ertelendi', b: 'Kasa 2mn bile kaldıramıyor — önce nakit.', noQueue: true }); return false; }
+  G._sosyalHafta = haftaKey;
   G.economy.kasa -= BEDEL;
   G.term.socialProjects = (G.term.socialProjects || 0) + 1;
   G.gauges.taraftar = clamp(G.gauges.taraftar + 1, 0, 100);
   const N = G.term.socialProjects;
-  pushInbox(G, { cat: 'kongre', t: `Sosyal proje #${N}: kulüp mahalleye indi`, b: `${BEDEL}mn ile semt sahaları/okul ziyaretleri programı. Taraftar +1.${N >= 3 ? ' "Kulüp Mahalleye İnecek" sözü YOLUNDA.' : ` (Söz için ${3 - N} proje daha.)`}`, noQueue: true });
+  pushInbox(G, { cat: 'kongre', t: `Sosyal proje #${N}: kulüp mahalleye indi`, b: `${BEDEL}mn ile semt sahaları/okul ziyaretleri programı. Taraftar +1.${N >= 3 ? ' "Kulüp Mahalleye İnecek" sözü YOLUNDA.' : ` (Söz için ${3 - N} proje daha; haftada 1.)`}`, noQueue: true });
   return true;
 }
 export function kadinTakimiKur(G) {
