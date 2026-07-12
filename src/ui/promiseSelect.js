@@ -166,16 +166,18 @@ export function render(G) {
   const lFx = { genc: '<b class="p">+ Kadro değeri uzun vadede ↑</b><b class="m">− Bu sezon güç kazancı düşük</b>', hazir: '<b class="n">± Bugünü alırsın, yarını değil</b>', yildiz: '<b class="p">+ Tribün coşar, marka ↑</b><b class="m">− Maaş yükü ağır, tek atış</b>' };
   const lDosya = { genc: '17-21 yaş · güç 50-62', hazir: '24-28 yaş · güç 65-72', yildiz: '1 isim · güç 78-85 · maaş yüksek' };
   // Karar butonları — replik yalnızca SEÇİLİ kartta (gürültü azalır); profil kartında "gelecek dosyalar"
+  // DERLİ TOPLU: her kartın iskeleti SABİT (başlık → fx → replik alanı) — replik alanı
+  // seçili değilken de yer tutar (boş <i>) → kart yükseklikleri asla tırtıklanmaz.
   const bBtn = (k, label) => `<button class="btn replik ${dir.budgetKey === k ? 'on' : ''}" data-act="dirBudget" data-arg="${k}">
       <span class="rk-ad">${label} <span class="muted tnum">≈${fmt(rakam(k))}mn</span></span>
-      ${dir.budgetKey === k ? `<i>«${bReplik[k]}»</i>` : ''}<span class="dir-fx">${bFx[k]}</span></button>`;
+      <span class="dir-fx">${bFx[k]}</span><i>${dir.budgetKey === k ? `«${bReplik[k]}»` : ''}</i></button>`;
   const lBtn = (k, label) => `<button class="btn replik ${dir.line === k ? 'on' : ''}" data-act="dirLine" data-arg="${k}">
-      <span class="rk-ad">${label}</span><span class="dir-dosya">📁 Gelecek dosyalar: ${lDosya[k]}</span>
-      ${dir.line === k ? `<i>«${lReplik[k]}»</i>` : ''}<span class="dir-fx">${lFx[k]}</span></button>`;
+      <span class="rk-ad">${label}</span><span class="dir-dosya">📁 ${lDosya[k]}</span>
+      <span class="dir-fx">${lFx[k]}</span><i>${dir.line === k ? `«${lReplik[k]}»` : ''}</i></button>`;
   const press = dir.press || 'sessiz';
   const pBtn = (k) => `<button class="btn replik ${press === k ? 'on' : ''}" data-act="dirPress" data-arg="${k}">
       <span class="rk-ad">${pAd[k]}</span>
-      ${press === k ? `<i>«${pReplik[k]}»</i>` : ''}<span class="dir-fx">${pFx[k]}</span></button>`;
+      <span class="dir-fx">${pFx[k]}</span><i>${press === k ? `«${pReplik[k]}»` : ''}</i></button>`;
   // CANLI SONUÇ önizlemesi — DEĞİŞENLER vurgulu (+delta), değişmeyenler SOLUK; kasa dili
   // "harcandı" değil "AYRILDI" (henüz transfer yok — kese ayrılıyor)
   const budgetCap = rakam(dir.budgetKey);
@@ -236,7 +238,7 @@ export function render(G) {
       <aside class="makam-sag">
         <div class="overline">Canlı Sonuç</div>
         <div class="onizleme">
-          <div class="onizleme-satir ${kasaTehlike ? 'tehlike' : ''}" data-tip="Kese AYRILIR — para henüz harcanmadı; transferler bu tavandan onaylanır"><span>Kasa</span><b class="tnum">${Math.round(G.economy.kasa)}mn · kese −${fmt(budgetCap)} · kalan ${kasaSonra}mn</b></div>
+          <div class="onizleme-satir ${kasaTehlike ? 'tehlike' : ''}" data-tip="Kese AYRILIR — para henüz harcanmadı; transferler bu tavandan onaylanır"><span>Kasa</span><b class="tnum">${Math.round(G.economy.kasa)} − ${fmt(budgetCap)} → ${kasaSonra}mn</b></div>
           ${dRow('Borç', Math.round(G.economy.borc), Math.round(G.economy.borc), 'mn')}
           ${dRow('Kurul', maliNow, maliSonra)}
           ${dRow('Taraftar', tarNow, tarSonra)}

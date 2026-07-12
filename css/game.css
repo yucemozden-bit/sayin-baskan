@@ -2373,3 +2373,38 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 .med-arsiv-kupur { padding: 6px 8px; border-left: 2px solid rgba(220, 210, 180, .3); margin-top: 6px; background: rgba(240, 236, 224, .03); }
 .med-arsiv-kupur b { display: block; font-family: var(--font-display); font-size: 12px; color: #E8DFC8; line-height: 1.25; }
 .med-arsiv-kupur i { font-size: 10px; color: var(--ink-3); font-style: italic; }
+
+/* ═══ MAKAM ODASI — DERLİ TOPLU DÜZEN (grid taşması fix + sıkı ritim + sabit kart iskeleti) ═══ */
+/* Grid blowout fix: uzun nowrap metin sağ kolonu viewport dışına itiyordu */
+.makam-grid { grid-template-columns: 186px minmax(0, 1fr) 232px; gap: 12px; }
+.makam-grid > * { min-width: 0; }
+.makam-baslik { font-size: 19px; margin: 4px 0 8px; }
+/* Sol GM kartı sıkı */
+.makam-grid .gm-kart { padding: 12px 13px; }
+.gm-barlar { gap: 4px; margin-top: 8px; }
+/* Orta: balonlar ince, bloklar sıkı ritimde */
+.masa { gap: 8px; }
+.gm-balon { padding: 9px 13px; font-size: 12.5px; line-height: 1.5; }
+.karar-blok .overline { margin-bottom: 0; }
+.karar-uc { gap: 7px; margin-top: 5px; }
+/* Kart iskeleti SABİT: başlık(1) + fx(2 satır) + replik alanı(sabit yükseklik) — tırtık yok */
+.btn.replik { min-height: 0; padding: 8px 11px; gap: 1px; }
+.btn.replik .rk-ad { font-size: 12.5px; }
+.btn.replik i { display: block; min-height: 26px; font-size: 10.5px; line-height: 1.25; margin-top: 3px; border-top: 1px dashed var(--line); padding-top: 3px; }
+.btn.replik.on i { border-top-color: rgba(36, 26, 6, .25); }
+.dir-fx { margin-top: 2px; min-height: 24px; }
+.dir-dosya { font-size: 9.5px; margin-top: 1px; }
+/* Sağ ray: kesilme bitti — dar, sıkı, tek satır rakamlar */
+.makam-sag { padding: 10px 12px; gap: 6px; }
+.onizleme-satir { font-size: 11px; }
+.onizleme-satir b { font-size: 11px; white-space: nowrap; }
+.kg-list { margin-top: 4px; }
+/* Belge kompakt */
+.tutanak-belge-tam { margin-top: 10px; padding: 12px 22px 11px; }
+.belge-ust { font-size: 12px; letter-spacing: 2px; }
+.belge-govde { margin-top: 7px; gap: 14px; }
+.belge-satirlar { gap: 3px; }
+.belge-satir { font-size: 12px; }
+.belge-alinti { font-size: 13.5px; padding: 6px; }
+.belge-alt { margin-top: 8px; }
+.muhurle-btn { padding: 10px 26px; font-size: 14px; }
