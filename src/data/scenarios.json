@@ -1,0 +1,28 @@
+{
+ "scenarios": [
+  {
+   "id": "batan-dev",
+   "ad": "BATAN DEV",
+   "tier": "buyuk",
+   "tanitim": "Şampiyonluklar geride kaldı; kasada delik, tahtada kilit, tribünde öfke. Önceki başkanın enkazı masanda.",
+   "mods": { "borcMult": 1.9, "transferBan": true, "taraftar": 40, "devir": true },
+   "hedef": { "tip": "batan", "metin": "2 dönemde borcu yarıla + 1 kupa kazan" }
+  },
+  {
+   "id": "yeni-takim",
+   "ad": "ŞEHRİN YENİ TAKIMI",
+   "tier": "kucuk",
+   "tanitim": "Kimse adını bilmiyor ama belediye arkanda ve şehir aç. Sıfırdan bir dev inşa et.",
+   "mods": { "itibar": 10, "tesisIndirim": 0.5, "fanMult": 0.6, "buyumeMult": 1.5 },
+   "hedef": { "tip": "yeni", "metin": "4 dönemde BÜYÜK statüye ulaş" }
+  },
+  {
+   "id": "secim-arifesi",
+   "ad": "SEÇİM ARİFESİ",
+   "tier": "orta",
+   "tanitim": "3. sezonun 20. haftasındasın; anketler %41 diyor. 14 haftada kongreyi çevir — saf politika sprinti (60-90 dk).",
+   "mods": { "fastStart": { "season": 3, "week": 20 }, "oyHedef": 41 },
+   "hedef": { "tip": "secim", "metin": "Seçimi kazan" }
+  }
+ ]
+}

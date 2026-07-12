@@ -1,0 +1,695 @@
+{
+ "_schema": "V4-§14 — 3 gazeteci + tüm şablon havuzları (V4-§7). Şablonlar KODDA DEĞİL veride (kolay genişletme). Slotlar: {oyuncu}{td}{rakip}{sıra}{vaat}{borç}{n}{g}{kalan}{fark}{ad}{p}{d}{yaş}{genç}{x}{rakip_aday}{tutulmayan_vaat}{ay}{gelir}{gider}{yorum}{grup_adı}{konu}{üye}",
+ "journalists": [
+  {
+   "id": "turgut-balli",
+   "name": "Turgut Ballı",
+   "outlet": "Tribün Gözü",
+   "stance": "yandaş",
+   "tone": 1
+  },
+  {
+   "id": "nazli-ekinci",
+   "name": "Nazlı Ekinci",
+   "outlet": "Bilanço",
+   "stance": "muhalif",
+   "tone": -1.5
+  },
+  {
+   "id": "ozan-kaptan",
+   "name": "Ozan Kaptan",
+   "outlet": "xG Raporu",
+   "stance": "analist",
+   "tone": 0
+  }
+ ],
+ "headlines": {
+  "SAMPIYONLUK_YARISI": [
+   {
+    "text": "Zirve senin evin mi?",
+    "tone": 1
+   },
+   {
+    "text": "{oyuncu} durdurulamıyor: {n} maçta {g} gol",
+    "tone": 2
+   },
+   {
+    "text": "Matematik başladı: {kalan} maç kaldı",
+    "tone": 1
+   },
+   {
+    "text": "{rakip} kayıp verdi, fırsat haftası",
+    "tone": 1
+   },
+   {
+    "text": "Şampiyonluk kokusu tribünlere sindi",
+    "tone": 2
+   },
+   {
+    "text": "{ad} kervanı yoluna devam ediyor",
+    "tone": 1
+   },
+   {
+    "text": "Zirve yarışında nefesler tutuldu",
+    "tone": 1
+   },
+   {
+    "text": "Zirve düellosu: {kalan} hafta, tek nefes",
+    "tone": 1
+   },
+   {
+    "text": "{ad} şampiyonluk kokusu alıyor",
+    "tone": 2
+   },
+   {
+    "text": "Puan cetveli alev alev: takip eden korksun",
+    "tone": 1
+   },
+   {
+    "text": "Kupa vitrini tozunu aldırdı",
+    "tone": 1
+   },
+   {
+    "text": "Rakip soyunma odasında zirve hesapları",
+    "tone": 0
+   }
+  ],
+  "KRIZ_KULUBU": [
+   {
+    "text": "Soyunma odasında {oyuncu} depremi",
+    "tone": -2
+   },
+   {
+    "text": "{td} için geri sayım mı?",
+    "tone": -2
+   },
+   {
+    "text": "Tribünden ilk ıslıklar",
+    "tone": -1
+   },
+   {
+    "text": "Başkan {ad}: sessizlik mi strateji mi?",
+    "tone": -1
+   },
+   {
+    "text": "Kötü gidişat: taraftar sabrı taşıyor",
+    "tone": -2
+   },
+   {
+    "text": "Kulüpte alarm zilleri çalıyor",
+    "tone": -1
+   },
+   {
+    "text": "{ad} yönetimine istifa çağrısı",
+    "tone": -2
+   },
+   {
+    "text": "Kriz masası kuruldu: herkes konuşuyor, kimse dinlemiyor",
+    "tone": -2
+   },
+   {
+    "text": "{ad} dibi gördü: çıkış merdiveni nerede?",
+    "tone": -2
+   },
+   {
+    "text": "Soyunma odasından sızan tek kelime: sessizlik",
+    "tone": -1
+   },
+   {
+    "text": "Taraftar pankart hazırlıyor: \"Yeter\"",
+    "tone": -2
+   },
+   {
+    "text": "Yönetim katında ışıklar sabaha kadar yandı",
+    "tone": -1
+   }
+  ],
+  "BORC_BATAGI": [
+   {
+    "text": "Maaşlar gecikti iddiası",
+    "tone": -2
+   },
+   {
+    "text": "Faiz canavarı: haftada {x}mn eriyor",
+    "tone": -2
+   },
+   {
+    "text": "Transfer tahtası kapıda mı?",
+    "tone": -1
+   },
+   {
+    "text": "Kasada dip dalgası: alacaklılar kapıda",
+    "tone": -2
+   },
+   {
+    "text": "Bütçe kilidi konuşuluyor",
+    "tone": -1
+   },
+   {
+    "text": "{ad}'da mali tablo kâbusu",
+    "tone": -2
+   },
+   {
+    "text": "İcra kapıyı çaldı çalacak",
+    "tone": -2
+   },
+   {
+    "text": "Yönetim kemer deliklerini sayıyor",
+    "tone": -1
+   },
+   {
+    "text": "Haciz söylentisi kulisleri salladı",
+    "tone": -2
+   },
+   {
+    "text": "Bilanço kırmızısı: rakamlar inkâr etmiyor",
+    "tone": -1
+   },
+   {
+    "text": "Krediler kapıya dayandı: {x}mn faiz kalemi",
+    "tone": -2
+   },
+   {
+    "text": "Mali kongre çağrısı masada dolaşıyor",
+    "tone": -1
+   }
+  ],
+  "SECIM_SATHI": [
+   {
+    "text": "{rakip_aday}: '{tutulmayan_vaat} nerede?'",
+    "tone": -2
+   },
+   {
+    "text": "Kongre kulisleri hareketli",
+    "tone": 0
+   },
+   {
+    "text": "Anket: başkana destek %{p}",
+    "tone": 0
+   },
+   {
+    "text": "Delege pazarlıkları kızıştı",
+    "tone": 0
+   },
+   {
+    "text": "Sandık öncesi son viraj",
+    "tone": 0
+   },
+   {
+    "text": "{ad} sahaya değil sandığa oynuyor",
+    "tone": -1
+   },
+   {
+    "text": "Kongre takvimi masada: geri sayım",
+    "tone": 0
+   },
+   {
+    "text": "Kulisin dilinde tek soru: kim kazanır?",
+    "tone": 0
+   },
+   {
+    "text": "Delege telefonları susmuyor",
+    "tone": 0
+   },
+   {
+    "text": "İki liste, tek koltuk: kulis kaynıyor",
+    "tone": 0
+   },
+   {
+    "text": "Başkanın karnesi fotokopiyle delegelere dağıtıldı",
+    "tone": -1
+   },
+   {
+    "text": "Sandık matematiği: kim, kime, neden?",
+    "tone": 0
+   }
+  ],
+  "YENIDEN_DOGUS": [
+   {
+    "text": "Küllerinden: {n} galibiyetlik seri",
+    "tone": 2
+   },
+   {
+    "text": "Taraftar geri döndü: tribünler doldu",
+    "tone": 2
+   },
+   {
+    "text": "{ad} yeniden ayağa kalkıyor",
+    "tone": 2
+   },
+   {
+    "text": "Çıkış grafiği moralleri düzeltti",
+    "tone": 1
+   },
+   {
+    "text": "Umut yeşerdi: kötü günler geride",
+    "tone": 1
+   },
+   {
+    "text": "Kenetlenen kadro meyvesini veriyor",
+    "tone": 1
+   },
+   {
+    "text": "Şehirde hava değişti: yüzler gülüyor",
+    "tone": 1
+   },
+   {
+    "text": "Kara bulutlar dağıldı, sıra zirvede",
+    "tone": 2
+   },
+   {
+    "text": "İstatistikler gülümsüyor: seri gerçek",
+    "tone": 1
+   },
+   {
+    "text": "Kombine kuyruğu geri döndü",
+    "tone": 2
+   },
+   {
+    "text": "{ad} tesislerinde kuş sesleri: huzur dönemi",
+    "tone": 1
+   },
+   {
+    "text": "Eski günler mi? Hayır — yenileri",
+    "tone": 2
+   }
+  ],
+  "ALTYAPI_DEVRIMI": [
+   {
+    "text": "{genç}: {yaş} yaşında ilk 11'de",
+    "tone": 1
+   },
+   {
+    "text": "Akademiden altın nesil mi geliyor?",
+    "tone": 2
+   },
+   {
+    "text": "Gençlik aşısı tuttu",
+    "tone": 1
+   },
+   {
+    "text": "{ad}'ın ocağı cevher işliyor",
+    "tone": 1
+   },
+   {
+    "text": "Alt yapı yatırımı sahaya yansıyor",
+    "tone": 1
+   },
+   {
+    "text": "Geleceğin yıldızları vitrinde",
+    "tone": 1
+   },
+   {
+    "text": "Hocaların dilinde ocak övgüsü",
+    "tone": 1
+   },
+   {
+    "text": "Komşu kulüpler ocağa göz dikti",
+    "tone": 1
+   },
+   {
+    "text": "U19 hocası: \"Bu jenerasyonu kaçırmayın\"",
+    "tone": 1
+   },
+   {
+    "text": "Ocak kaynıyor: üç genç A takım idmanında",
+    "tone": 1
+   },
+   {
+    "text": "Scoutlar {ad} maçlarına akın ediyor",
+    "tone": 1
+   },
+   {
+    "text": "Altyapı raporu Avrupa basınında",
+    "tone": 2
+   }
+  ],
+  "NORMAL": [
+   {
+    "text": "Ligde sakin bir hafta",
+    "tone": 0
+   },
+   {
+    "text": "{oyuncu} sözleşme masasında",
+    "tone": 0
+   },
+   {
+    "text": "Tesislerde çalışmalar sürüyor",
+    "tone": 0
+   },
+   {
+    "text": "{ad} rutin mesaisinde",
+    "tone": 0
+   },
+   {
+    "text": "Kulüpten gündem yaratmayan hafta",
+    "tone": 0
+   },
+   {
+    "text": "Antrenman raporu: her şey yolunda",
+    "tone": 0
+   },
+   {
+    "text": "Sıradan bir lig haftası geride kaldı",
+    "tone": 0
+   },
+   {
+    "text": "Sakin hafta: gündem antrenman, mesai saha",
+    "tone": 0
+   },
+   {
+    "text": "{ad} rutininde: ne alkış ne ıslık",
+    "tone": 0
+   },
+   {
+    "text": "Kulübün gündemi bu hafta futbolun kendisi",
+    "tone": 0
+   },
+   {
+    "text": "Kulis sessiz — bazen en iyi haber budur",
+    "tone": 1
+   },
+   {
+    "text": "Hafta raporu: olağan şüpheliler, olağan sonuçlar",
+    "tone": 0
+   }
+  ]
+ },
+ "reports": {
+  "_note": "v4.3: haftalık teknik rapor ŞİDDET KADEMELİ (hafif/orta/agir ×2). GM abartmaz — cümle sayıyla çelişmez. Slot: {oyuncu} (uygunluk-hafif: tek sakat). 6-hafta tekrar kuralına dahil.",
+  "uygunluk": {
+   "hafif": [
+    "{oyuncu}'yu bu hafta yazamıyoruz, Başkanım; gerisi tam kadro hazır. Tedavisi planlandığı gibi ilerliyor.",
+    "Tek eksik {oyuncu} — onun dışında revir bomboş. Yerine bakacak ismimiz belli, panik yok.",
+    "{oyuncu} bu hafta antrenmanı pas geçti; kadroda telafisi hazır.",
+    "Revirde tek yatak dolu — rotasyonla görünmez kılarız."
+   ],
+   "orta": [
+    "Revirde yoğunluk var; birkaç ismi bu hafta riske atmayalım derim. Kadro derinliği şimdilik yetiyor.",
+    "İki-üç oyuncumuz tedavide. İdare ediyoruz ama bir sakatlık daha planı bozar — rotasyonu düşünelim.",
+    "Revirde üç isim sıra bekliyor; on birde iki zorunlu değişiklik var.",
+    "Sağlık ekibi mesaide: birkaç eksikle çıkıyoruz ama omurga yerinde."
+   ],
+   "agir": [
+    "Revir kalabalık, Başkanım; ilk on bir zorla ayakta. Tıbbi altyapıya yapılacak her yatırım şu an altın değerinde.",
+    "Sağlık tablosu alarmda: tedavi odası dolu, eksik mevki çok. Bu hafta kadro tasarrufu şart.",
+    "Revir tam kapasite — bu hafta hücum hattını fizyoterapistler kuruyor.",
+    "Kadro listesini sağlık raporları yazdı; gençlere formalar hazırlandı."
+   ]
+  },
+  "moral": {
+   "hafif": [
+    "Odada hafif bir gerginlik seziyorum; büyütmeden, birkaç doğru kelimeyle dağılır.",
+    "Moral fena değil ama eskisi kadar da coşkulu değiliz. Küçük bir jest havayı tazeler.",
+    "Birkaç asık surat var; kahve masasında çözülür.",
+    "Moral ortalamanın kılına dokunmuş — konuşarak düzelir."
+   ],
+   "orta": [
+    "Takımın kafası karışık; son sonuçlar özgüveni törpüledi. Sakin ve destekleyici bir ton öneririm.",
+    "Grup içinde huzursuz bir sessizlik var. Liderlere alan açmak toparlanmayı hızlandırır.",
+    "Soyunma odasında ses az, bakışlar yerde; bir kıvılcım lazım.",
+    "Motivasyon toplantısı istedim — hafta içi yapacağız."
+   ],
+   "agir": [
+    "Soyunma odasının havası bozuk, Başkanım. Konuşmalar kısa, yüzler asık. Yönetimden güven mesajı şart.",
+    "Moral dipte; antrenman temposu düştü, şakalaşma bitti. Acil bir dokunuş gerekiyor — bu hal sahaya taşınır.",
+    "Takım küs sahaya çıkıyor; içeride düğüm var, çözülmezse sahada patlar.",
+    "Psikolojik eşik aşıldı — bu hafta sonuç her şeyi değiştirir, iki yönde de."
+   ]
+  },
+  "form": {
+   "hafif": [
+    "Oyunumuz fena akmıyor ama son vuruşlarda küçük aksaklıklar var; ince ayar meselesi.",
+    "Ritmimiz yerinde sayılır; bir-iki otomatizm tekrarıyla oturur.",
+    "Ritmimiz bir tık düştü; ayar antrenmanla gelir.",
+    "Son maçların temposu ortalamanın altında ama panik yok."
+   ],
+   "orta": [
+    "Form grafiğimiz inişte; bireysel hata zinciri sonuçlara yansıyor. Panik değil istikrar lazım.",
+    "Takım kendini arıyor: hücumda son vuruş, savunmada zamanlama aksıyor. Sabırlı bir hafta daha rica ediyorum.",
+    "Form grafiği aşağı kıvrıldı — oyun planını sadeleştiriyoruz.",
+    "Vites bulamıyoruz; bu hafta düşük tempoyu kabullenip sağlam oynarız."
+   ],
+   "agir": [
+    "Oyun ritmimiz tamamen kayıp; otomatizmler çalışmıyor. Tekrar sayısını artırdık, karşılığını sabırla bekleyelim.",
+    "Kötü bir dalganın ortasındayız; top bir türlü dönmüyor. Bu dalga çalışmayla kırılır — kadro kararlılığı önemli.",
+    "Takım ayakta uyuyor — hücum verilerimiz sezon dibinde.",
+    "Form çukurundayız; çıkışın tek yolu basit futbol, sıfır risk."
+   ]
+  },
+  "kond": {
+   "hafif": [
+    "Bacaklarda hafif ağırlık var; antrenman dozunu bir tık düşürdük, hafta sonuna tazeleniriz.",
+    "Tempo yüksekti, ufak bir yorgunluk birikti — kontrollü hafta yeter.",
+    "Bacaklarda hafif yorgunluk — çarşamba rejenerasyon.",
+    "Yük yönetimi devrede; kritik isimler korunuyor."
+   ],
+   "orta": [
+    "Kondisyon değerleri sınırda seyrediyor. Dinlenme lazım; zorlarsak sakatlık faturası kabarır.",
+    "Toparlanma süreleri kısaldı; bu hafta yükü hafifletmek uzun vadede kazanç.",
+    "Fikstür bedeli: kilometre saatleri kırmızıya yakın.",
+    "İkinci yarılarda düşüyoruz — değişiklikler erken gelecek."
+   ],
+   "agir": [
+    "Bacaklar bitik, Başkanım. Fikstür bedelini ağır istiyor — rotasyon artık tercih değil zorunluluk.",
+    "Fiziksel yorgunluk kritik seviyede. Böyle devam edersek revir dolacak; nefes almalıyız.",
+    "Depo boş — bu kadroyla yüksek tempo intihar olur.",
+    "Fiziksel çöküş verisi net: bu hafta topu rakibe verip kontrayla yaşarız."
+   ]
+  },
+  "iyi": [
+   "Her şey yolunda, Başkanım. Revir sakin, moral yüksek, bacaklar zinde. Böyle haftalarda tek işimiz kazanmak.",
+   "Raporum kısa: sorun yok. Takım hazır, hava iyi. Keyifli bir maç haftası bizi bekliyor.",
+   "Tesiste moral de tempo da yerinde. Bu dengeyi bozmayalım yeter — gerisi sahada gelir.",
+   "İşler tıkırında; oyuncular istekli, ekip uyumlu. Yönetime tek notum var: güveniniz tam olsun.",
+   "Tablo temiz: revir boş, moral yerinde, bacaklar dolu. GM olarak işim kolaydı bu hafta.",
+   "Her metrik yeşil — teknik ekip 'dokunma, bozarsın' modunda."
+  ]
+ },
+ "matchChar": {
+  "_note": "Y8 maç raporu KARAKTER cümlesi (×12+). Slotlar: {oyuncu} {dk}",
+  "galibiyet": [
+   "{dk}'te mühür: {oyuncu} gecesi.",
+   "Üç puanın mimarı belliydi: {oyuncu}.",
+   "Zor maçın kilidini {oyuncu} açtı."
+  ],
+  "maglubiyet": [
+   "Futbolun acımasız gecesi — {dk}'te yıkılan bir takım.",
+   "Bu gece anlatacak güzel bir şey yok; olan tribüne oldu.",
+   "Skor tabelası acıttı; en çok da {oyuncu}'nun boşa giden emeği."
+  ],
+  "beraberlik": [
+   "İki takım da kazanmayı unuttu; puanlar bölüşüldü.",
+   "{dk}'teki pozisyon girseydi başka konuşurduk.",
+   "Ne zafer ne hezimet — futbolun gri gecesi."
+  ],
+  "derbi": [
+   "Derbi gecesi: bu skor haftalarca konuşulur.",
+   "Şehrin göbeğinde {oyuncu} imzası.",
+   "Derbinin kaderi {dk}'te yazıldı."
+  ],
+  "hezimet": [
+   "Tarihe geçecek bir çöküş; taraftar 60'ta stadı terk etti.",
+   "Bu farkın açıklaması yok — sadece özür var.",
+   "Kara gece: her istatistik utanç verici."
+  ],
+  "gosteri": [
+   "Gol yağmuru: tribün doyamadı.",
+   "{oyuncu} ve arkadaşlarından futbol resitali.",
+   "Rakibe verilecek tek teselli: bitti."
+  ]
+ },
+ "ticker": {
+  "gol": [
+   "{dk}' GOOOL! {oyuncu} köşeye bıraktı",
+   "{dk}' {oyuncu} kafayla ağlarla buluşturdu",
+   "{dk}' penaltı gole çevrildi: {oyuncu}",
+   "{dk}' harika vuruş! {oyuncu} uzaktan patlattı",
+   "{dk}' {oyuncu} boş kaleye tamamladı",
+   "{dk}' Savunma hatası affedilmedi — top ağlarda!",
+   "{dk}' Korner sonrası kafa vuruşu dibe çakıldı!",
+   "{dk}' Kontratak ders gibiydi: üç pas, bir bitiş."
+  ],
+  "kacan": [
+   "{dk}' {oyuncu} direkten döndü!",
+   "{dk}' kaleci köşeden çıkardı, inanılmaz",
+   "{dk}' boş kale... auta!",
+   "{dk}' {oyuncu}'nun şutu az farkla dışarı",
+   "{dk}' inanılmaz kurtarış, kaleci ağları koruyor",
+   "{dk}' Boş kaleye vuramadı — tribün elleriyle başında!",
+   "{dk}' Şut üst direkten döndü, stadyum inledi.",
+   "{dk}' Kaleciyle karşı karşıya... ve topu dışarı!"
+  ],
+  "kart": [
+   "{dk}' {oyuncu} oyundan atıldı — on kişiler!",
+   "{dk}' sert müdahale, {oyuncu} sarı gördü",
+   "{dk}' ikinci sarıdan {oyuncu} dışarı!"
+  ],
+  "tansiyon": [
+   "{dk}' tribünler ayakta, tempo yükseliyor",
+   "{dk}' baskı artıyor, ev sahibi yükleniyor",
+   "{dk}' saha karıştı, hakem oyunu durdurdu",
+   "{dk}' İki oyuncu göğüs göğüse — hakem araya girdi.",
+   "{dk}' Yedek kulübeleri birbirine girdi, dördüncü hakem terletti."
+  ],
+  "var": [
+   {
+    "text": "{dk}' VAR inceliyor... gol İPTAL",
+    "delayMs": 2000
+   },
+   {
+    "text": "{dk}' VAR kontrolü... penaltı VERİLDİ",
+    "delayMs": 2000
+   },
+   "{dk}' VAR çizgi çekiyor... stadyumda çıt yok.",
+   "{dk}' Monitör önünde uzun inceleme — karar bekleniyor."
+  ]
+ },
+ "inbox": {
+  "cfo": {
+   "template": "Başkanım, {ay} nakit projeksiyonu ekte. {gelir}mn gelir / {gider}mn gider. {yorum}",
+   "yorum": [
+    "Nakit güçlü; bu pencerede manevra alanımız var.",
+    "Sınırdayız; büyük bir harcama nakit akışını zorlar.",
+    "Kırmızı çizgiye yaklaşıyoruz; acil önlem şart."
+   ]
+  },
+  "akademi": [
+   "{genç} antrenmanda gözlerimizi doldurdu. A takım denemesi öneririm.",
+   "Altyapıda umut verici bir grup var; sabırlı olursak meyvesini alırız."
+  ],
+  "taraftarGrubu": [
+   "Sayın Başkan, {konu} hakkında tribünün sesini duymanızı istiyoruz. Saygılarımızla, {grup_adı}.",
+   "{grup_adı} olarak {konu} konusundaki kararınızı yakından takip ediyoruz."
+  ],
+  "menajer": {
+   "köpekbalığı": [
+    "Müvekkilim ilgiden memnun ama rakamlar konuşsun; imza parası ciddi olmalı.",
+    "Bu tekliften daha fazlası lazım; başka kulüpler de masada, aceleci olmayın."
+   ],
+   "beyefendi": [
+    "Müvekkilim projenize sıcak bakıyor; makul bir anlaşmaya varabiliriz.",
+    "Uzun vadeli düşünüyoruz; adil bir teklif ikimizi de mutlu eder."
+   ],
+   "aile": [
+    "Oğlum için oynama süresi garantisi istiyoruz, para ikinci planda.",
+    "Ailece güvendiğimiz bir kulüp arıyoruz; onu iyi hissettirin yeter."
+   ],
+   "portföycü": [
+    "Elimde tam size göre birkaç isim daha var; iyi ilişkimiz sürsün.",
+    "Bu işi bağlarsak listemin kapıları size açık kalır."
+   ]
+  },
+  "td": [
+   "Başkanım, sol bek bölgesi zayıf; pencerede bir takviye şart.",
+   "Antrenman tesisinin durumu gelişimi yavaşlatıyor; yatırım rica ediyorum.",
+   "Kadro derinliği yetersiz; fikstür sıkışınca zorlanacağız."
+  ],
+  "kurulUyesi": [
+   "{üye} son toplantıda {konu} konusunda rahatsızlığını dile getirdi."
+  ]
+ },
+ "presser": {
+  "derbiOncesi": {
+   "iddialı": [
+    "Bu derbi bizim. Sahadan galip ayrılacağız.",
+    "Rakip kim olursa olsun, bu şehrin lideri biziz."
+   ],
+   "sakin": [
+    "Zor bir maç bizi bekliyor, hazırız; sonucu sahada göreceğiz.",
+    "Derbi başka bir atmosfer; sakin kalıp işimize bakacağız."
+   ],
+   "savunmacı": [
+    "Baskıyı biliyoruz ama panik yok; planımıza güveniyoruz.",
+    "Herkes bizi eleştiriyor, biz cevabı sahada vereceğiz."
+   ],
+   "ateşli": [
+    "Rakibin son yıllarda ne yaptığını herkes biliyor; konuşmak onlara düşmez.",
+    "Bu tribün, bu takım — kimse bize meydan okuyamaz!"
+   ]
+  },
+  "kriz": {
+   "iddialı": [
+    "Bu takım dibi gördü, şimdi ayağa kalkacak; söz veriyorum.",
+    "En kısa sürede toparlanıp yukarı tırmanacağız."
+   ],
+   "sakin": [
+    "Zor bir dönemden geçiyoruz; sabır ve çalışma bizi çıkaracak.",
+    "Sonuçlar istediğimiz gibi değil ama yön doğru."
+   ],
+   "savunmacı": [
+    "Sorumluluk yalnız bende değil; herkes üzerine düşeni yapmalı.",
+    "Eleştiriler haksız; tabloya bütün olarak bakılmalı."
+   ],
+   "ateşli": [
+    "Bizi gömmek isteyenler yanılıyor! Bu kulüp kimseye boyun eğmez.",
+    "Yeter artık bu linç kampanyası — kime hizmet ediyor belli!"
+   ]
+  },
+  "zafer": {
+   "iddialı": [
+    "Bu daha başlangıç; hedefimiz çok daha büyük.",
+    "Kazanmaya alışacaksınız; bu takım durmayacak."
+   ],
+   "sakin": [
+    "Güzel bir galibiyet; ayaklarımız yere basıyor, sıradaki maça bakıyoruz.",
+    "Emeğin karşılığı; sakin kalıp devam edeceğiz."
+   ],
+   "savunmacı": [
+    "Bugün eleştirenlere en güzel cevabı takım verdi.",
+    "Kimse inanmıyordu; sessizce çalıştık, sonuç ortada."
+   ],
+   "ateşli": [
+    "İşte bu! Bu taraftar bu coşkuyu hak ediyor!",
+    "Bize inanmayanlar bu skoru iyi baksın!"
+   ]
+  },
+  "hakem": {
+   "iddialı": [
+    "Bu kadar hatanın hesabını soracağız, sonuna kadar gideceğiz.",
+    "Hakkımızı sonuna kadar arayacağız; kimse bizi durduramaz."
+   ],
+   "sakin": [
+    "Tartışmalı bir karar vardı; yetkililerin değerlendireceğine inanıyorum.",
+    "Sahada olanları federasyona bırakıyoruz, biz işimize bakarız."
+   ],
+   "savunmacı": [
+    "Bahane üretmek istemem ama o pozisyon maçı etkiledi.",
+    "Sonucu sadece hakeme bağlamak doğru olmaz, eksiklerimiz de var."
+   ],
+   "ateşli": [
+    "Bu bir skandaldır! Her hafta aynı takımlar korunuyor!",
+    "Bu düdüklerin hesabını birileri verecek, buradan ilan ediyorum!"
+   ]
+  },
+  "rakipAday": {
+   "iddialı": [
+    "Rakip aday konuşur, biz iş yaparız; karnemiz ortada.",
+    "Vaat değil eser bırakıyoruz; seçmen bunu görecek."
+   ],
+   "sakin": [
+    "Herkesin aday olma hakkı var; biz yaptıklarımızla anılacağız.",
+    "Polemiğe girmem; kongre üyeleri en doğru kararı verir."
+   ],
+   "savunmacı": [
+    "Geçmişi çarpıtmak kolay; rakamlar yalan söylemez.",
+    "Bize yüklenmesini anlıyorum ama tablo göründüğü gibi değil."
+   ],
+   "ateşli": [
+    "Bu şehir onun ne yaptığını çok iyi biliyor; boş konuşmasın!",
+    "Meydan okuyorsa gelsin, karnesini karnemizle karşılaştıralım!"
+   ]
+  }
+ },
+ "gmDirektif": {
+  "dusuk|genc": "Dar kese, genç kadro… Altyapıya bakarım. Ama sizden sabır isterim Başkanım, meyvesi bu sezon değil.",
+  "dusuk|hazir": "Bu keseyle mucize beklemeyin. Ama bedavaya çıkanların içinde hâlâ adam var, bulurum.",
+  "dusuk|yildiz": "Bu parayla yıldız mı Başkanım? Olsa olsa kiralık gelir, ya da takımıyla küs bir isim. Riski sizin.",
+  "orta|genc": "Bu keseyle iki genci bağlarım. Üç sene sonra ikisini de iki katına satarsınız, not edin.",
+  "orta|hazir": "Makul rakam, pişmiş adam. Profili ben bulurum, pazarlıkta da kimseye kaptırmam.",
+  "orta|yildiz": "Bir yıldıza yeter, fazlası yok. Tek atışımız var Başkanım — ıskalarsak sezon gider.",
+  "yuksek|genc": "Bu keseyle ligin en iyi gençlerini toplarım. İki sene sonra bu takımı herkes konuşur.",
+  "yuksek|hazir": "Bu parayla kadronun yarısını değiştiririm. Devre arasında bu takımı siz bile tanımazsınız.",
+  "yuksek|yildiz": "Gözüme kestirdiğim isim var. Siz basın toplantısı için salonu tutun Başkanım."
+ }
+}

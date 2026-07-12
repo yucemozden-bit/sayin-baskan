@@ -1,0 +1,1057 @@
+{
+ "_schema": "V4-§14 — olay havuzu (Bible-14 + V4-§8). type: threshold (deterministik eşik) | random (olasılıksal, EVENT_P). effects yapısı: gauge{delta}, economy{kasa,borc,faiz}, flag{name,ticks}, player{...}, note (motorun yorumlayacağı karmaşık etki). auto:true → oyuncuya seçim sunulmaz.",
+ "threshold": [
+  {
+   "id": "kongre-cagri",
+   "trigger": "gauges.guven < THRESH.guvenKriz",
+   "title": "Kongre olağanüstü çağrı",
+   "auto": true,
+   "effects": {
+    "flag": {
+     "budgetLock": 4
+    },
+    "gauge": {
+     "taraftar": -5
+    },
+    "note": "Medya baskısı; 4 tick bütçe kilidi."
+   },
+   "body": "Güven tabanı çöktü: muhalif delegeler imza toplayıp olağanüstü kongre çağrısı yaptı. Divan kuruldu, bütçe kilitlendi — kulüp resmen seçim moduna girdi."
+  },
+  {
+   "id": "boykot",
+   "trigger": "gauges.taraftar < THRESH.taraftarBoykot",
+   "title": "Tribün boykotu",
+   "auto": true,
+   "effects": {
+    "ticketMult": 0.6,
+    "ticks": 3,
+    "gaugePerTick": {
+     "guven": -4
+    },
+    "note": "3 tick bilet geliri ×0.6."
+   },
+   "body": "Radikal tribün grubu boykot kararı aldı; kombine iadeleri başladı. Kapalı tribün bu hafta bomboş olacak — gişe ve moral aynı anda kanıyor."
+  },
+  {
+   "id": "transfer-tahtasi",
+   "trigger": "gauges.mali < THRESH.maliTahta",
+   "title": "Transfer tahtası",
+   "auto": true,
+   "effects": {
+    "flag": {
+     "transferBan": 2
+    },
+    "note": "2 pencere transfer yasağı."
+   },
+   "body": "Federasyonun mali denetimi kapıya dayandı: borç eşiği aşıldı, transfer tahtası kapatıldı. Tahta açılana dek ne alım ne kiralama — sadece satış."
+  },
+  {
+   "id": "kume-domino",
+   "trigger": "season.relegated",
+   "title": "Küme düşüşü: Domino",
+   "auto": true,
+   "effects": {
+    "gauge": {
+     "itibar": -20,
+     "taraftar": -25
+    },
+    "tvMult": 0.5,
+    "note": "Tüm yıldızlar transfer talep eder."
+   },
+   "body": "Küme hattına yaklaştıkça domino işliyor: sponsorlar temkinli, menajerler mesafeli, kombine iadesi soruluyor. Panik dalgası tesise sızmadan durdurulmalı."
+  },
+  {
+   "id": "sampiyon-zafer",
+   "trigger": "season.champion",
+   "title": "ŞAMPİYON!",
+   "auto": true,
+   "effects": {
+    "gauge": {
+     "itibar": 15,
+     "taraftar": 20
+    },
+    "sponsorValueMult": 1.15,
+    "note": "Şampiyonluk primi + sponsor değeri +%15."
+   },
+   "body": "ŞAMPİYONLUK! Şehir meydanda, konfeti yağmuru altında kulüp tarihine yeni bir yıldız işlendi. Kutlama korteji, prim masası ve efsane bir gece seni bekliyor."
+  },
+  {
+   "id": "kupa-zafer",
+   "trigger": "season.cupWon",
+   "title": "Kupa bizim!",
+   "auto": true,
+   "effects": {
+    "gauge": {
+     "itibar": 8,
+     "taraftar": 10
+    },
+    "note": "Kupa primi."
+   },
+   "body": "Kupa müzeye geldi! Final gecesinin coşkusu şehri sardı; başkanlık locasından kaldırdığın kupa, kongre salonunda da konuşulacak."
+  },
+  {
+   "id": "yildiz-sizinti",
+   "trigger": "player.isStar && player.morale < 30",
+   "title": "Soyunma odası sızıntısı",
+   "auto": true,
+   "effects": {
+    "gauge": {
+     "taraftar": -6
+    },
+    "player": {
+     "transferRequest": true
+    },
+    "note": "otorite<70 ise soyunma odası moral −5."
+   },
+   "body": "Soyunma odasından basına ses kaydı sızdı: yıldız oyuncu yönetimi eleştiriyor. Kabine güveni sarsıldı; sızıntının kaynağı belirsiz, herkes birbirine bakıyor."
+  },
+  {
+   "id": "sakatlik-dalgasi",
+   "trigger": "power.uygunluk < 0.75 (2 tick)",
+   "title": "Sakatlık dalgası",
+   "auto": true,
+   "effects": {
+    "note": "Form/moral kısır döngü uyarısı; tıbbi tesis freni."
+   },
+   "body": "Revir alarm veriyor: bir haftada dördüncü sakatlık. Sağlık ekibi yüklenme raporu hazırladı; TD rotasyona mecbur, taraftar \"bu kadro yorgun\" diyor."
+  }
+ ],
+ "random": [
+  {
+   "id": "doviz-soku",
+   "title": "Döviz şoku",
+   "trigger": "random",
+   "options": [
+    {
+     "label": "Kabul et",
+     "effects": {
+      "economy": {
+       "faiz": 0.05,
+       "borcMult": 1.08
+      }
+     },
+     "whisper": "faiz yükü artar · kasa şimdilik rahat"
+    },
+    {
+     "label": "Yeniden yapılandır",
+     "effects": {
+      "economy": {
+       "faiz": 0.04
+      },
+      "note": "Vade uzatılır, ani şok yumuşar."
+     },
+     "whisper": "vade uzar · ani şok yumuşar"
+    }
+   ],
+   "body": "CFO masaya kur tablosunu koydu: dövize endeksli kredilerin faizi bir gecede fırladı. Banka iki yol sunuyor — mevcut şartlarla devam ya da masaya oturup vadeyi uzatmak."
+  },
+  {
+   "id": "yildiza-dev-teklif",
+   "title": "Yıldıza dev teklif",
+   "trigger": "random",
+   "options": [
+    {
+     "label": "Sat",
+     "effects": {
+      "economy": {
+       "kasaGain": "marketValue×rand(0.8,1.3)"
+      },
+      "gauge": {
+       "taraftar": -6
+      }
+     },
+     "whisper": "kasa dolar · tribün küser"
+    },
+    {
+     "label": "Reddet",
+     "effects": {
+      "player": {
+       "morale": 6
+      },
+      "gauge": {
+       "taraftar": 4
+      }
+     },
+     "whisper": "oyuncu gururlanır · taraftar bayram eder"
+    }
+   ],
+   "body": "Avrupa devinin sportif direktörü menajer üzerinden ulaştı: en değerli oyuncun için resmi teklif hazır, basına sızması an meselesi. Taraftar sosyal medyada şimdiden nöbette.",
+   "phone": {
+    "caller": "menajer",
+    "callerName": "Menajer hattı"
+   }
+  },
+  {
+   "id": "kombine-indir",
+   "title": "Taraftar grubu: kombine indir",
+   "trigger": "random",
+   "options": [
+    {
+     "label": "İndir",
+     "effects": {
+      "gauge": {
+       "taraftar": 4
+      },
+      "revenueMult": 0.9
+     },
+     "whisper": "tribün ısınır · gişe inceden erir"
+    },
+    {
+     "label": "Reddet",
+     "effects": {
+      "gauge": {
+       "taraftar": -4
+      }
+     },
+     "whisper": "gişe korunur · tribün soğur"
+    }
+   ],
+   "body": "Kapalı tribün derneği yönetim kuruluna dilekçe bıraktı: \"Enflasyon bizi ezdi, kombineye indirim istiyoruz.\" Dernek başkanı yerel radyoda konuyu büyütüyor."
+  },
+  {
+   "id": "genc-patladi",
+   "title": "Genç yetenek patladı",
+   "trigger": "random",
+   "auto": true,
+   "effects": {
+    "player": {
+     "overall": 5
+    },
+    "note": "Akademiden sıçrama."
+   },
+   "body": "Akademi hocasının haftalardır fısıldadığı çocuk sonunda sahnede: antrenman maçında herkesi mest etti. Medya çoktan haber yaptı — kendiliğinden gelişen güzel bir gün."
+  },
+  {
+   "id": "hakem-skandal",
+   "title": "Hakem/skandal",
+   "trigger": "random",
+   "auto": true,
+   "effects": {
+    "gauge": {
+     "itibar": -5
+    },
+    "note": "Medya tonu sertleşir."
+   },
+   "body": "Haftanın maçındaki tartışmalı pozisyonlar ülke gündemine oturdu. Federasyon soruşturma açtı; kulübün adı geçmiyor ama liglerde tansiyon yükseldi."
+  },
+  {
+   "id": "sponsor-firsati",
+   "title": "Sponsor fırsatı",
+   "trigger": "random",
+   "options": [
+    {
+     "label": "Kabul (isim hakkı çatışması)",
+     "effects": {
+      "revenueMult": 1.2,
+      "gauge": {
+       "taraftar": -3
+      }
+     },
+     "whisper": "gelir artar · küçük hukuki gerginlik"
+    },
+    {
+     "label": "Reddet",
+     "effects": {},
+     "whisper": "mevcut düzen korunur"
+    }
+   ],
+   "body": "Yeni bir teknoloji firması göğüs sponsorluğuna talip — rakamlar cazip ama mevcut isim sponsoruyla marka çakışması var; hukuk departmanı \"dava riski düşük ama var\" diyor."
+  },
+  {
+   "id": "arsa-indirimi",
+   "title": "Yerel yönetim stadyum arsası",
+   "trigger": "random",
+   "options": [
+    {
+     "label": "Kabul",
+     "effects": {
+      "facilityDiscount": {
+       "stadyum": 0.4,
+       "scope": "season"
+      },
+      "note": "Arsa devralındı: stadyum yatırımı bu sezon −%40 indirimli — ihale teklifleri ucuz gelecek."
+     },
+     "whisper": "tesis ucuzlar · taahhüt yükü doğar"
+    },
+    {
+     "label": "Red",
+     "effects": {},
+     "whisper": "borç yok · fırsat kaçar"
+    }
+   ],
+   "body": "Valilikten resmi yazı geldi: stadyum çevresindeki kamu arsası kulübe indirimli devredilebilir. Karşılığında altyapıya yatırım taahhüdü isteniyor; teklif bu ay geçerli.",
+   "phone": {
+    "caller": "kurul",
+    "callerName": "Valilik özel kalem"
+   }
+  },
+  {
+   "id": "maas-gecikmesi",
+   "title": "Maaş gecikmesi dedikodusu",
+   "trigger": "economy.kasa < 5",
+   "options": [
+    {
+     "label": "Açıkla",
+     "effects": {
+      "gauge": {
+       "itibar": -2
+      },
+      "note": "Dedikodu biter."
+     },
+     "whisper": "şeffaflık puan kazandırır · gündem uzar"
+    },
+    {
+     "label": "Sessiz kal",
+     "effects": {
+      "chance": 0.4,
+      "onHit": {
+       "squadMorale": -4
+      }
+     },
+     "whisper": "gündem söner · dedikodu köpürür"
+    }
+   ],
+   "body": "Yerel gazete \"maaşlar gecikti\" iddiasını manşete taşıdı. Soyunma odası sessiz ama menajerler telefon trafiğinde; kamuoyu senin ağzından bir cümle bekliyor."
+  },
+  {
+   "id": "belediye-arsa",
+   "title": "Belediye arsa teklifi",
+   "trigger": "random",
+   "options": [
+    {
+     "label": "Kabul",
+     "effects": {
+      "facilityDiscount": {
+       "antrenman": 0.3,
+       "scope": "term"
+      },
+      "note": "Protokol imzalandı: antrenman tesisi bu dönem −%30 indirimli — ihale teklifleri ucuz gelecek."
+     },
+     "whisper": "tesis ucuzlar · protokol borcu doğar"
+    },
+    {
+     "label": "Red",
+     "effects": {},
+     "whisper": "bağımsızlık korunur · maliyet tam biner"
+    }
+   ],
+   "body": "Belediye başkanı bizzat aradı: şehir çeperindeki arsayı yeni antrenman tesisi için kulübe tahsis etmeye hazır. Karşılığı, protokole \"sosyal tesis\" maddesi ve görünmez bir siyasi borç.",
+   "phone": {
+    "caller": "kurul",
+    "callerName": "Belediye Başkanı"
+   }
+  },
+  {
+   "id": "efsane-vefat",
+   "title": "Efsane futbolcu vefatı",
+   "trigger": "random",
+   "options": [
+    {
+     "label": "Anma organizasyonu",
+     "effects": {
+      "gauge": {
+       "taraftar": 4
+      },
+      "economy": {
+       "kasa": -0.3
+      }
+     },
+     "whisper": "itibar + tribün bağı · küçük masraf"
+    },
+    {
+     "label": "Sade mesaj",
+     "effects": {
+      "gauge": {
+       "taraftar": 1
+      }
+     },
+     "whisper": "sade kalır · bir grup buruk"
+    }
+   ],
+   "body": "Kulübün altın çağının kaptanı hayatını kaybetti. Şehir yasta; tribün gruplarından anma talebi var. Nasıl uğurlayacağın, kulübün hafızasına yazılacak."
+  },
+  {
+   "id": "gece-hayati",
+   "title": "Yıldızın gece hayatı haberi",
+   "trigger": "hasPersonality:alevlenebilir",
+   "options": [
+    {
+     "label": "Ceza kes",
+     "effects": {
+      "kimya": 2,
+      "player": {
+       "morale": -8
+      }
+     },
+     "whisper": "disiplin mesajı · yıldız küser"
+    },
+    {
+     "label": "Kol kanat ger",
+     "effects": {
+      "player": {
+       "morale": 5
+      },
+      "mediaTone": -1
+     },
+     "whisper": "oyuncu borçlanır · medya sevmez"
+    }
+   ],
+   "body": "Gece kulübünden çıkan görüntüler sabaha karşı servis edildi: kadronun yıldızı, maçtan 48 saat önce. Muhabir yorum için kapıda, TD kararını senden bekliyor.",
+   "phone": {
+    "caller": "gazeteci",
+    "callerName": "Nazlı Ekinci (Bilanço)"
+   }
+  },
+  {
+   "id": "karaborsa",
+   "title": "Kombine karaborsası",
+   "trigger": "doluluk > 0.95",
+   "options": [
+    {
+     "label": "Elektronik bilet yatırımı",
+     "effects": {
+      "economy": {
+       "kasa": -2
+      },
+      "gauge": {
+       "taraftar": 3
+      },
+      "note": "Karaborsa olayları biter, CFO projeksiyonu iyileşir."
+     },
+     "whisper": "yatırım maliyeti · gişe düzeni oturur"
+    },
+    {
+     "label": "Görmezden gel",
+     "effects": {},
+     "whisper": "bedava ama öfke tribüne birikir"
+    }
+   ],
+   "body": "Derbi kombineleri karaborsada üç katına satılıyor; gerçek taraftar kapıda kalıyor. Güvenlik birimi elektronik bilet sistemine geçişi öneriyor — bedeli var."
+  },
+  {
+   "id": "td-teklif",
+   "title": "Rakipten TD'ne teklif",
+   "trigger": "coach.score > 75",
+   "options": [
+    {
+     "label": "Zam yap",
+     "effects": {
+      "coach": {
+       "wageMult": 1.3
+      },
+      "note": "TD kalır."
+     },
+     "whisper": "maaş yükü artar · istikrar kalır"
+    },
+    {
+     "label": "Bırak",
+     "effects": {
+      "coach": {
+       "leaves": true
+      },
+      "note": "TaktikUyum sıfırlanır."
+     },
+     "whisper": "tazminatsız ayrılık · kadro sahipsiz kalır"
+    }
+   ],
+   "body": "Rakip kulüp teknik direktörüne resmî teklif götürdü — rakamı basına da sızdırdılar. Hoca açık kapı bırakıyor: \"Kulübüm bana değer verirse bir yere gitmem.\""
+  },
+  {
+   "id": "genc-ab-kanca",
+   "title": "Genç yıldıza AB kulübü kancası",
+   "trigger": "hasGoldenChild",
+   "options": [
+    {
+     "label": "Sat",
+     "effects": {
+      "economy": {
+       "kasaGain": "büyük"
+      },
+      "gauge": {
+       "taraftar": -8
+      }
+     },
+     "whisper": "nakit gelir · gelecek satılır"
+    },
+    {
+     "label": "Tut + zam",
+     "effects": {
+      "player": {
+       "wageMult": 1.4,
+       "morale": 6
+      }
+     },
+     "whisper": "çocuk kalır · maaş bütçesi şişer"
+    },
+    {
+     "label": "Satış payıyla sat",
+     "effects": {
+      "economy": {
+       "kasaGain": "orta"
+      },
+      "gauge": {
+       "taraftar": -4
+      }
+     },
+     "whisper": "bugün az, yarın pay — sabır işi"
+    }
+   ],
+   "body": "Altyapıdan çıkan genç yıldıza AB kulübü kanca attı; menajeri \"çocuğun hayali\" diye fısıldıyor. Üç yol var, üçünün de bedeli farklı."
+  },
+  {
+   "id": "cati-arizasi",
+   "title": "Stat çatısı arızası",
+   "trigger": "facilities.stadyum < 4 && season.winter",
+   "options": [
+    {
+     "label": "Acil onarım",
+     "effects": {
+      "economy": {
+       "kasa": -1.5
+      }
+     },
+     "whisper": "kasa öder · risk kapanır"
+    },
+    {
+     "label": "Ertele",
+     "effects": {
+      "matchRevenueMult": 0.8,
+      "gauge": {
+       "itibar": -3
+      }
+     },
+     "whisper": "para cepte · fırtına hesabı sorar"
+    }
+   ],
+   "body": "Fırtınada kapalı tribünün çatısı hasar aldı. Statik raporu \"acil değil ama riskli\" diyor; belediye denetimi kapıda. Onarım pahalı, erteleme kumar."
+  },
+  {
+   "id": "sike-iddiasi",
+   "title": "Şike iddiası (asılsız)",
+   "trigger": "gauges.itibar < 40",
+   "options": [
+    {
+     "label": "Hukuki savaş",
+     "effects": {
+      "economy": {
+       "kasa": -1
+      },
+      "chance": 0.8,
+      "onHit": {
+       "gauge": {
+        "itibar": 5
+       }
+      }
+     },
+     "whisper": "itibar savunulur · gündem büyür"
+    },
+    {
+     "label": "Sessizlik",
+     "effects": {
+      "gauge": {
+       "itibar": -4
+      },
+      "note": "Kalıcı sis."
+     },
+     "whisper": "gündem söner · iz kalabilir"
+    }
+   ],
+   "body": "Marjinal bir hesap \"şike\" iddiası ortaya attı; ana akım medya henüz temkinli. Hukukçular \"dava kazanılır ama gündem büyür\" diyor. Sessizlik de bir strateji."
+  },
+  {
+   "id": "bagis-kampanyasi",
+   "title": "Taraftar bağış kampanyası",
+   "trigger": "tag:BORC_BATAGI",
+   "options": [
+    {
+     "label": "Kabul",
+     "effects": {
+      "economy": {
+       "kasaGain": "2..5"
+      },
+      "gauge": {
+       "guven": -3
+      },
+      "note": "'Yönetemiyor' algısı."
+     },
+     "whisper": "kasaya taze kan · muhalif iğneler"
+    },
+    {
+     "label": "Reddet",
+     "effects": {
+      "gauge": {
+       "taraftar": 2
+      }
+     },
+     "whisper": "gurur korunur · tribün emeği boşa düşer"
+    }
+   ],
+   "body": "Taraftar grupları kendi aralarında bağış kampanyası başlatmış: \"Kulübümüze omuz veriyoruz.\" Gurur verici — ama muhalifler \"yönetim dilenciliğe düştü\" diye yazacak."
+  },
+  {
+   "id": "dizi-cekim",
+   "title": "Ünlü dizi kulüpte çekim istiyor",
+   "trigger": "random",
+   "options": [
+    {
+     "label": "İzin ver",
+     "effects": {
+      "brand": 0.05,
+      "economy": {
+       "kasa": 1
+      },
+      "board": {
+       "Nostaljik": -5
+      }
+     },
+     "whisper": "ekstra gelir + vitrin · antrenman aksar"
+    },
+    {
+     "label": "Reddet",
+     "effects": {},
+     "whisper": "düzen korunur · gelir kaçar"
+    }
+   ],
+   "body": "Reyting rekortmeni dizinin yapımcısı stadyumda üç günlük çekim izni istiyor. Telif dolgun; ama antrenman planı bozulur, TD şimdiden homurdanıyor."
+  },
+  {
+   "id": "grip-salgini",
+   "title": "Toplu sakatlık (grip salgını)",
+   "trigger": "season.winter",
+   "auto": true,
+   "effects": {
+    "uygunluk": -0.08,
+    "ticks": 2,
+    "note": "Kadro rotasyonu zorunlu 2 hafta."
+   },
+   "body": "Tesiste grip salgını: revir koridoru doldu, kadronun yarısı ateşli. Sağlık ekibi karantina protokolü uyguluyor; bu hafta rotasyon kaçınılmaz."
+  },
+  {
+   "id": "eski-baskan-roportaj",
+   "title": "Eski başkan röportajı",
+   "trigger": "season.election",
+   "options": [
+    {
+     "label": "Cevap ver",
+     "effects": {
+      "note": "Basın toplantısı (F) motoru tetiklenir."
+     },
+     "whisper": "otorite mesajı · polemik büyür"
+    },
+    {
+     "label": "Sessiz",
+     "effects": {
+      "rivalAttractiveness": 1
+     },
+     "whisper": "kavga çıkmaz · söz onda kalır"
+    }
+   ],
+   "body": "Koltuğu senden önce bırakan başkan pazar ekinde konuşmuş: \"Benim dönemimde bu kulüp...\" — iğneler açık. Cevap hakkı senin; sessizlik de mesaj."
+  },
+  {
+   "id": "forma-krizi",
+   "title": "Forma tasarımı krizi",
+   "trigger": "season.start",
+   "options": [
+    {
+     "label": "Klasik",
+     "effects": {
+      "gauge": {
+       "taraftar": 2
+      }
+     },
+     "whisper": "gelenekçiler mutlu"
+    },
+    {
+     "label": "Modern",
+     "effects": {
+      "gencTaban": 1,
+      "radikalGrup": -3
+     },
+     "whisper": "gençlik mutlu · nostaljikler homurdanır"
+    },
+    {
+     "label": "Taraftar oylaması",
+     "effects": {
+      "gauge": {
+       "taraftar": 4
+      },
+      "formaRevenueMult": {
+       "value": 0.8,
+       "ticks": 4
+      }
+     },
+     "whisper": "demokrasi güzel · sonuç sürpriz"
+    }
+   ],
+   "body": "Yeni sezon forması sızdı ve tribün ikiye bölündü: \"kökümüze ihanet\" diyen de var, \"nihayet çağdaş\" diyen de. Tedarikçi son kararı bu hafta istiyor."
+  },
+  {
+   "id": "scout-cevher",
+   "title": "Scout'un gizli cevheri",
+   "trigger": "facilities.scout >= 6",
+   "options": [
+    {
+     "label": "Hemen al (sis yüksek)",
+     "effects": {
+      "note": "Kumar: gerçek overall belirsiz."
+     },
+     "whisper": "ucuz ama kumar · sis yoğun"
+    },
+    {
+     "label": "Rapor bekle",
+     "effects": {
+      "note": "1 ay bekle; fiyat %20 artabilir."
+     },
+     "whisper": "netlik gelir · fiyat da gelir"
+    }
+   ],
+   "body": "Baş scout gizli raporla geldi: Balkan liginde kimsenin fark etmediği bir cevher, \"üç ay sonra fiyatı üçe katlanır\" diyor. Ama izleme dosyası incecik — sis yoğun."
+  },
+  {
+   "id": "seyircisiz-ceza",
+   "title": "Kupa maçı seyircisiz cezası",
+   "trigger": "ateşliDemeç >= 3",
+   "auto": true,
+   "effects": {
+    "matchRevenue": 0,
+    "note": "O maç bilet geliri 0."
+   },
+   "body": "Kupa maçındaki saha olayları faturayı kesti: bir maç seyircisiz oynama cezası. Gişe geliri o hafta sıfır; tribün öfkeli, itiraz süreci sonuç vermez."
+  },
+  {
+   "id": "rakip-kume-dustu",
+   "title": "Yerel rakip küme düştü",
+   "trigger": "regionalRival.pos >= 17",
+   "auto": true,
+   "effects": {
+    "gauge": {
+     "taraftar": 3
+    },
+    "note": "Gelecek sezon derbi geliri yok."
+   },
+   "body": "Şehrin öteki takımı küme düştü. Derbi gelirleri bir sezonluğuna rafta ama şehrin tek büyük sahnesi artık senin — taraftar pazarında boşluk doğdu."
+  },
+  {
+   "id": "cfo-teklif",
+   "title": "CFO'ya rakipten teklif",
+   "trigger": "staff.cfo && skill>=60",
+   "options": [
+    {
+     "label": "Zam yap (kalır)",
+     "effects": {
+      "staffWageMult": {
+       "role": "cfo",
+       "mult": 1.35
+      },
+      "note": "Maaş bordrosu kabardı ama masadaki akıl kaldı."
+     },
+     "whisper": "maaş artar · mali akıl kalır"
+    },
+    {
+     "label": "Bırak gitsin",
+     "effects": {
+      "staffLeaves": "cfo",
+      "note": "Koltuk boşaldı — projeksiyonlar yeniden sisli."
+     },
+     "whisper": "tasarruf · projeksiyonlar sislenir"
+    }
+   ],
+   "body": "Rakip kulüp CFO'na dolgun bir teklif götürdü; kendisi masaya net geldi: \"Burada mutluyum ama piyasa bu.\" Kalması bir imza meselesi — imzanın da bedeli var."
+  },
+  {
+   "id": "staff-catisma",
+   "title": "Yönetimde ego çatışması",
+   "trigger": "hasTrait:egolu",
+   "options": [
+    {
+     "label": "Egolu yöneticinin tarafını tut",
+     "effects": {
+      "gauge": {
+       "guven": -2
+      },
+      "note": "Yeteneği koruduk; kurul mırıldandı."
+     },
+     "whisper": "ego kazanır · diğerleri not eder"
+    },
+    {
+     "label": "Kapıyı göster",
+     "effects": {
+      "staffLeavesEgolu": true,
+      "gauge": {
+       "guven": 2
+      },
+      "note": "Huzur geldi, yetenek gitti."
+     },
+     "whisper": "kapı gösterilir · koltuk boşalır"
+    }
+   ],
+   "body": "Yönetim katında kriz: egolu yöneticin toplantıda kapıyı çarptı, iki koltuk birbirine küs. Ofiste taraf tutmadan çıkış yok gibi."
+  },
+  {
+   "id": "limit-revizyon",
+   "title": "Federasyon limit revizyonu",
+   "trigger": "ffp",
+   "auto": true,
+   "effects": {
+    "ffpMult": 0.95,
+    "note": "Federasyon vidaları sıktı: harcama limiti %5 daraldı."
+   },
+   "body": "Federasyon yıl ortasında harcama limitlerini revize etti. Mali masanın tablosu güncellendi; planlanan hamleler yeni limite göre yeniden hesaplanmalı."
+  },
+  {
+   "id": "td-yildiz-soguk",
+   "title": "Asistan raporu: TD-yıldız soğukluğu",
+   "trigger": "coach.oyuncuYonetimi < 55",
+   "options": [
+    {
+     "label": "Araya gir",
+     "effects": {
+      "chance": 0.5,
+      "onHit": {
+       "note": "İlişki düzelir."
+      },
+      "onMiss": {
+       "squadMorale": -3,
+       "note": "İkisi de küser."
+      }
+     },
+     "whisper": "buzlar çözülebilir · TD alınabilir"
+    },
+    {
+     "label": "Karışma",
+     "effects": {
+      "chance": 0.3,
+      "onHit": {
+       "mediaLeak": true
+      }
+     },
+     "whisper": "saygı korunur · fay hattı işler"
+    }
+   ],
+   "body": "Asistan antrenörün gizli raporu masanda: TD ile yıldız oyuncu iki haftadır selamlaşmıyor. Kabine küçük ama fay hattı büyüyebilir; müdahale de tepki çekebilir."
+  },
+  {
+   "id": "yerel-derbi-daveti",
+   "title": "Yerel derbi daveti",
+   "trigger": "random",
+   "tier": "kucuk",
+   "body": "Komşu ilçenin kulübü yıldönümü için hazırlık maçı teklif etti: küçük ama dolu bir stat, yerel TV yayını, dostluk kupası. Küçük kulüp için sahne demek bu.",
+   "options": [
+    {
+     "label": "Kabul et",
+     "whisper": "küçük gelir + yerel bağ · hafif yorgunluk",
+     "effects": {
+      "economy": {
+       "kasa": 1.5
+      },
+      "gauge": {
+       "taraftar": 2
+      }
+     }
+    },
+    {
+     "label": "Nazikçe reddet",
+     "whisper": "program korunur · komşu buruk",
+     "effects": {
+      "gauge": {
+       "taraftar": -1
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "yildiz-reklam-krizi",
+   "title": "Yıldızın reklam krizi",
+   "trigger": "random",
+   "tier": "buyuk",
+   "body": "Kadronun yüzü, kulübün ana sponsoruyla rakip bir markanın reklamında çıktı. Sponsor cephesi telefonda: 'Sözleşmeye bakın.' Menajer: 'Bireysel hakları.' Kriz masada.",
+   "options": [
+    {
+     "label": "Oyuncunun yanında dur",
+     "whisper": "kabine rahatlar · sponsor soğur",
+     "effects": {
+      "player": {
+       "morale": 5
+      },
+      "gauge": {
+       "itibar": -2
+      }
+     }
+    },
+    {
+     "label": "Sponsora güvence ver",
+     "whisper": "ticari masa yumuşar · yıldız kırılır",
+     "effects": {
+      "player": {
+       "morale": -5
+      },
+      "gauge": {
+       "mali": 2
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "delege-listesi",
+   "title": "Delege listesi sızdı",
+   "trigger": "random",
+   "cond": "secim",
+   "body": "Kongre delege listesi bir gece yarısı muhalif gruba sızdı; kim kime söz vermiş, kim kararsız — hepsi masada. Sızıntının kaynağı belirsiz, iki taraf da diğerini suçluyor.",
+   "options": [
+    {
+     "label": "Soruşturma başlat",
+     "whisper": "otorite mesajı · kulis gerilir",
+     "effects": {
+      "gauge": {
+       "guven": 2,
+       "taraftar": -1
+      }
+     }
+    },
+    {
+     "label": "Gündeme almayın",
+     "whisper": "sükûnet · sızıntı cesaret bulur",
+     "effects": {
+      "mediaTone": -0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "rakip-vaat-bombasi",
+   "title": "Rakip adayın vaat bombası",
+   "trigger": "random",
+   "cond": "secim",
+   "body": "Rakip başkan adayı basın toplantısında bombayı patlattı: 'Seçilirsem dünya yıldızı getiriyorum — imza hazır.' İsim yok, belge yok ama manşetler dolu.",
+   "options": [
+    {
+     "label": "Blöf de, belge iste",
+     "whisper": "tutarsa rakip yara alır",
+     "effects": {
+      "rakipCekicilik": -2
+     }
+    },
+    {
+     "label": "Kendi projeni anlat",
+     "whisper": "güvenli zemin · gündem onda kalır",
+     "effects": {
+      "gauge": {
+       "guven": 1
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "araci-teklifi",
+   "title": "Aracı: 'kış fırsatı elimde'",
+   "trigger": "random",
+   "cond": "pencere",
+   "body": "Tanınmış bir oyuncu aracısı ofise geldi: 'Elimde ocak ayında boşa çıkacak, piyasa altı bir isim var — ama önce temsil sözleşmesi.' Komisyon istiyor, isim vermiyor.",
+   "options": [
+    {
+     "label": "Komisyonu öde",
+     "whisper": "isim açılır · GM huylanır",
+     "effects": {
+      "economy": {
+       "kasa": -2
+      },
+      "note": "GM dosyayı önümüzdeki haftalarda getirir."
+     }
+    },
+    {
+     "label": "Kapıyı göster",
+     "whisper": "temiz masa · fırsat belirsizliğe gömülür",
+     "effects": {}
+    }
+   ]
+  },
+  {
+   "id": "yildiz-kis-huzursuz",
+   "title": "Kış penceresi huzursuzluğu",
+   "trigger": "random",
+   "cond": "pencere",
+   "body": "Rotasyonda kalan hücumcu menajerini devreye soktu: 'Ocak ayında kiralık gidelim, oynasın.' TD karşı: 'Kadro derinliği eriyecek.' İki taraf da seni bekliyor.",
+   "options": [
+    {
+     "label": "Kiralık planına yeşil ışık",
+     "whisper": "oyuncu gelişir · derinlik riski",
+     "effects": {
+      "player": {
+       "morale": 4
+      }
+     }
+    },
+    {
+     "label": "'Kadroda kalıyor'",
+     "whisper": "derinlik korunur · moral bedeli",
+     "effects": {
+      "player": {
+       "morale": -4
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "aile-mirasi",
+   "title": "Aile mirası gündemde",
+   "trigger": "random",
+   "cond": "aile",
+   "body": "Aile meclisinde yaşlı amca söz aldı: kulübe akan servetin bir kısmını aile vakfına yönlendirmek istiyor. 'Kulüp bizi yuttu' diyor — meclis bölünmüş durumda.",
+   "options": [
+    {
+     "label": "Vakfa pay ayır",
+     "whisper": "aile huzuru · servet incelir",
+     "effects": {
+      "servet": -8,
+      "gauge": {
+       "guven": 2
+      }
+     }
+    },
+    {
+     "label": "'Her kuruş kulübe'",
+     "whisper": "kasa güçlü · sofrada soğuk rüzgar",
+     "effects": {
+      "gauge": {
+       "itibar": -1
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "aile-sirket-krizi",
+   "title": "Aile şirketinde kriz",
+   "trigger": "random",
+   "cond": "aile",
+   "body": "Serveti besleyen aile şirketi zor bir çeyrek geçirdi; mali müşavir 'bu yıl kulübe akan musluk kısılmalı' diyor. Şirket mi, kulüp mü — cüzdan tek.",
+   "options": [
+    {
+     "label": "Şirketi güçlendir",
+     "whisper": "servet korunur · kulüp kemer sıkar",
+     "effects": {
+      "economy": {
+       "kasa": -3
+      },
+      "servet": 6
+     }
+    },
+    {
+     "label": "Kulüp önce",
+     "whisper": "kasa nefes alır · servet zayıflar",
+     "effects": {
+      "economy": {
+       "kasa": 3
+      },
+      "servet": -6
+     }
+    }
+   ]
+  }
+ ]
+}

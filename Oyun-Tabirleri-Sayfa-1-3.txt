@@ -1,0 +1,498 @@
+﻿SAYIN BAŞKAN — OYUN İÇİ TABİRLER (İlk 3 sayfa)
+Her tabirin altındaki "Yeni :" satırına, o metnin ne olmasını istediğini yaz.
+======================================================================
+
+
+######################################################################
+#  SAYFA 1 · KULÜP SEÇIMI
+######################################################################
+
+[1] Üst başlık   (Ekranın tepe etiketi (overline))
+    Mevcut : Yeni Kariyer
+    Yeni   : 
+
+[2] Ana başlık   (Oyunun adı, altın renkli)
+    Mevcut : SAYIN BAŞKAN
+    Yeni   : 
+
+[3] Slogan   (Başlık altı italik atmosfer cümlesi)
+    Mevcut : Işıklar yandı. Koltuk seni bekliyor.
+    Yeni   : 
+
+[4] Mod butonu   (Oyun modu seçim butonu)
+    Mevcut : Klasik
+    Yeni   : 
+
+[5] Mod tanıtımı (Klasik)   (Seçili modun alt açıklaması)
+    Mevcut : Tam deneyim — kurul, kongre, kayıt serbest.
+    Yeni   : 
+
+[6] Mod ipucu (Klasik)   (Butona gelince çıkan tooltip)
+    Mevcut : Tam deneyim: kurul, kongre, serbest kayıt. Önerilen ilk durak.
+    Yeni   : 
+
+[7] Mod butonu   (Oyun modu seçim butonu)
+    Mevcut : Ironman
+    Yeni   : 
+
+[8] Mod ipucu (Ironman)   (Tooltip)
+    Mevcut : TEK YAŞAM — geri dönüş yok, kayıt kilidi açılmaz. Hardcore rozetler yalnız burada.
+    Yeni   : 
+
+[9] Mod tanıtımı (Ironman)   (Alt açıklama)
+    Mevcut : Tek yaşam: manuel kayıt/yükleme yok, geri alma yok. Hardcore başarımlar yalnız burada.
+    Yeni   : 
+
+[10] Mod butonu   (Oyun modu seçim butonu)
+    Mevcut : Vitrin Başkanı
+    Yeni   : 
+
+[11] Mod ipucu (Vitrin)   (Tooltip)
+    Mevcut : Kurul her dönem 1 zorunlu hedef dayatır. Tutturamazsan desteği çöker.
+    Yeni   : 
+
+[12] Mod butonu   (Oyun modu seçim butonu)
+    Mevcut : Aile Kulübü
+    Yeni   : 
+
+[13] Mod ipucu (Aile)   (Tooltip)
+    Mevcut : Kurul yok, kulüp borçlanamaz: her açık 100mn kişisel servetinden. Servet biterse iflas.
+    Yeni   : 
+
+[14] Sekme   (Üst sekme)
+    Mevcut : Kulüpler
+    Yeni   : 
+
+[15] Sekme   (Üst sekme)
+    Mevcut : Senaryolar
+    Yeni   : 
+
+[16] Kart rozeti   (Orta kulüp kartındaki yeşil rozet)
+    Mevcut : önerilir
+    Yeni   : 
+
+[17] Kart etiketi   (Kartın köşesindeki tier etiketi)
+    Mevcut : KÜÇÜK / ORTA / BÜYÜK
+    Yeni   : 
+
+[18] İlk oyun ipucu   (Orta kart altındaki yönlendirme)
+    Mevcut : İlk kez mi? Yıldızspor'la başla.
+    Yeni   : 
+
+[19] Stat ipucu   (İstatistik tooltip (güç ikonu))
+    Mevcut : Temel güç
+    Yeni   : 
+
+[20] Stat ipucu   (İstatistik tooltip (kasa ikonu))
+    Mevcut : Kasa / Borç
+    Yeni   : 
+
+[21] Stat ipucu   (İstatistik tooltip (kadro ikonu))
+    Mevcut : Kadro değeri
+    Yeni   : 
+
+[22] Stat ipucu   (İstatistik tooltip (beklenti ikonu))
+    Mevcut : Beklenti
+    Yeni   : 
+
+[23] Beklenti değeri   (Kartta gösterilen sezon hedefi)
+    Mevcut : Kümede kal / Üst yarı / Şampiyonluk
+    Yeni   : 
+
+[24] Etiket (küçük)   (Küçük kulüp kartı alt etiketi)
+    Mevcut : Zorluk: yüksek · borç rahat, güç düşük
+    Yeni   : 
+
+[25] Etiket (orta)   (Orta kulüp kartı alt etiketi)
+    Mevcut : Dengeli başlangıç
+    Yeni   : 
+
+[26] Etiket (büyük)   (Büyük kulüp kartı alt etiketi)
+    Mevcut : Yüksek beklenti · ağır borç yükü
+    Yeni   : 
+
+[27] Varsayılan ad   (Küçük/orta/büyük kulüp varsayılan isimleri)
+    Mevcut : Gölköy SK / Yıldızspor / İmparator FK
+    Yeni   : 
+
+[28] Lore (küçük)   (Küçük kulüp hikâyesi)
+    Mevcut : Göl kenarında iki kuşaktır ayakta duran mahalle kulübü. Beklenti mütevazı, borç az — hikâye yazmak isteyene boş sayfa.
+    Yeni   : 
+
+[29] Lore (orta)   (Orta kulüp hikâyesi)
+    Mevcut : Şehrin orta direği: ne dev ne cüce. Tribünü kalabalık, kasası idareli — doğru başkanla her kapı açılır.
+    Yeni   : 
+
+[30] Lore (büyük)   (Büyük kulüp hikâyesi)
+    Mevcut : Şampiyonluklar çağının yorgun imparatorluğu. Kadro değerli, borç ağır, sabır sıfır — taht kolay taşınmaz.
+    Yeni   : 
+
+[31] 2. Lig rozeti   (En zor başlangıç kartının rozeti)
+    Mevcut : 2. LİG · EN ZOR
+    Yeni   : 
+
+[32] 2. Lig adı   (Varsayılan 2. lig kulübü)
+    Mevcut : Demiryolu SK
+    Yeni   : 
+
+[33] 2. Lig lore   (2. lig kartı hikâyesi)
+    Mevcut : Kupa günleri çoktan soldu; kulüp 2. lige demir attı. Bütçe cılız, tribün sabırsız — tek yol yukarı: terfi (ilk 3). Zayıf ligde dengi rakiplerle çetin bir yarış seni bekliyor.
+    Yeni   : 
+
+[34] 2. Lig hedef   (2. lig kartı hedefi)
+    Mevcut : Terfi (ilk 3)
+    Yeni   : 
+
+[35] 2. Lig gelir   (2. lig kartı gelir uyarısı)
+    Mevcut : Yayın/sponsor/bilet düşük
+    Yeni   : 
+
+[36] Senaryo etiketi   (Senaryo kartı üst etiketi)
+    Mevcut : MEYDAN OKUMA
+    Yeni   : 
+
+[37] Yeniden çevir   (Kulüpleri rastgele yenileme butonu)
+    Mevcut : 🎲 Kulüpleri yeniden çevir
+    Yeni   : 
+
+[38] Yeniden çevir notu   (Buton altı açıklama)
+    Mevcut : Sınırsız — her kariyer farklı koksun: isim, hikâye, stadyum, tribün karakteri havuzdan gelir.
+    Yeni   : 
+
+
+######################################################################
+#  SAYFA 2 · VAAT SEÇIMI
+######################################################################
+
+[1] Üst başlık   (Ekran overline)
+    Mevcut : Dönem Başı · Adım 1/2 · Seçim Sözleşmesi
+    Yeni   : 
+
+[2] Başlık   (Ekran başlığı)
+    Mevcut : Vaatlerini seç
+    Yeni   : 
+
+[3] Alt başlık   (Başlık yanı açıklama)
+    Mevcut : — En fazla 3 vaat: tutarsan oy, tutmazsan koz.
+    Yeni   : 
+
+[4] İpucu   (Başlık ⓘ tooltip)
+    Mevcut : Vaat yolunda somut adım anında alkış alır; adımsız geçen sezon huzursuzluk doğurur. Tutulan söz güven+taraftar+oy getirir.
+    Yeni   : 
+
+[5] Rozet   (Zorluk 4-5 vaatlerdeki rozet)
+    Mevcut : Büyük Oyun
+    Yeni   : 
+
+[6] Fısıltı (zor)   (Zorluk ≥4 kart tooltip)
+    Mevcut : seçersen: taraftar umudu YÜKSEK, kongre coşar · tutmazsan: seçimde ağır koz + söz sicili yara alır
+    Yeni   : 
+
+[7] Fısıltı (orta)   (Zorluk 3 kart tooltip)
+    Mevcut : seçersen: umut orta, beklenti belirgin · tutmazsan: rakibe orta boy koz
+    Yeni   : 
+
+[8] Fısıltı (kolay)   (Zorluk ≤2 kart tooltip)
+    Mevcut : seçersen: küçük ama güvenli umut · tutmazsan: hafif sitem
+    Yeni   : 
+
+[9] Kazanç/Risk (zor)   (Zorluk ≥4 kart içi iki satır)
+    Mevcut : ✔ Taraftar umudu yükselir, kongre coşar  /  ✘ Tutmazsan: seçimde ağır koz + sicil yarası
+    Yeni   : 
+
+[10] Kazanç/Risk (orta)   (Zorluk 3 kart içi iki satır)
+    Mevcut : ✔ Umut artar, beklenti belirginleşir  /  ✘ Tutmazsan: rakibe orta boy koz
+    Yeni   : 
+
+[11] Kazanç/Risk (kolay)   (Zorluk ≤2 kart içi iki satır)
+    Mevcut : ✔ Küçük ama güvenli bir umut  /  ✘ Tutmazsan: hafif sitem, telafisi kolay
+    Yeni   : 
+
+[12] Pusula   (Seçilenleri gösteren şerit başlığı)
+    Mevcut : Sözleşme pusulası
+    Yeni   : 
+
+[13] Boş slot   (Doldurulmamış vaat slotu)
+    Mevcut : boş slot
+    Yeni   : 
+
+[14] Çelişki uyarısı   (Çelişen ikili seçilince yanan uyarı)
+    Mevcut : [GM]: "[Vaat A] ile [Vaat B]… ikisi birden zor olur Başkanım."
+    Yeni   : 
+
+[15] Rakip gölgesi   (Kulis kartı başlığı)
+    Mevcut : Rakip Gölgesi
+    Yeni   : 
+
+[16] Rakip gölgesi metni   (Kulis kartı gövdesi)
+    Mevcut : Kulisler fısıldıyor: rakip aday [söz] sözü hazırlıyormuş. Sandıkta karşına çıkacak.
+    Yeni   : 
+
+[17] Kilit sebebi   (Borçsuz Kulüp vaadi kilidi)
+    Mevcut : Kulüp zaten borçsuz — bu vaat seçilemez
+    Yeni   : 
+
+[18] Kilit sebebi   (Ligde Kalma vaadi kilidi)
+    Mevcut : Beklenti küme hattı değil — bu vaat seçilemez
+    Yeni   : 
+
+[19] Kilit sebebi   (Genel kilit sebebi)
+    Mevcut : Şu an seçilemez
+    Yeni   : 
+
+[20] Vaat   (Koşul: ≥1 lig şampiyonluğu · zorluk 5)
+    Mevcut : Şampiyonluk Hedefi
+    Yeni   : 
+
+[21] Vaat   (Koşul: Borç yarıya insin · zorluk 4)
+    Mevcut : Borçsuz Kulüp
+    Yeni   : 
+
+[22] Vaat   (Koşul: Stadyum +2 kademe · zorluk 3)
+    Mevcut : Stadyum Yatırımı
+    Yeni   : 
+
+[23] Vaat   (Koşul: Kadro değeri +%25 · zorluk 4)
+    Mevcut : Kadro Değeri +%25
+    Yeni   : 
+
+[24] Vaat   (Koşul: Ölçülen akademi · zorluk 3)
+    Mevcut : Altyapı Güçlendirilmesi
+    Yeni   : 
+
+[25] Vaat   (Koşul: Antrenman +2 kademe · zorluk 3)
+    Mevcut : Antrenman Merkezi
+    Yeni   : 
+
+[26] Vaat   (Koşul: Ölçülen stadyum · zorluk 2)
+    Mevcut : Taraftar Deneyimi
+    Yeni   : 
+
+[27] Vaat   (Koşul: Tıbbi +2 kademe · zorluk 2)
+    Mevcut : Tıbbi Ekip Geliştirme
+    Yeni   : 
+
+[28] Vaat   (Koşul: Ölçülen coach · zorluk 3)
+    Mevcut : Teknik Ekip Sağlama
+    Yeni   : 
+
+[29] Vaat   (Koşul: Ölçülen marka · zorluk 1)
+    Mevcut : Toplum Programları
+    Yeni   : 
+
+[30] Vaat   (Koşul: Ölçülen marka · zorluk 2)
+    Mevcut : Kadın Takımı Kurma
+    Yeni   : 
+
+[31] Vaat   (Koşul: Ölçülen akademi · zorluk 2)
+    Mevcut : Tabandan Yüksele
+    Yeni   : 
+
+[32] Vaat   (Koşul: Scout ağı ≥3 kademe · zorluk 2)
+    Mevcut : İzci Ağı Genişletme
+    Yeni   : 
+
+[33] Vaat   (Koşul: Ölçülen brandValue · zorluk 3)
+    Mevcut : Marka Değerini Artır
+    Yeni   : 
+
+[34] Vaat   (Koşul: Maaş/gelir ≤ %55 · zorluk 3)
+    Mevcut : Maaş Disiplini
+    Yeni   : 
+
+[35] Vaat   (Koşul: Ölçülen ticari · zorluk 2)
+    Mevcut : Ticari İşler Geliştir
+    Yeni   : 
+
+[36] Vaat   (Koşul: Ölçülen itibar · zorluk 1)
+    Mevcut : Kulüp Mirası
+    Yeni   : 
+
+[37] Vaat   (Koşul: Ölçülen marka · zorluk 4)
+    Mevcut : Uluslararası Genişleme
+    Yeni   : 
+
+[38] Vaat   (Koşul: Pencerede 80+ güç transfer · zorluk 3)
+    Mevcut : Yıldız Transferi
+    Yeni   : 
+
+[39] Vaat   (Koşul: TeknikEkip skoru ≥75 TD ata · zorluk 3)
+    Mevcut : Yıldız Teknik Direktör
+    Yeni   : 
+
+[40] Vaat   (Koşul: Dönem boyu küme hattına düşme · zorluk 2)
+    Mevcut : Ligde Kalma
+    Yeni   : 
+
+[41] Vaat   (Koşul: Dönem boyu bilet ≤1.0× · zorluk 2)
+    Mevcut : Kombine Zammı Yok
+    Yeni   : 
+
+
+######################################################################
+#  SAYFA 3 · MAKAM ODASI
+######################################################################
+
+[1] Üst başlık   (Ekran overline)
+    Mevcut : Dönem Başı · Adım 2/2 · Makam Odası — İlk Toplantı
+    Yeni   : 
+
+[2] Başlık   (Ekran başlığı)
+    Mevcut : [GM adı] karşında, elinde transfer dosyası
+    Yeni   : 
+
+[3] GM unvanı   (GM kartı unvanı)
+    Mevcut : Genel Menajer
+    Yeni   : 
+
+[4] GM karakteri (yüksek)   (GM yeteneği ≥75)
+    Mevcut : Piyasayı avucunun içi gibi bilir; menajerler telefonunu açar.
+    Yeni   : 
+
+[5] GM karakteri (orta)   (GM yeteneği ≥55)
+    Mevcut : İşini bilir; menajer ağı fena değil.
+    Yeni   : 
+
+[6] GM karakteri (düşük)   (GM yeteneği <55)
+    Mevcut : Hevesli ama ağı dar — getirdiği dosyaları iyi süz.
+    Yeni   : 
+
+[7] GM kartı notu   (GM kartı alt notu)
+    Mevcut : Dosyayı o getirir, imza sende: transferi sen yapmazsın, ONAYLARSIN.
+    Yeni   : 
+
+[8] GM açılış repliği   (GM konuşma balonu (gerçek rakamlarla))
+    Mevcut : Hoş geldiniz, Başkanım. Masada [X] milyon nakit, [Y] milyon borç var; kurulun beklentisi [beklenti]. Transfer masasını ben yürütürüm — sizden iki karar istiyorum: ne kadar harcayayım, kime harcayayım?
+    Yeni   : 
+
+[9] Beklenti sözü   (Açılış repliğine giren beklenti ifadesi)
+    Mevcut : ligde kalmak / üst yarı / şampiyonluk / iyi bir sezon
+    Yeni   : 
+
+[10] Karar başlığı   (Bütçe kararı başlığı)
+    Mevcut : "Ne kadar harcayayım?"
+    Yeni   : 
+
+[11] Bütçe butonu   (Düşük bütçe butonu)
+    Mevcut : Kısıtlı
+    Yeni   : 
+
+[12] Bütçe repliği   (Kısıtlı seçilince başkan repliği)
+    Mevcut : «Kemerleri sıkıyoruz — bu rakamı geçme.»
+    Yeni   : 
+
+[13] Bütçe etkisi   (Kısıtlı yan etkisi)
+    Mevcut : + Kurul rahatlar (Mali ↑)  /  − Tribün heyecansız (Taraftar ↓)
+    Yeni   : 
+
+[14] Bütçe butonu   (Orta bütçe butonu)
+    Mevcut : Dengeli
+    Yeni   : 
+
+[15] Bütçe repliği   (Dengeli seçilince başkan repliği)
+    Mevcut : «Dengeli git; ne cimri ne savurgan.»
+    Yeni   : 
+
+[16] Bütçe etkisi   (Dengeli yan etkisi)
+    Mevcut : ± Güvenli orta yol — yan etki yok
+    Yeni   : 
+
+[17] Bütçe butonu   (Yüksek bütçe butonu)
+    Mevcut : Cömert
+    Yeni   : 
+
+[18] Bütçe repliği   (Cömert seçilince başkan repliği)
+    Mevcut : «Gerekeni harca — hesabını sonra veririz.»
+    Yeni   : 
+
+[19] Bütçe etkisi   (Cömert yan etkisi)
+    Mevcut : + Tribün coşar (Taraftar ↑)  /  − Kurul huzursuz (Mali ↓)
+    Yeni   : 
+
+[20] Karar başlığı   (Oyuncu profili kararı başlığı)
+    Mevcut : "Kime harcayayım?"
+    Yeni   : 
+
+[21] Profil butonu   (Genç profil butonu)
+    Mevcut : Gençlere yatır
+    Yeni   : 
+
+[22] Profil repliği   (Genç seçilince başkan repliği)
+    Mevcut : «Geleceğe yatır — genç ve aç olsunlar.»
+    Yeni   : 
+
+[23] Profil butonu   (Hazır profil butonu)
+    Mevcut : Hazır oyuncu
+    Yeni   : 
+
+[24] Profil repliği   (Hazır seçilince başkan repliği)
+    Mevcut : «Hazır, kanıtlanmış isimler istiyorum.»
+    Yeni   : 
+
+[25] Profil butonu   (Yıldız profil butonu)
+    Mevcut : Yıldız istiyorum
+    Yeni   : 
+
+[26] Profil repliği   (Yıldız seçilince başkan repliği)
+    Mevcut : «Bana bir yıldız getir; tribün ayağa kalksın.»
+    Yeni   : 
+
+[27] GM tepkisi (Kısıtlı+Genç)   (Seçime canlı GM cevabı)
+    Mevcut : Dar bütçe, genç kadro — akademiye bakarım, sabır isterim Başkanım.
+    Yeni   : 
+
+[28] GM tepkisi (Kısıtlı+Hazır)   (Seçime canlı GM cevabı)
+    Mevcut : Dar bütçeyle mucize beklemeyin; ama serbest piyasada cevher bulurum.
+    Yeni   : 
+
+[29] GM tepkisi (Kısıtlı+Yıldız)   (Seçime canlı GM cevabı)
+    Mevcut : Bu parayla yıldız mı? Ancak kiralık ya da küskün bir isim döndürürüm.
+    Yeni   : 
+
+[30] GM tepkisi (Dengeli+Genç)   (Seçime canlı GM cevabı)
+    Mevcut : Dengeli kasayla iki genç yetenek bağlarım — üç yıl sonra iki katına satarsınız.
+    Yeni   : 
+
+[31] GM tepkisi (Dengeli+Hazır)   (Seçime canlı GM cevabı)
+    Mevcut : Makul bütçe, hazır oyuncu: doğru profili bulur, pazarlığı ben yaparım.
+    Yeni   : 
+
+[32] GM tepkisi (Dengeli+Yıldız)   (Seçime canlı GM cevabı)
+    Mevcut : Bir yıldıza yeter, artmaz — tek isabetli atış yapacağız, ıskalamak yok.
+    Yeni   : 
+
+[33] GM tepkisi (Cömert+Genç)   (Seçime canlı GM cevabı)
+    Mevcut : Cömert kasayla ligin en iyi gençlerini toplarım — proje takımı kurarız.
+    Yeni   : 
+
+[34] GM tepkisi (Cömert+Hazır)   (Seçime canlı GM cevabı)
+    Mevcut : Bu bütçeyle kadronun yarısını tazelerim; Şubat gibi tanınmaz oluruz.
+    Yeni   : 
+
+[35] GM tepkisi (Cömert+Yıldız)   (Seçime canlı GM cevabı)
+    Mevcut : Gözüm piyasada — büyük isim getiririm. Basın toplantısını şimdiden ayarlayın.
+    Yeni   : 
+
+[36] GM tepkisi (varsayılan)   (Kombinasyon tanımsızsa yedek cümle)
+    Mevcut : Çerçeveyi çizin, gerisini bana bırakın Başkanım.
+    Yeni   : 
+
+[37] Tutanak   (İmza öncesi özet satırı)
+    Mevcut : Tutanak  Bütçe ≈[X]mn · [profil] · [vaat özeti].
+    Yeni   : 
+
+[38] Tutanak (vaatsiz)   (Hiç vaat seçilmediyse)
+    Mevcut : vaat verilmedi — tutanağa "Söz yok, iş var" düşülecek
+    Yeni   : 
+
+[39] İmza notu   (Tutanak sonu açıklaması)
+    Mevcut : "Sözleşmeyi İmzala" → mühür basılır, dönem açılır.
+    Yeni   : 
+
+[40] Geri dön   (Adım 1'e dönüş butonu)
+    Mevcut : ← Vaatlere dön
+    Yeni   : 
+
+[41] Profil özeti   (Tutanaktaki profil ifadesi)
+    Mevcut : genç profil / hazır oyuncu / yıldız transferi
+    Yeni   : 

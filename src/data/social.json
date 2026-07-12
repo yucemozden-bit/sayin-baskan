@@ -1,0 +1,129 @@
+{
+ "_schema": "v5-§6 sosyal medya paylaşım şablonları (×30). Slotlar: {oyuncu}{genç}{vaat}{sıra}{rakip}. mood: pos/neg/notr — sentiment'e göre havuz seçilir.",
+ "pos": [
+  "bu takım başka bir şey oynuyor şu an 🔥",
+  "{oyuncu} resmen uçuyor, izlemesi zevk",
+  "yıllardır böyle keyifli maç izlememiştim",
+  "başkan bu işi biliyor, hakkını verelim 👏",
+  "kombine parasının hakkını alıyoruz bu sezon",
+  "{genç} bu takımın geleceği 🔥🔥",
+  "deplasmanda bile korkmuyoruz artık",
+  "tribün doldu taştı, güzel günler",
+  "bu kadro {rakip} dahil kimseden çekinmez",
+  "şampiyonluk mu dedi biri? 👀"
+ ],
+ "neg": [
+  "adam gibi stoper alın yeter başka bir şey istemiyorum",
+  "başkan {vaat} demişti, gülüyorum",
+  "bu bilet parasına bu futbol mu ya",
+  "yönetim istifa demek istemiyorum ama zorluyorlar",
+  "{oyuncu} formayı hak etmiyor, gerçekler acıdır",
+  "her sene aynı hikaye, umut yok",
+  "sırada ne var? {sıra}. sıraya alışın diyorlar",
+  "hocanın oyun planını anlayan var mı",
+  "kasada para yok deniyor ama prim dağıtılıyormuş 🤔",
+  "tribün eskisi gibi dolu değil, sebebi belli"
+ ],
+ "matchLive": {
+  "_note": "Y5 tribün canlı şeridi — radikal (meydan okuyan) vs ılımlı (sağduyulu) tonları ayrışır",
+  "golPatlama": [
+   "GOOOOOL BE!!! 🔥🔥🔥",
+   "İŞTE BU! İŞTE BUUU!",
+   "yıkıl stadyum yıkıllll",
+   "kimse duramaz önümüzde!!",
+   "GOOOL! Ses getir şehir! 🔥",
+   "İşte bu takımın ruhu! ⚽💛",
+   "Kim atarsa atsın — biz kazanalım da 🙌"
+  ],
+  "golDerbi": [
+   "DERBİDE GOL! tarih yazıyoruz!!",
+   "onların yüzüne bakın şimdi 😎🔥",
+   "bu şehir bizim! BİZİM!",
+   "DERBİDE GOL — komşuya selam olsun 😎",
+   "Bu gol bir yıl konuşulur 🎆"
+  ],
+  "hezimet": [
+   "bu ne rezalet ya... formayı çıkarın",
+   "yazıklar olsun, yıllardır böyle ezilmemiştik",
+   "yönetim istifa! hepsi istifa!",
+   "Kaçıncı gol bu... sayamıyorum artık 🤡",
+   "Otobüs mü kalktı sahadan?"
+  ],
+  "radikal": [
+   "bu kadro bu formayı taşıyamıyor",
+   "sabrımız taştı, cuma günü konuşacağız",
+   "başkan duysun: tribün susmayacak",
+   "Bu formanın ağırlığını taşıyamayan çıksın gitsin!",
+   "Yönetim istifa dememize az kaldı, haberiniz olsun.",
+   "90 dakika koşmayanı bu tribün affetmez."
+  ],
+  "ilimli": [
+   "sakin olalım, sezon uzun",
+   "eksiklere rağmen mücadele var, teşekkürler",
+   "eleştirelim ama yıkmayalım arkadaşlar",
+   "genç kadro, zaman lazım",
+   "Sakin olalım, sezon uzun 🙂",
+   "Gençler deneyim kazanıyor, sabır.",
+   "Skor ne olursa olsun yanındayız."
+  ]
+ },
+ "morning": {
+  "_note": "Y5 ertesi sabah yankısı — sonraki tick başında akışa düşer",
+  "galibiyet": [
+   "dün geceyi hâlâ yaşıyorum 🔥",
+   "sabah gazeteleri güzel okunuyor bugün",
+   "işe giderken forma giydim, pişman değilim",
+   "bu takım bize güzel bir sezon yaşatacak",
+   "Sabah kahvesi bugün daha güzel ☕💛",
+   "Dün geceyi tekrar izledim — evet, gerçekmiş 😂",
+   "Puan cetveli ekran görüntüsü: arşivlik 📸"
+  ],
+  "maglubiyet": [
+   "dün geceden beri uyuyamadım",
+   "sabah olsun dedik, olmadı — acı taze",
+   "pazartesi sendromu + mağlubiyet = konuşmayın benimle",
+   "bu böyle olmayacak, birileri bir şey yapsın",
+   "Uyanınca skor değişmiş olur diye umdum. Değişmemiş.",
+   "Bugün kimseyle konuşmayacağım, sorma.",
+   "Analiz videosunu izleyemedim, mide almadı."
+  ],
+  "beraberlik": [
+   "iki puan bıraktık ama dünya yıkılmadı",
+   "dünkü maçtan aklımda kalan: mücadele",
+   "kazanamadık ama kaybetmedik de, yarım ekmek",
+   "Bir puan mı, iki puan kaybı mı? Tartışın.",
+   "Ne sevindik ne üzüldük — futbolun çilesi bu."
+  ]
+ },
+ "notr": [
+  "bu hafta zor maç, bakalım",
+  "kadro açıklanmış, ilginç tercihler var",
+  "pencere açıldı, kim gelir kim gider",
+  "{oyuncu} sözleşmesi ne oldu bilen var mı",
+  "hakem atamaları açıklandı, hayırlısı",
+  "sezon uzun, sabır lazım",
+  "gençlerden haber bekleyen tek ben miyim",
+  "biletler satışta, tribünde buluşalım",
+  "istatistiklere göre ortalamadayız, ne iyi ne kötü",
+  "bugün antrenman açıktı, tempo fena değildi"
+ ],
+ "boyutSitem": {
+  "transfer": [
+   "Tahta kilitli mi, yönetim mi uyuyor? 🤔",
+   "Rakipler imza üstüne imza, bizde in cin top oynuyor."
+  ],
+  "stil": [
+   "Bu oyunla mı yarışacağız? Cesaret istiyoruz.",
+   "Topa sahibiz ama kaleye gitmiyoruz — istatistik yalan söylemez."
+  ],
+  "kimlik": [
+   "Altyapıdan tek çocuk yok sahada. Ocak ne için var?",
+   "Bu kulübün bir ruhu vardı — arayan bulamıyor."
+  ]
+ },
+ "kutlama": [
+  "Şampiyonlar gibi oynadık, şampiyonlar gibi kutlarız 🏆",
+  "Bu gece uyku yok! 🎉",
+  "Yıllar sonra bu günü anlatacağız çocuklara."
+ ]
+}

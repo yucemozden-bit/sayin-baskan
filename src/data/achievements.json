@@ -1,0 +1,64 @@
+{
+  "_schema": "V4-§14 — {id, category, name, condition (güvenli DSL string, eval'siz parser), reward}. 30 başarım, V4-§9 kategorileri: Koltuk / Saha / Kasa / Ocak / Kimlik / Acı. reward profile'a işlenir; bazıları New Game+ bonusu açar.",
+  "achievements": [
+    { "id": "koltuk-5-donem",       "category": "Koltuk", "name": "Değişmez Başkan",        "condition": "term.electedCount >= 5",                        "reward": "badge" },
+    { "id": "koltuk-buyuk-oy",      "category": "Koltuk", "name": "Ezici Zafer",            "condition": "election.won && election.oyOrani >= 0.70",       "reward": "badge" },
+    { "id": "koltuk-muhalefetten",  "category": "Koltuk", "name": "Küllerinden Dönen",      "condition": "election.won && meta.wasOpposition",            "reward": "badge" },
+    { "id": "koltuk-kil-payi",      "category": "Koltuk", "name": "Kıl Payı",               "condition": "election.won && election.oyOrani < 0.52",       "reward": "badge" },
+    { "id": "koltuk-efsane",        "category": "Koltuk", "name": "Efsane Başkan",          "condition": "term.electedCount >= 4",                        "reward": "newgameplus: itibar +5 başla" },
+
+    { "id": "saha-namaglup",        "category": "Saha",   "name": "Namağlup Şampiyon",      "condition": "season.champion && season.losses == 0",         "reward": "badge" },
+    { "id": "saha-3-kupa",          "category": "Saha",   "name": "Kupa Kolektörü",         "condition": "cup.streak >= 3",                               "reward": "badge" },
+    { "id": "saha-derbi-5te5",      "category": "Saha",   "name": "Derbi Kralı",            "condition": "derby.seasonWins >= 5 && derby.seasonLosses == 0","reward": "badge" },
+    { "id": "saha-avrupa",          "category": "Saha",   "name": "Kıtanın Zirvesi",        "condition": "season.europeWin",                              "reward": "badge" },
+    { "id": "saha-ust-uste",        "category": "Saha",   "name": "Hanedan",                "condition": "league.titleStreak >= 2",                       "reward": "badge" },
+
+    { "id": "kasa-borcsuz",         "category": "Kasa",   "name": "Borçsuz Kulüp",          "condition": "economy.borc <= 0",                             "reward": "badge" },
+    { "id": "kasa-maas-disiplini",  "category": "Kasa",   "name": "Maaş Disiplini",         "condition": "season.wageRatio < 0.45",                       "reward": "badge" },
+    { "id": "kasa-transfer-kari",   "category": "Kasa",   "name": "Piyasa Ustası",          "condition": "career.transferProfit >= 100",                  "reward": "badge" },
+    { "id": "kasa-nakit-kalesi",    "category": "Kasa",   "name": "Nakit Kalesi",           "condition": "economy.kasa >= 100",                           "reward": "badge" },
+    { "id": "kasa-ffp-temiz",       "category": "Kasa",   "name": "Kuralına Göre",          "condition": "term.ffpBreaches == 0",                         "reward": "badge" },
+
+    { "id": "ocak-5-genc",          "category": "Ocak",   "name": "Ocaktan Yetişme",        "condition": "squad.academyInXI >= 5",                        "reward": "badge" },
+    { "id": "ocak-altin-efsane",    "category": "Ocak",   "name": "Altın Çocuk",            "condition": "player.academyGraduate && player.overall >= 90", "reward": "badge" },
+    { "id": "ocak-akademi-max",     "category": "Ocak",   "name": "Fabrika",                "condition": "facilities.akademi >= 10",                      "reward": "badge" },
+    { "id": "ocak-satis-motoru",    "category": "Ocak",   "name": "Genç Satış Motoru",      "condition": "career.academySalesRevenue >= 50",              "reward": "badge" },
+    { "id": "ocak-jubile",          "category": "Ocak",   "name": "Vefa",                   "condition": "player.academyGraduate && player.jubilee",      "reward": "badge" },
+
+    { "id": "kimlik-temiz-buyuk",   "category": "Kimlik", "name": "Temiz Yükseliş",         "condition": "club.tier == 'buyuk' && career.noBettingSponsor","reward": "badge" },
+    { "id": "kimlik-stad-adi",      "category": "Kimlik", "name": "Halkın Stadı",           "condition": "stadium.namedByVote",                           "reward": "badge" },
+    { "id": "kimlik-muze",          "category": "Kimlik", "name": "Tarih Yazanlar",         "condition": "club.museum",                                   "reward": "badge" },
+    { "id": "kimlik-kadin-takim",   "category": "Kimlik", "name": "Tam Kadro Kulüp",        "condition": "womensTeam.active",                             "reward": "badge" },
+    { "id": "kimlik-uluslararasi",  "category": "Kimlik", "name": "Sınırların Ötesi",       "condition": "expansion.officeCount >= 1",                    "reward": "badge" },
+
+    { "id": "aci-dususten-sampiyon","category": "Acı",    "name": "Diriliş",                "condition": "history.relegatedThenChampionWithin <= 2",      "reward": "newgameplus: zor mod rozeti" },
+    { "id": "aci-1-fark-kaybet",    "category": "Acı",    "name": "Buruk Yenilgi",          "condition": "election.lost && election.oyOrani >= 0.49",      "reward": "badge" },
+    { "id": "aci-iflastan-sampiyon","category": "Acı",    "name": "Uçurumun Kenarından",    "condition": "season.champion && history.wasNearBankruptcy",   "reward": "badge" },
+    { "id": "aci-son-hafta",        "category": "Acı",    "name": "Son Nefes",              "condition": "season.survivedFinalWeek",                      "reward": "badge" },
+    { "id": "aci-geri-donus",       "category": "Acı",    "name": "İmkânsız Geri Dönüş",    "condition": "match.comebackFrom3",                           "reward": "badge" },
+
+    { "id": "koltuk-3-donem",       "category": "Koltuk", "name": "Kalıcı İsim",           "condition": "term.electedCount >= 3",                        "reward": "badge" },
+    { "id": "koltuk-halk-adami",    "category": "Koltuk", "name": "Halkın Adamı",          "condition": "gauge.guven >= 88",                             "reward": "badge" },
+    { "id": "koltuk-sandik-ustasi", "category": "Koltuk", "name": "Sandık Ustası",         "condition": "election.oyOrani>=0.65 x2",                     "reward": "badge" },
+
+    { "id": "saha-gol-makinesi",    "category": "Saha",   "name": "Gol Makinesi",          "condition": "season.GF >= 75",                               "reward": "badge" },
+    { "id": "saha-beton-defans",    "category": "Saha",   "name": "Beton Defans",          "condition": "season.GA <= 28",                               "reward": "badge" },
+    { "id": "saha-sampiyon",        "category": "Saha",   "name": "Şampiyon",              "condition": "season.pos == 1",                               "reward": "badge" },
+
+    { "id": "kasa-tok",             "category": "Kasa",   "name": "Tok Kasa",              "condition": "economy.kasa >= 200",                           "reward": "badge" },
+    { "id": "kasa-imparator",       "category": "Kasa",   "name": "Servet İmparatoru",     "condition": "economy.kasa >= 350",                           "reward": "badge" },
+    { "id": "kasa-saglam-bilanco",  "category": "Kasa",   "name": "Sağlam Bilanço",        "condition": "economy.borc <= 10",                            "reward": "badge" },
+
+    { "id": "ocak-fidanlik",        "category": "Ocak",   "name": "Fidanlık",              "condition": "facilities.akademi >= 5",                       "reward": "badge" },
+    { "id": "ocak-dogan-yildiz",    "category": "Ocak",   "name": "Doğan Yıldız",          "condition": "player.age<=20 && overall>=72",                 "reward": "badge" },
+    { "id": "ocak-ocak-bagi",       "category": "Ocak",   "name": "Ocak Bağı",             "condition": "squad.academy >= 3",                            "reward": "badge" },
+
+    { "id": "kimlik-dev-stat",      "category": "Kimlik", "name": "Dev Stadyum",           "condition": "facilities.stadyum >= 8",                       "reward": "badge" },
+    { "id": "kimlik-itibarli",      "category": "Kimlik", "name": "İtibarlı Kulüp",        "condition": "gauge.itibar >= 80",                            "reward": "badge" },
+    { "id": "kimlik-sehir-gururu",  "category": "Kimlik", "name": "Şehrin Gururu",         "condition": "gauge.taraftar >= 90",                          "reward": "badge" },
+
+    { "id": "aci-metanet",          "category": "Acı",    "name": "Metanet",               "condition": "3 sezon küme görmeden",                         "reward": "badge" },
+    { "id": "aci-kabuk-degisimi",   "category": "Acı",    "name": "Kabuk Değişimi",        "condition": "küme hattından ertesi sezon ilk 8",             "reward": "badge" },
+    { "id": "aci-yilmaz-yurek",     "category": "Acı",    "name": "Yılmaz Yürek",          "condition": "küme gördü, güven toparladı",                   "reward": "badge" }
+  ]
+}

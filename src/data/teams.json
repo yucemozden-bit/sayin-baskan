@@ -1,0 +1,222 @@
+{
+ "_schema": "V4-§14 — {id, name, city, colors:[hex,hex], baseStrength, rival:bool}. Tohum: V6-§8 (18 kurgusal TR-dokulu takım).",
+ "_note": "rival:true = aynı şehir dokusundaki derbi eşleşmesi (tohum işareti). Oyuncunun ezeli/bölgesel rakibi kulüp seçiminde runtime atanır (V4-§3).",
+ "teams": [
+  {
+   "id": "kartalspor",
+   "name": "Kartalspor",
+   "city": "İstanbul",
+   "colors": [
+    "#0C2340",
+    "#C8102E"
+   ],
+   "baseStrength": 78,
+   "rival": true,
+   "lore": "Şehrin gölgesi uzun devi: kupasız geçen tek sezon kriz sayılır. Tribünü şöhrete alışkın, sabrı kısa."
+  },
+  {
+   "id": "bogazici-fk",
+   "name": "Boğaziçi FK",
+   "city": "İstanbul",
+   "colors": [
+    "#00263A",
+    "#F2A900"
+   ],
+   "baseStrength": 76,
+   "rival": true,
+   "lore": "Boğazın iki yakasını bölen köklü çınar. Efsaneleri müzeye sığmaz — beklentileri de bütçeye."
+  },
+  {
+   "id": "payitaht-sk",
+   "name": "Payitaht SK",
+   "city": "Ankara",
+   "colors": [
+    "#4A0E0E",
+    "#D4AF37"
+   ],
+   "baseStrength": 74,
+   "rival": true,
+   "lore": "Başkentin bürokrat kulübü: locada kravat, tribünde disiplin. Sessiz ama derin cepler."
+  },
+  {
+   "id": "anadolu-gucu-1923",
+   "name": "Anadolu Gücü 1923",
+   "city": "Ankara",
+   "colors": [
+    "#006341",
+    "#FFFFFF"
+   ],
+   "baseStrength": 66,
+   "rival": true,
+   "lore": "Cumhuriyetle yaşıt gurur abidesi. Şanlı geçmiş, tozlu vitrin — \"yeniden\" kelimesi her kongrede."
+  },
+  {
+   "id": "liman-sk",
+   "name": "Liman SK",
+   "city": "İzmir",
+   "colors": [
+    "#003B71",
+    "#00A3E0"
+   ],
+   "baseStrength": 63,
+   "rival": true,
+   "lore": "40 yıldır şampiyonluk görmemiş liman kenti kulübü. Tribün sabırlı ama yorgun; sis düdüğü hâlâ umutlu öter."
+  },
+  {
+   "id": "ege-birlik",
+   "name": "Ege Birlik",
+   "city": "İzmir",
+   "colors": [
+    "#0E7C7B",
+    "#F4F1DE"
+   ],
+   "baseStrength": 61,
+   "rival": true,
+   "lore": "İskelede kurulmuş, rakı masasında büyümüş. Futbolu keyifle oynar, kaybedince şarkıyla ağlar."
+  },
+  {
+   "id": "bozkirspor",
+   "name": "Bozkırspor",
+   "city": "Bozkır",
+   "colors": [
+    "#6A1B1A",
+    "#E8C170"
+   ],
+   "baseStrength": 60,
+   "rival": false,
+   "lore": "Rüzgârın hiç dinmediği bozkırda inatla ayakta. Az konuşur, çok koşar — misafir takımlar burayı sevmez."
+  },
+  {
+   "id": "demirsehir-sk",
+   "name": "Demirşehir SK",
+   "city": "Demirşehir",
+   "colors": [
+    "#37474F",
+    "#FF7043"
+   ],
+   "baseStrength": 59,
+   "rival": false,
+   "lore": "Fabrika vardiyasından çıkıp maça giden işçi şehri. Alkışı ağır kazanırsın, ama ömürlük olur."
+  },
+  {
+   "id": "kuzey-yakasi",
+   "name": "Kuzey Yakası",
+   "city": "Karadeniz",
+   "colors": [
+    "#102A43",
+    "#9FB3C8"
+   ],
+   "baseStrength": 58,
+   "rival": false,
+   "lore": "Yağmur, çamur ve yaylalardan inen ses: Karadeniz inadı. Tribünü kaybetmeyi affeder, kaçmayı asla."
+  },
+  {
+   "id": "vadi-1905",
+   "name": "Vadi 1905",
+   "city": "Vadişehir",
+   "colors": [
+    "#7C2D12",
+    "#FED7AA"
+   ],
+   "baseStrength": 57,
+   "rival": false,
+   "lore": "Vadinin dibinde asırlık bir mahalle takımı. Herkes herkesi tanır — başkan dahil; kulis diye bir şey yoktur, kahvehane vardır."
+  },
+  {
+   "id": "sahil-fk",
+   "name": "Sahil FK",
+   "city": "Sahilköy",
+   "colors": [
+    "#1B98E0",
+    "#FFFFFF"
+   ],
+   "baseStrength": 56,
+   "rival": false,
+   "lore": "Yazı turist, kışı hasretle geçen sayfiye kulübü. Ağustos maçları festival, şubat maçları sadakat testi."
+  },
+  {
+   "id": "yildiz-ovasi-fk",
+   "name": "Yıldız Ovası FK",
+   "city": "Ovaköy",
+   "colors": [
+    "#2E1A47",
+    "#F0C808"
+   ],
+   "baseStrength": 55,
+   "rival": false,
+   "lore": "Ovanın ortasında yıldızlara adanmış stat. Altyapısı bereketli — yetiştirir, satar, yine yetiştirir."
+  },
+  {
+   "id": "toros-genclik",
+   "name": "Toros Gençlik",
+   "city": "Toroslar",
+   "colors": [
+    "#14532D",
+    "#FDE047"
+   ],
+   "baseStrength": 54,
+   "rival": false,
+   "lore": "Dağ köylerinden devşirilen çevik bir gençlik projesi. Kadro genç, hata bol, tavan bilinmez."
+  },
+  {
+   "id": "celikkale-fk",
+   "name": "Çelikkale FK",
+   "city": "Çelikkale",
+   "colors": [
+    "#263238",
+    "#B0BEC5"
+   ],
+   "baseStrength": 52,
+   "rival": false,
+   "lore": "Kale gibi savunma, çelik gibi tribün. Golü az atar, yediğinde şehirde ışıklar söner."
+  },
+  {
+   "id": "dogu-simsekleri",
+   "name": "Doğu Şimşekleri",
+   "city": "Doğuşehir",
+   "colors": [
+    "#3B0764",
+    "#FACC15"
+   ],
+   "baseStrength": 50,
+   "rival": false,
+   "lore": "Doğunun en gürültülü sahası: davul sabah başlar. Yoksul kasa, zengin yürek."
+  },
+  {
+   "id": "ruzgarli-sk",
+   "name": "Rüzgarlı SK",
+   "city": "Rüzgarlı",
+   "colors": [
+    "#1E3A5F",
+    "#7DD3FC"
+   ],
+   "baseStrength": 47,
+   "rival": false,
+   "lore": "Adı gibi istikrarsız: bir sezon fırtına, bir sezon esinti. Taraftarı meteoroloji gibi takip eder."
+  },
+  {
+   "id": "akarsu-birligi",
+   "name": "Akarsu Birliği",
+   "city": "Akarsu",
+   "colors": [
+    "#075985",
+    "#67E8F9"
+   ],
+   "baseStrength": 46,
+   "rival": false,
+   "lore": "Nehir kenarında balıkçıların kurduğu birlik. Küçük stat, temiz futbol, hesap bilen yönetim geleneği."
+  },
+  {
+   "id": "taskopru-fk",
+   "name": "Taşköprü FK",
+   "city": "Taşköprü",
+   "colors": [
+    "#44403C",
+    "#A8A29E"
+   ],
+   "baseStrength": 44,
+   "rival": false,
+   "lore": "Asırlık köprünün ayağında küçük ama dik başlı. Devleri kendi sahasında terletmek şehir sporu sayılır."
+  }
+ ]
+}

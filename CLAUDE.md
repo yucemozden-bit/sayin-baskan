@@ -13,7 +13,10 @@ yayınlanacak. Şu anki aşama: HTML/CSS/JS ile oynanabilir prototip (tasarım d
 - **Kongre seçimi**: 3 sezonda bir. Oy = güven + vaat durumu + sportif sonuç. %50 altı = oyun sonu.
 - **Seçim vaatleri**: her dönem başında 3 seçenekten biri (terfi, borçsuz kulüp,
   stadyum yatırımı, kadro değeri +%40). Tutulursa +oy, tutulmazsa -oy.
-- Küme düşme oyunu bitirmez, güveni sarsar. İflas (kasa < -1M) oyunu bitirir.
+- Küme düşme oyunu bitirmez ama sportif bir sonuçtur: ertesi sezon **2. Lig** başlar
+  (zayıf rakipler + düşük yayın/sponsor/bilet geliri + en değerli oyuncu üst lige gider).
+  Hedef terfi (ilk 3); dönersen ekonomi ve beklenti eski çıtasına oturur. `G.lig` (1/2)
+  kulüp tier'ından (küçük/orta/büyük) ayrıdır. İflas (kasa < -1M) oyunu bitirir.
 - Referans mekanikler eski prototipte mevcut (aşağıda "Eski prototip" notu).
 
 ## Ekran haritası

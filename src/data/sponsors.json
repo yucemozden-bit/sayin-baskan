@@ -1,0 +1,20 @@
+{
+  "_schema": "V4-§14 — {id, name, sector, tier, type, incomeMult, riskProfile}. Tohum: V6-§8 (14 marka) + V4-§6 anlaşma çeşitleri.",
+  "_note": "type: standart|bahis|kripto|yerel|fintech|naming. incomeMult sponsor gelir çarpanı. riskProfile: kabul edilince gelen yan etkiler (null = temiz).",
+  "sponsors": [
+    { "id": "aeroturk",      "name": "AeroTürk",             "sector": "havayolu",       "tier": "std",     "type": "standart", "incomeMult": 1.0, "riskProfile": null },
+    { "id": "bankamatik",    "name": "Bankamatik+",          "sector": "banka",          "tier": "std",     "type": "standart", "incomeMult": 1.0, "riskProfile": null },
+    { "id": "voltenerji",    "name": "VoltEnerji",           "sector": "enerji içeceği", "tier": "std",     "type": "standart", "incomeMult": 1.05, "riskProfile": null },
+    { "id": "megabahis",     "name": "MegaBahis",            "sector": "bahis",          "tier": "premium", "type": "bahis",    "incomeMult": 1.4, "riskProfile": { "taraftar": -3, "itibar": -2, "note": "Ilımlı grup mektup yazar (aile kulübü imajı)." } },
+    { "id": "kriptonova",    "name": "KriptoNova",           "sector": "kripto",         "tier": "premium", "type": "kripto",   "incomeMult": 1.6, "riskProfile": { "batmaChance": 0.25, "itibar": -5, "note": "İlk sezon ×1.6; %25 batar → gelir kesilir + haber patlaması." } },
+    { "id": "demirtas",      "name": "Demirtaş Holding",     "sector": "inşaat",         "tier": "std",     "type": "standart", "incomeMult": 1.0, "riskProfile": null },
+    { "id": "anadolu-sig",   "name": "Anadolu Sigorta Grubu","sector": "sigorta",        "tier": "std",     "type": "standart", "incomeMult": 1.0, "riskProfile": null },
+    { "id": "telenet",       "name": "TeleNet",              "sector": "telekom",        "tier": "std",     "type": "standart", "incomeMult": 1.05, "riskProfile": null },
+    { "id": "lezzet-grup",   "name": "Lezzet Grup",          "sector": "gıda",           "tier": "yerel",   "type": "yerel",    "incomeMult": 0.6, "riskProfile": { "taraftar": 3, "note": "‘Bizim kulüp’ imajı." } },
+    { "id": "otomax",        "name": "Otomax",               "sector": "otomotiv",       "tier": "std",     "type": "standart", "incomeMult": 1.0, "riskProfile": null },
+    { "id": "genckart",      "name": "GençKart",             "sector": "fintech",        "tier": "std",     "type": "fintech",  "incomeMult": 1.1, "riskProfile": { "gencTaban": 3, "note": "Genç taban memnuniyeti +." } },
+    { "id": "yerli-esnaf",   "name": "Yerli Esnaf Birliği",  "sector": "esnaf",          "tier": "yerel",   "type": "yerel",    "incomeMult": 0.6, "riskProfile": { "taraftar": 3, "note": "Yerel paket." } },
+    { "id": "globalair",     "name": "GlobalAir",            "sector": "havayolu",       "tier": "premium", "type": "naming",   "incomeMult": 1.5, "riskProfile": { "namingRights": true, "nostaljikLoyalty": -15, "radikalGrup": -8, "note": "Stadyum sv≥7 gerekir; ‘Stadın adı satılmaz’ tepkisi." } },
+    { "id": "petromar",      "name": "PetroMar",             "sector": "enerji",         "tier": "std",     "type": "standart", "incomeMult": 1.0, "riskProfile": null }
+  ]
+}

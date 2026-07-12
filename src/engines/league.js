@@ -1,0 +1,93 @@
+// src/engines/league.js — Lig (Bible-7)
+//   18 takım, çift devreli fikstür (Berger/circle), G3/B1/M0, averaj sıralaması.
+//   AI rakipler SADECE strength sayısı (canlı lig başkan simülasyonu V5-§2 kesiminde).
+// Katsayılar TUNING'den; engines/ DOM'a dokunmaz.
+
+import { TUNING } from '../config.js';
+import { rand } from '../core/rng.js';
+import { macGucu } from './power.js';
+import { simulateMatch } from './match.js';
+
+// Çift devreli fikstür — Berger (circle) yöntemi. n çift olmalı.
+// İlk devre n-1 tur; ikinci devre aynı eşleşmeler ev/deplasman ters.
+export function makeFixtures(ids) {
+  const teams = ids.slice();
+  if (teams.length % 2 !== 0) teams.push(null); // tek sayıysa bye
+  const n = teams.length;
+  const half = n / 2;
+  const first = [];
+  let rot = teams.slice(1); // sabit hariç dönen kısım
+  for (let r = 0; r < n - 1; r++) {
+    const line = [teams[0], ...rot];
+    const round = [];
+    for (let i = 0; i < half; i++) {
+      const t1 = line[i];
+      const t2 = line[n - 1 - i];
+      if (t1 == null || t2 == null) continue; // bye
+      // Ev/deplasman dengesi için tur+eşleşme paritesine göre yer değiştir
+      const [home, away] = (r + i) % 2 === 0 ? [t1, t2] : [t2, t1];
+      round.push({ home, away });
+    }
+    first.push(round);
+    rot = [rot[rot.length - 1], ...rot.slice(0, -1)]; // döndür
+  }
+  // İkinci devre: ev/deplasman ters — her eşleşme birer kez ev-deplasman oynanır
+  const second = first.map((round) => round.map((m) => ({ home: m.away, away: m.home })));
+  return [...first, ...second];
+}
+
+// Lig durumu. teams: [{id, name, strength, mine?}]
+export function createLeague(teams) {
+  const table = {};
+  for (const t of teams) {
+    table[t.id] = { id: t.id, name: t.name, strength: t.strength, mine: !!t.mine, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0 };
+  }
+  return { table, fixtures: makeFixtures(teams.map((t) => t.id)), week: 0 };
+}
+
+// Tek maç: strength → MaçGücü (ev avantajı + şans) → Poisson skor.
+export function simulateLeagueMatch(homeStr, awayStr, rng = rand) {
+  const M = TUNING.MATCH;
+  const homeMG = macGucu(homeStr, { isHome: true, stadyum: M.AI_STAD, taraftar: M.AI_TARAFTAR });
+  const awayMG = macGucu(awayStr, { isHome: false });
+  return simulateMatch(homeMG, awayMG);
+}
+
+export function applyResult(h, a, gH, gA) {
+  const P = TUNING.MATCH.PTS;
+  h.P++; a.P++;
+  h.GF += gH; h.GA += gA; a.GF += gA; a.GA += gH;
+  if (gH > gA) { h.W++; a.L++; h.Pts += P.W; a.Pts += P.L; }
+  else if (gH < gA) { a.W++; h.L++; a.Pts += P.W; h.Pts += P.L; }
+  else { h.D++; a.D++; h.Pts += P.D; a.Pts += P.D; }
+}
+
+// Bir haftanın (turun) tüm maçlarını oynat.
+export function playWeek(league, weekIndex, rng = rand) {
+  const round = league.fixtures[weekIndex];
+  const results = [];
+  for (const m of round) {
+    const h = league.table[m.home], a = league.table[m.away];
+    const { gH, gA } = simulateLeagueMatch(h.strength, a.strength, rng);
+    applyResult(h, a, gH, gA);
+    results.push({ home: m.home, away: m.away, gH, gA });
+  }
+  league.week = weekIndex + 1;
+  return results;
+}
+
+// Sıralama: puan → averaj (GF−GA) → attığı gol (GF). (Bible-7)
+export function standings(league) {
+  return Object.values(league.table)
+    .slice()
+    .sort((x, y) => y.Pts - x.Pts || (y.GF - y.GA) - (x.GF - x.GA) || y.GF - x.GF)
+    .map((t, i) => ({ ...t, rank: i + 1, GD: t.GF - t.GA }));
+}
+
+// Tüm sezonu oynat. Döner: {league, table (sıralı), matches (tüm maç sonuçları)}.
+export function simulateSeason(teams, rng = rand) {
+  const league = createLeague(teams);
+  const matches = [];
+  for (let w = 0; w < league.fixtures.length; w++) matches.push(...playWeek(league, w, rng));
+  return { league, table: standings(league), matches };
+}

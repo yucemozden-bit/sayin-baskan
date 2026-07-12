@@ -1,0 +1,213 @@
+{
+ "_schema": "Bible-15 — 20 vaat. {id, name, metric, difficulty(1-5), condition(DSL), baseline(snapshot alanı)}. Dönem başında max 3 seçilir; dönem sonunda kept/broken kontrol edilir.",
+ "promises": [
+  {
+   "id": "P01",
+   "name": "Kupayı Vitrine Koyacağım",
+   "metric": "sportif",
+   "difficulty": 5,
+   "baseline": null,
+   "condition": "term.titles >= 1"
+  },
+  {
+   "id": "P02",
+   "name": "Kulübün Sırtındaki Yükü İndireceğim",
+   "metric": "borc",
+   "difficulty": 4,
+   "baseline": "borc",
+   "condition": "economy.borc <= baseline.borc * 0.5",
+   "conflicts": [
+    "P03",
+    "P04",
+    "P21"
+   ]
+  },
+  {
+   "id": "P03",
+   "name": "Stadımızı Büyüteceğim",
+   "metric": "stadyum",
+   "difficulty": 3,
+   "baseline": "stadyum",
+   "condition": "facilities.stadyum >= baseline.stadyum + 2",
+   "conflicts": [
+    "P02",
+    "P15"
+   ]
+  },
+  {
+   "id": "P04",
+   "name": "Bu Kadroyu Değerlendireceğim",
+   "metric": "kadroDeger",
+   "difficulty": 4,
+   "baseline": "kadroDeger",
+   "condition": "club.kadroDeger >= baseline.kadroDeger * 1.25",
+   "conflicts": [
+    "P02",
+    "P15"
+   ]
+  },
+  {
+   "id": "P05",
+   "name": "Altyapıya Sahip Çıkacağım",
+   "metric": "akademi",
+   "difficulty": 3,
+   "baseline": "akademi",
+   "condition": "facilities.akademi >= baseline.akademi + 2 && term.academyGraduates >= 2"
+  },
+  {
+   "id": "P06",
+   "name": "Tesise Kazma Vuracağım",
+   "metric": "antrenman",
+   "difficulty": 3,
+   "baseline": "antrenman",
+   "condition": "facilities.antrenman >= baseline.antrenman + 2"
+  },
+  {
+   "id": "P07",
+   "name": "Tribünü Rahat Ettireceğim",
+   "metric": "stadyum",
+   "difficulty": 2,
+   "baseline": "matchExp",
+   "condition": "term.matchExp >= baseline.matchExp * 1.25",
+   "_note": "P17 (maç altyapısı/teknoloji) bu karta birleştirildi (v4.1-5)"
+  },
+  {
+   "id": "P08",
+   "name": "Sakatlıklar Bitecek",
+   "metric": "tibbi",
+   "difficulty": 2,
+   "baseline": "tibbi",
+   "condition": "facilities.tibbi >= baseline.tibbi + 2"
+  },
+  {
+   "id": "P09",
+   "name": "Hocanın Ekibini Tam Kuracağım",
+   "metric": "coach",
+   "difficulty": 3,
+   "baseline": null,
+   "condition": "power.teknikEkip >= 75"
+  },
+  {
+   "id": "P10",
+   "name": "Kulüp Mahalleye İnecek",
+   "metric": "marka",
+   "difficulty": 1,
+   "baseline": null,
+   "condition": "term.socialProjects >= 3"
+  },
+  {
+   "id": "P11",
+   "name": "Kadın Takımını Kuracağım",
+   "metric": "marka",
+   "difficulty": 2,
+   "baseline": null,
+   "condition": "womensTeam.active"
+  },
+  {
+   "id": "P12",
+   "name": "Kendi Çocuğumuzu Çıkaracağım",
+   "metric": "akademi",
+   "difficulty": 2,
+   "baseline": null,
+   "condition": "term.academyGraduates >= 1"
+  },
+  {
+   "id": "P13",
+   "name": "Gözümüz Her Sahada Olacak",
+   "metric": "scout",
+   "difficulty": 2,
+   "baseline": "scout",
+   "condition": "facilities.scout >= 3"
+  },
+  {
+   "id": "P14",
+   "name": "Bu Armayı Konuşturacağım",
+   "metric": "brandValue",
+   "difficulty": 3,
+   "baseline": "brandValue",
+   "condition": "club.brandValue >= baseline.brandValue * 1.3"
+  },
+  {
+   "id": "P15",
+   "name": "Kasada Delik Bırakmayacağım",
+   "metric": "wageRatio",
+   "difficulty": 3,
+   "baseline": null,
+   "condition": "term.wageRatio <= 0.55",
+   "conflicts": [
+    "P04",
+    "P21",
+    "P22"
+   ]
+  },
+  {
+   "id": "P16",
+   "name": "Kulübe Para Kazandıracağım",
+   "metric": "ticari",
+   "difficulty": 2,
+   "baseline": "ticariGel",
+   "condition": "term.ticariGelir >= baseline.ticariGel * 1.25"
+  },
+  {
+   "id": "P19",
+   "name": "Bu Kulübün Tarihine Sahip Çıkacağım",
+   "metric": "itibar",
+   "difficulty": 1,
+   "baseline": null,
+   "condition": "club.museum",
+   "_note": "P18 (çevre dostu) + P19 (müze) birleştirildi (v4.1-5)"
+  },
+  {
+   "id": "P20",
+   "name": "Adımızı Sınırın Ötesine Taşıyacağım",
+   "metric": "marka",
+   "difficulty": 4,
+   "baseline": null,
+   "condition": "expansion.officeCount >= 1"
+  },
+  {
+   "id": "P21",
+   "name": "Tribüne Bir Yıldız Getireceğim",
+   "metric": "kadro",
+   "difficulty": 3,
+   "baseline": null,
+   "condition": "term.starBought",
+   "_note": "v4.1-5: pencere sonunda 80+ güç alım",
+   "conflicts": [
+    "P02",
+    "P15"
+   ]
+  },
+  {
+   "id": "P22",
+   "name": "Başına Adam Gibi Hoca Getireceğim",
+   "metric": "coach",
+   "difficulty": 3,
+   "baseline": null,
+   "condition": "power.teknikEkip(coach) >= 75",
+   "_note": "v4.1-5",
+   "conflicts": [
+    "P15"
+   ]
+  },
+  {
+   "id": "P23",
+   "name": "Bu Takımı Küme Hattına Düşürmeyeceğim",
+   "metric": "sportif",
+   "difficulty": 2,
+   "baseline": null,
+   "condition": "history.seasons.every(pos < 16)",
+   "selectableIf": "club.hedefSira >= 13",
+   "_note": "v4.1-5: sadece küme hattı beklentili kulüpler"
+  },
+  {
+   "id": "P24",
+   "name": "Bilete Zam Yok",
+   "metric": "taraftar",
+   "difficulty": 2,
+   "baseline": null,
+   "condition": "term.maxTicket <= 1.0",
+   "_note": "v4.1-5: dönem boyu bilet ≤1.0×"
+  }
+ ]
+}

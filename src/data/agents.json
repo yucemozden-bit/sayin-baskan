@@ -1,0 +1,11 @@
+{
+  "_schema": "V4-§14 — {id, name, type, relationship(0-100), clients:[playerId]}. Tohum: V6-§8 (6 menajer). type: köpekbalığı|beyefendi|aile|portföycü (V4-§2.2). clients runtime'da atanır.",
+  "agents": [
+    { "id": "seref-kaya",   "name": "Şeref Kaya",   "type": "köpekbalığı", "relationship": 50, "clients": [] },
+    { "id": "ayla-durmaz",  "name": "Ayla Durmaz",  "type": "beyefendi",   "relationship": 50, "clients": [] },
+    { "id": "baba-yilmaz",  "name": "Baba Yılmaz",  "type": "aile",        "relationship": 50, "clients": [] },
+    { "id": "marco-ferran", "name": "Marco Ferran", "type": "portföycü",   "relationship": 50, "clients": [] },
+    { "id": "kadir-oz",     "name": "Kadir Öz",     "type": "köpekbalığı", "relationship": 50, "clients": [] },
+    { "id": "elif-sancak",  "name": "Elif Sancak",  "type": "portföycü",   "relationship": 50, "clients": [] }
+  ]
+}

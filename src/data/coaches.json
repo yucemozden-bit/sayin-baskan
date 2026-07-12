@@ -1,0 +1,17 @@
+{
+  "_schema": "V4-§14 — {name, archetype, stats{taktik,oyuncuYonetimi,otorite,yardimciEkip}, wage(mn/sezon), minReputation}. Tohum: V6-§8 (12 TD). stats V6-§8 tek skoru arketipe göre 4 niteliğe açar (Bible-10).",
+  "coaches": [
+    { "name": "Kemal Aydoğan",    "archetype": "motivatör",   "stats": { "taktik": 66, "oyuncuYonetimi": 78, "otorite": 72, "yardimciEkip": 68 }, "wage": 0.6,  "minReputation": 45 },
+    { "name": "Serdar Kılınç",    "archetype": "savunmacı",   "stats": { "taktik": 76, "oyuncuYonetimi": 64, "otorite": 74, "yardimciEkip": 66 }, "wage": 0.5,  "minReputation": 42 },
+    { "name": "Doğan Erkul",      "archetype": "oyun kurucu", "stats": { "taktik": 82, "oyuncuYonetimi": 70, "otorite": 68, "yardimciEkip": 78 }, "wage": 0.9,  "minReputation": 55 },
+    { "name": "Bülent Karaca",    "archetype": "genç işçisi", "stats": { "taktik": 66, "oyuncuYonetimi": 72, "otorite": 62, "yardimciEkip": 76 }, "wage": 0.4,  "minReputation": 35 },
+    { "name": "Faruk Demirel",    "archetype": "savunmacı",   "stats": { "taktik": 68, "oyuncuYonetimi": 56, "otorite": 66, "yardimciEkip": 58 }, "wage": 0.25, "minReputation": 30 },
+    { "name": "Metin Soylu",      "archetype": "motivatör",   "stats": { "taktik": 58, "oyuncuYonetimi": 70, "otorite": 66, "yardimciEkip": 60 }, "wage": 0.35, "minReputation": 38 },
+    { "name": "Vittorio Ranzetti","archetype": "oyun kurucu", "stats": { "taktik": 88, "oyuncuYonetimi": 76, "otorite": 74, "yardimciEkip": 84 }, "wage": 1.2,  "minReputation": 70 },
+    { "name": "Jorge Valdes",     "archetype": "genç işçisi", "stats": { "taktik": 72, "oyuncuYonetimi": 80, "otorite": 68, "yardimciEkip": 82 }, "wage": 0.8,  "minReputation": 60 },
+    { "name": "Ali Osman Peker",  "archetype": "savunmacı",   "stats": { "taktik": 64, "oyuncuYonetimi": 52, "otorite": 62, "yardimciEkip": 54 }, "wage": 0.15, "minReputation": 25 },
+    { "name": "Hakan Yücesoy",    "archetype": "oyun kurucu", "stats": { "taktik": 70, "oyuncuYonetimi": 60, "otorite": 58, "yardimciEkip": 66 }, "wage": 0.35, "minReputation": 40 },
+    { "name": "Tarık Bozan",      "archetype": "motivatör",   "stats": { "taktik": 52, "oyuncuYonetimi": 66, "otorite": 62, "yardimciEkip": 56 }, "wage": 0.22, "minReputation": 32 },
+    { "name": "Sven Larsen",      "archetype": "savunmacı",   "stats": { "taktik": 84, "oyuncuYonetimi": 70, "otorite": 80, "yardimciEkip": 74 }, "wage": 1.0,  "minReputation": 65 }
+  ]
+}

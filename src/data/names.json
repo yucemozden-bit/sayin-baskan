@@ -1,0 +1,36 @@
+{
+  "_schema": "V4-§14 — { first:[...], last:[...], foreign:{br:[],ar:[],eu:[]} }. Oyuncu üretimi: %70 yerli (first×last), %30 yabancı (foreign havuzu). Gerçek ünlü futbolcu çağrışımından kaçınıldı.",
+  "first": [
+    "Ahmet", "Mehmet", "Mustafa", "Ali", "Hüseyin", "Hasan", "İbrahim", "Osman", "Yusuf", "Murat",
+    "Ömer", "Kemal", "Kadir", "Serkan", "Emre", "Barış", "Tolga", "Onur", "Volkan", "Selim",
+    "Cem", "Deniz", "Ozan", "Umut", "Kaan", "Berk", "Sinan", "Tuncay", "Ferhat", "Gökhan",
+    "Levent", "Erdem", "Uğur", "Yiğit", "Bora", "Efe", "Alp", "Doruk", "Kerem", "Mert",
+    "Arda", "Batuhan", "Çağatay", "Görkem", "Halil", "İlker", "Koray", "Melih", "Nedim", "Okan",
+    "Polat", "Rıza", "Samet", "Şahin", "Taner", "Ünal", "Vedat", "Yavuz", "Zeki", "Burak",
+    "Cengiz", "Devrim", "Ekrem", "Fatih", "Gürkan", "Hakan", "İsmail", "Kağan", "Metin", "Necati",
+    "Orhan", "Recep", "Serdar", "Tarık", "Utku", "Yalçın", "Ziya", "Adem", "Bahadır", "Cihan",
+    "Dursun", "Engin", "Fuat", "Gökay", "Hamza", "İzzet", "Kürşat", "Muhammet", "Nihat", "Oğuz",
+    "Ramazan", "Sefa", "Turgay", "Veli", "Yakup", "Bülent", "Caner", "Dinçer", "Ercan", "Ferit",
+    "Güven", "Hayri", "İlhan", "Kutlu", "Mesut", "Nuri", "Oktay", "Rüştü", "Suat", "Tamer",
+    "Yaşar", "Erhan", "Fikret", "Sarp", "Kayra", "Tunahan", "Emirhan", "Ege", "Poyraz", "Toprak"
+  ],
+  "last": [
+    "Yılmaz", "Kaya", "Demir", "Şahin", "Çelik", "Yıldız", "Yıldırım", "Öztürk", "Aydın", "Özdemir",
+    "Arslan", "Doğan", "Kılıç", "Aslan", "Çetin", "Kara", "Koç", "Kurt", "Özkan", "Şimşek",
+    "Polat", "Korkmaz", "Çakır", "Aksoy", "Bulut", "Güneş", "Aktaş", "Bozkurt", "Türk", "Yalçın",
+    "Acar", "Bayram", "Güler", "Ateş", "Uçar", "Duman", "Coşkun", "Sarı", "Karataş", "Taş",
+    "Toprak", "Ekinci", "Şen", "Erdem", "Avcı", "Işık", "Kaplan", "Özer", "Tekin", "Turan",
+    "Ünal", "Yavuz", "Aydemir", "Balcı", "Çınar", "Dağ", "Elmas", "Fidan", "Gül", "Han",
+    "İnce", "Keskin", "Köse", "Mutlu", "Nas", "Oral", "Özgür", "Pekcan", "Sağlam", "Tunç",
+    "Uzun", "Vural", "Yeşil", "Zorlu", "Akın", "Barın", "Çakmak", "Değirmenci", "Erol", "Fırat",
+    "Gökçe", "Güngör", "Kahraman", "Nalbant", "Öncel", "Pamuk", "Sezer", "Tosun", "Ulaş", "Yaman",
+    "Ay", "Bilgin", "Cebeci", "Dinç", "Ergün", "Genç", "Gümüş", "Karabulut", "Menteşe", "Özsoy",
+    "Sönmez", "Taşkın", "Ünlü", "Yorulmaz", "Bakır", "Çiftçi", "Eren", "Güçlü", "Kartal", "Sarıca",
+    "Tanrıöver", "Ustaoğlu", "Yağmur", "Aksan", "Boran", "Çelebi", "Deveci", "Erkan", "Soylu", "Peker"
+  ],
+  "foreign": {
+    "br": ["Rafael Nogueira", "Bruno Alencar", "Diego Fontes", "Lucas Braga", "Thiago Rocha", "Matheus Vieira", "Caio Bittencourt", "Everton Paz", "Wesley Damasceno", "Igor Sampaio", "Vinícius Prado", "Felipe Cardoso"],
+    "ar": ["Karim Haddad", "Youssef Nasser", "Omar Rachid", "Bilal Mansour", "Tariq Zaidi", "Sami Khalil", "Nabil Farouk", "Amine Toubal", "Hakim Belkacem", "Riad Cherif", "Walid Bensalah", "Fouad Rahmani"],
+    "eu": ["Lukas Meyer", "Tomáš Novák", "Andrei Popa", "Marco Bianchi", "Pierre Dubois", "Niklas Berg", "Stefan Horvat", "Janko Kovač", "Erik Lindqvist", "Pavel Marek", "Diego Serra", "Kristian Olsen"]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "_schema": "V4-§14 — kurul üyesi isim/arketip havuzu. Kurul üyesi runtime'da: {name, archetype, loyalty:0-100, weight}. Tohum: V6-§8 + V4-§2.1.",
+  "_note": "weight = guven_hedef ağırlıklı ortalamasındaki oyu (Σ(loyalty×weight)). concern = üyenin derdi (hangi gauge'a duyarlı).",
+  "archetypes": [
+    { "archetype": "Hesap Adamı",   "concern": "mali disiplin",              "weight": 0.24, "names": ["Nedim Ersoylu", "Cavit Aksan", "Bülent Tokgöz"] },
+    { "archetype": "Politikacı",    "concern": "taraftar + medya imajı",     "weight": 0.22, "names": ["Suzan Karataş", "Erdal Pınar", "Nurgül Aytaç"] },
+    { "archetype": "Eski Futbolcu", "concern": "sportif başarı + altyapı",   "weight": 0.20, "names": ["\"Efsane\" Cengiz Toprak", "Yaşar Günal", "Kâmuran Erdoğdu"] },
+    { "archetype": "Sponsor Kralı", "concern": "ticari gelir + marka",       "weight": 0.18, "names": ["Halil Menteşe", "Sedat Konuralp", "Vedat Arca"] },
+    { "archetype": "Nostaljik",     "concern": "gelenek (TD/yıldız satışına alerjik)", "weight": 0.16, "names": ["Rıfat Boyner", "İhsan Köylüoğlu", "Necdet Sarıca"] }
+  ]
+}
