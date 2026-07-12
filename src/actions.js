@@ -2,7 +2,7 @@
 // state'i (G) burası mutasyona uğratır, eventBus'a burası yayınlar.
 // ui/ modülleri yalnızca state okur; asla doğrudan motor çağırmaz/state yazmaz.
 
-import { TUNING, TIERS, applyDifficulty } from './config.js';
+import { TUNING, TIERS, applyDifficulty, DIFFICULTY } from './config.js';
 import { eventBus } from './core/eventBus.js';
 import { generateSquad, squadMarketValue, developSquad, youthIntake, uniqueName } from './models/squadGen.js';
 import { Player } from './models/player.js';
@@ -12,6 +12,7 @@ import { simulateMatch, postMatch } from './engines/match.js';
 import { createLeague, playWeek, standings, simulateLeagueMatch, applyResult } from './engines/league.js';
 import { applyEconomy, payDebt, sponsorSlotWeekly } from './engines/economy.js';
 import { generateSponsorOffer } from './engines/sponsorGen.js';
+import { extendMarketDet } from './engines/market.js';
 import { computeTargets, applyInertia } from './engines/gauges.js';
 import { checkThresholdEvents, tickEventFlags } from './engines/events.js';
 import { selectPromises, decayPromiseHope, judgePromises, isSelectable, addMidPromise } from './engines/promises.js';
@@ -89,6 +90,22 @@ export function newGame(data, difficulty = 'normal', mode = 'klasik') {
     meta: { season: 1, week: 1, term: 1, version: 'v1.0-adayi' }, // sürüm damgası (onaylı)
     inbox: [], pendingMatch: null, election: null,
   };
+}
+
+// SETUP ekranı (kariyer kuruluşu): başkan adı + kulüp adı/renk + şehir + zorluk uygular,
+// sonra selectClub'ı çağırır. Zorluk kariyer başında KİLİTLENİR (cfg yeniden türetilir).
+export function applySetup(G, o = {}) {
+  if (o.zorluk && DIFFICULTY[o.zorluk]) { G.difficulty = o.zorluk; G.cfg = applyDifficulty(TUNING, o.zorluk); }
+  if (o.mode) G.mode = o.mode;
+  if (o.baskanAd && String(o.baskanAd).trim()) G.baskan = { name: String(o.baskanAd).trim().slice(0, 26) };
+  const id = o.identity ? { ...o.identity } : {};
+  if (o.kulupAd && String(o.kulupAd).trim()) id.name = String(o.kulupAd).trim().slice(0, 28);
+  const identity = (id.name || id.stadName || id.founded) ? id : null;
+  const lig2 = o.tier === 'lig2';
+  selectClub(G, lig2 ? 'kucuk' : (o.tier || 'orta'), identity, { lig2 });
+  if (o.renk) G.club.renk = o.renk;       // özel renk — tema bunu her şeyin üstünde okur
+  if (o.sehir && String(o.sehir).trim()) G.club.sehir = String(o.sehir).trim().slice(0, 24);
+  return G;
 }
 
 // B4b: identity — kulüp havuzundan gelen kimlik (name/stadName/founded/fanChar) varsayılanı ezer
@@ -337,7 +354,7 @@ function initSeason(G) {
   G.season = { W: 0, D: 0, L: 0, GF: 0, GA: 0 };
   G.ticketLetterDone = false;
   G.transferWindow = windowOpen(1);
-  if (G.transferWindow) G.market = generateMarket(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout });
+  if (G.transferWindow) G.market = makeMarket(G);
   // Y1: HİKAYE TOHUMU — sezonun ana gerilim hattı (olay ağırlığı + sezon karnesi cümlesi)
   G.storyArc = pickStorySeed(G);
   pushInbox(G, { cat: 'manset', t: `Sezonun sorusu: ${G.storyArc.label}`, sig: 'arc-' + G.worldSeason, b: G.storyArc.key === 'yildiz_veda' && G.storyArc.starName ? `Herkes aynı şeyi soruyor: ${G.storyArc.starName} kalacak mı?` : 'Medya sezona bu çerçeveden bakacak.' });
@@ -375,7 +392,7 @@ export function advanceWeek(G) {
 export function preSeasonWeek(G) {
   const wk = G.meta.week; // sabit — hazırlık, fikstür haftası değildir
   G.transferWindow = true; // hazırlık dönemi = transfer masası açık
-  if (!G.market) G.market = generateMarket(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout });
+  if (!G.market) G.market = makeMarket(G);
   G.demecUsed = false;
   drainDecisionQueue(G);
   transferWarTick(G);
@@ -397,22 +414,42 @@ export function preSeasonWeek(G) {
 // Deterministik string hash (piyasa ilgi/süre/rapor türetimi — ana RNG'yi TÜKETMEZ)
 function mh32(s) { let h = 0; const t = String(s); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return h; }
 
+// PİYASA KURULUMU: seed'li çekirdek (RNG akışı aynı kalır) + deterministik +70 isim
+// (A8: 80+ oyunculuk havuz — ekran sayfalama/filtreyle gösterir).
+function makeMarket(G) {
+  const core = generateMarket(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout });
+  const ek = extendMarketDet(Math.round(G.temelGuc), {
+    names: G.data.names, scout: G.facilities.scout, count: 70,
+    salt: (G.meta?.season || 1) * 100 + ((G.meta?.week || 1) >= 17 ? 1 : 0),
+  });
+  return core.concat(ek);
+}
+
 // Sürekli scouting: pencere açıkken her hafta bir isim başka kulübe imzalar, gözlemci ağı yenisini bulur.
 // Gözlemci ağı (scout tesisi) geliştikçe bulunan oyuncunun tavanı yükselir.
 export function scoutTick(G) {
   if (!G.transferWindow || !Array.isArray(G.market) || G.market.length === 0) return;
   // RAKİP İLGİSİ + SÜRE BASKISI (deterministik): her isimde ilgi sayacı + dosya kapanma
-  // süresi. Süresi dolan oyuncu RAKİBE İMZA ATAR — beklemek bedellidir, piyasa canlıdır.
+  // süresi. Süresi dolan RAKİBE İMZA ATAR; yerine YENİ isim gelir (havuz canlı + sabit ~80).
+  // İsimli haber yalnız sorguladıkların/yıldızlar için — gerisi TEK özet satırı (inbox taşmaz).
   const rakipler = Object.values(G.league?.table || {}).filter((t) => t && t.name && t.id !== MY);
+  const gidenler = [];
   for (let i = G.market.length - 1; i >= 0; i--) {
     const p = G.market[i];
     if (p._ilgi == null) { const mh = mh32(String(p.id) + '|' + p.name); p._ilgi = mh % 4; p._kalan = 2 + ((mh >>> 4) % 4); continue; }
     p._kalan -= 1;
-    if (p._kalan <= 0) {
-      G.market.splice(i, 1);
+    if (p._kalan <= 0) gidenler.push(G.market.splice(i, 1)[0]);
+  }
+  if (gidenler.length) {
+    // Kaçanların yerine taze isimler — piyasa döner ama boşalmaz
+    G.market.push(...extendMarketDet(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout, count: gidenler.length, salt: 50000 + (G.meta?.week || 0) + (G.meta?.season || 1) * 53 }));
+    const onemli = gidenler.filter((p) => p._sorgu || p.overall >= Math.round(G.temelGuc) + 12).slice(0, 2);
+    for (const p of onemli) {
       const rk = rakipler.length ? rakipler[mh32(p.name) % rakipler.length].name : 'bir rakip';
-      pushInbox(G, { cat: 'transfer', t: `${p.name} rakibe imza attı`, b: `${rk} dosyayı kapattı — geç kaldık Başkanım. İlgi gören isim beklemez; bir dahakine erken davranalım.`, noQueue: true });
+      pushInbox(G, { cat: 'transfer', t: `${p.name} rakibe imza attı`, b: `${rk} dosyayı kapattı — geç kaldık Başkanım. İlgi gören isim beklemez.`, noQueue: true });
     }
+    const sessiz = gidenler.length - onemli.length;
+    if (sessiz > 0) pushInbox(G, { cat: 'transfer', t: `Piyasa döndü: ${sessiz} isim başka kulüplere gitti`, b: 'Scout ağı listeyi tazeledi — yeni isimler raporda.', noQueue: true, sig: 'piyasa-donus' });
   }
   if (G.market.length === 0) return;
   const CAP = (TUNING.TRANSFER.MARKET_SIZE || 12) + 1;
@@ -442,7 +479,7 @@ export function beginWeek(G) {
   G.hazirlik = 0; // maç haftası başladıysa hazırlık dönemi bitmiştir (gerçek oyunda zaten 0)
   const wk = G.meta.week;
   G.transferWindow = windowOpen(wk);
-  if (wk === 17) G.market = generateMarket(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout });
+  if (wk === 17) G.market = makeMarket(G);
   scoutTick(G); // sürekli scouting: piyasa her hafta tazelenir + ilgi/süre nabzı
   sponsorMarketTick(G); // sponsor pazarı: eski teklifler çekilir, yeni markalar kapıyı çalar
   G.sorguHak = 1 + (G.facilities.scout || 0); // haftalık sorgu hakkı — scout ağı büyüdükçe artar
@@ -3178,8 +3215,33 @@ export function ilanVer(G, { pos, yasMax, tavan }) {
   const posTrIlan = { GK: 'kaleci', DEF: 'stoper', MID: 'orta saha', FWD: 'forvet' }[pos] || pos;
   G.socialFeed = [{ text: `Kulis: ${posTrIlan} arıyormuşuz — menajerlere ilan gitmiş 👀`, mood: 'notr', viral: false }, ...(G.socialFeed || [])].slice(0, 4);
   for (const p of G.squad.filter((x) => x.pos === pos)) p.morale = clamp(p.morale + TUNING.MEGA.ILAN.MORAL_CEZA, 0, 100);
-  pushInbox(G, { cat: 'transfer', t: `İlan verildi: ${posTrIlan} aranıyor`, b: `${G.gm.name} ağları saldı: yaş ≤${yasMax}, bütçe tavanı ${tavan}mn. Uygun kulüpler 1-3 hafta içinde dosya gönderir; deadline'da cevaplar yoğunlaşır.`, noQueue: true });
+  // İLANIN SOMUT SONUCU: piyasa o mevkide GENİŞLER — menajerler ellerindeki isimleri getirir
+  if (Array.isArray(G.market)) {
+    G.market.push(...extendMarketDet(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout, count: 4, salt: 9000 + (G.meta?.week || 0), pos }));
+    G.market.sort((a, b) => b.overall - a.overall);
+  }
+  pushInbox(G, { cat: 'transfer', t: `İlan verildi: ${posTrIlan} aranıyor`, b: `${G.gm.name} ağları saldı: yaş ≤${yasMax}, bütçe tavanı ${tavan}mn. Menajerler ellerindekini getirdi — piyasada o mevkide YENİ İSİMLER belirdi; kulüpler 1-3 hafta içinde dosya da gönderir.`, noQueue: true });
   return { ok: true };
+}
+
+// KURULA BÜTÇE ARTIŞI İSTE — dönem başına 1 hak. Kurulun mali güveni yüksekse tavan +%15
+// (karşılığı Mali −6: "hesabını soracağız"); zayıfsa RET + istemek bile bedel (Mali −3).
+export function kurulButceArtisi(G) {
+  if (!G.transferWindow) { pushInbox(G, { cat: 'kongre', t: 'Kurul toplanmadı', b: 'Pencere kapalıyken bütçe gündemi açılmaz.', noQueue: true }); return false; }
+  if (G.mode === 'aile') { pushInbox(G, { cat: 'kongre', t: 'Kurul yok', b: 'Aile Kulübü — bütçeyi soracağın kurul yok; kasa da kese de senin.', noQueue: true }); return false; }
+  const donem = G.meta?.term || 1;
+  if (G._kurulButceDonem === donem) { pushInbox(G, { cat: 'kongre', t: 'Kurul ikinci kez toplanmaz', b: 'Bu dönem bütçe artışını zaten sordun. "Aynı dönemde iki kere olmaz Başkanım."', noQueue: true }); return false; }
+  G._kurulButceDonem = donem;
+  if ((G.gauges.mali ?? 50) >= 55) {
+    const artis = Math.max(5, Math.round((G.directive?.budget || 0) * 0.15));
+    G.directive.budget = (G.directive?.budget || 0) + artis;
+    G.gauges.mali = clamp(G.gauges.mali - 6, 0, 100);
+    pushInbox(G, { cat: 'kongre', t: `Kurul bütçeyi büyüttü: +${fmt1(artis)}mn`, b: `Mali disiplinin karşılığı: transfer tavanı ${fmt1(G.directive.budget)}mn'a çıktı. Kurul notu: "Hesabını dönem sonunda soracağız." (Mali −6)` });
+    return true;
+  }
+  G.gauges.mali = clamp(G.gauges.mali - 3, 0, 100);
+  pushInbox(G, { cat: 'kongre', t: 'Kurul bütçe artışını REDDETTİ', b: 'Mali güven zayıf — "Önce kasayı toparlayın Başkanım." Üstelik istemek bile puan kaybettirdi (Mali −3).' });
+  return false;
 }
 function ilanTick(G, wk) {
   const I = TUNING.MEGA.ILAN;

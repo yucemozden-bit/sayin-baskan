@@ -121,6 +121,11 @@ export function render(G) {
     <h1 style="margin:6px 0 0;color:var(--club-2)">SAYIN BAŞKAN</h1>
     <div class="cizgi"></div>
     <p class="muted" style="margin:10px 0 0;font-style:italic">Kongre dağıldı. Mühür hâlâ masada.</p>
+    ${G._devamVar ? `<div class="devam-banner">
+      <span>💾 Kayıtlı kariyer: <b>${esc(G._devamVar.club)}</b> · Sezon ${G._devamVar.season}, Hafta ${G._devamVar.week}</span>
+      <button class="devam" data-act="contSave" style="padding:8px 20px;font-size:13px">Devam Et ►</button>
+      <button class="btn" data-act="contSil" data-tip="Kayıtlı kariyeri sil" style="padding:6px 10px;font-size:11px">🗑</button>
+    </div>` : ''}
     <div class="btnrow" style="justify-content:center;margin-top:14px">${modBtns}</div>
     <div class="muted" style="font-size:12px;margin-top:4px">${esc(MODES[mode].tanitim)}</div>
     ${tabBtns}

@@ -113,11 +113,13 @@ export function shell(G, opts) {
     </div>
   </nav>` : '';
 
+  // SABİT ALT AKSİYON ŞERİDİ: sol = hafta bilgisi + fısıltı/uyarı, sağ = CTA (havada durmaz)
   const devamHtml = devam ? `<div class="devam-wrap">
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-      <button class="devam ${devam.pulse ? 'pulse' : ''}" data-act="devam" ${devam.disabled ? 'disabled' : ''}>${devam.label || 'DEVAM ►'}</button>
-      ${devam.sub ? `<span class="muted" style="font-size:11px">${esc(devam.sub)}</span>` : ''}
+    <div class="devam-info">
+      ${G.meta ? `<span class="devam-hafta tnum">Sezon ${G.meta.season} · ${(G.hazirlik || 0) > 0 ? 'Hazırlık' : 'Hafta ' + Math.min(G.meta.week, G.SEASON_WEEKS || 34)} · Dönem ${G.meta.term}</span>` : ''}
+      ${devam.sub ? `<span class="muted devam-sub">${esc(devam.sub)}</span>` : ''}
     </div>
+    <button class="devam ${devam.pulse ? 'pulse' : ''}" data-act="devam" ${devam.disabled ? 'disabled' : ''}>${devam.label || 'DEVAM ►'}</button>
   </div>` : '';
 
   return `${top}<div class="layout">${navHtml}<main class="stage ${opts.center ? 'center' : ''}">${content}</main></div>${devamHtml}`;

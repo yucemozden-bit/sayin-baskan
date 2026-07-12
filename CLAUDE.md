@@ -6,7 +6,7 @@ kulübü yönetir: bütçe, sponsorlar, tesisler, transfer onayları, teknik dir
 ataması, taraftar/kongre ilişkileri. Uzun vadeli hedef: Godot'a taşınıp **Steam**'de
 yayınlanacak. Şu anki aşama: HTML/CSS/JS ile oynanabilir prototip (tasarım dokümanı işlevi görür).
 
-## Çekirdek döngü (tasarım hedefi — henüz kodlanmadı)
+## Çekirdek döngü (KODLANDI — src/ altında modüler MVP; testler tests/ altında)
 - Haftalık maçlar simüle edilir (oyuncu maçı oynamaz, sonucu yaşar).
 - Gelir: bilet, kombine, büfe, sponsor, yayın, ikramiye. Gider: maaşlar, işletme, faiz.
 - **Üye Güveni** (0-100): sonuçlar, memnuniyet, borç durumuna göre haftalık değişir.
@@ -19,12 +19,13 @@ yayınlanacak. Şu anki aşama: HTML/CSS/JS ile oynanabilir prototip (tasarım d
   kulüp tier'ından (küçük/orta/büyük) ayrıdır. İflas (kasa < -1M) oyunu bitirir.
 - Referans mekanikler eski prototipte mevcut (aşağıda "Eski prototip" notu).
 
-## Ekran haritası
-- [x] **title** — açılış (arma, menü: Yeni Kariyer / Devam Et / Ayarlar)
-- [ ] **setup** — kariyer kuruluşu (başkan adı, kulüp adı, renkler, şehir, zorluk)
-- [ ] **office** — makam odası / ana merkez (haftalık döngünün merkezi)
-- [ ] diğerleri birlikte tasarlanacak — SIRAYLA gidilir, kullanıcı onayı olmadan
-  yeni ekran eklenmez.
+## Ekran haritası (mevcut durum)
+- [x] **açılış/kapı** — kulüp seçimi + mod + "Devam Et" (src/ui/clubSelect.js)
+- [x] **setup** — kariyer kuruluşu: başkan adı, kulüp adı, renk, şehir, zorluk (src/ui/setup.js)
+- [x] **makam odası** — vaat seçimi + GM direktif diyaloğu (src/ui/promiseSelect.js)
+- [x] **kokpit / kadro / transfer / tesisler / finans / medya / kongre / veri / kulüp / inbox / ayarlar**
+- [x] **maç günü / sezon sonu / seçim gecesi / kariyer sonu** sahneleri
+- Yeni ekran, kullanıcı onayı olmadan eklenmez; ekranlar inceleme dosyalarıyla revize edilir.
 
 ## Görsel dil
 - Palet: gece laciverti zemin (#070b14), panel #0e1526, çizgi #1c2740,
@@ -35,11 +36,17 @@ yayınlanacak. Şu anki aşama: HTML/CSS/JS ile oynanabilir prototip (tasarım d
 - Yeni CSS değişkeni eklemeden önce :root'takileri kullan.
 
 ## Kod kuralları
-- Saf HTML/CSS/JS. Framework yok, build adımı yok. `index.html` çift tıkla açılır.
-- Ekran sistemi: her ekran `<section class="screen" id="scr-AD">`, geçiş `go("AD")`
-  (js/screens.js). Her yeni ekranın JS'i ayrı dosya: `js/AD.js`.
+- Saf HTML/CSS/JS (ES modülleri). Framework yok, build yok. **http üzerinden açılır**
+  (`node serve.js` → http://localhost:8080; file:// çalışmaz — fetch + modüller).
+- Yapı: `src/main.js` (faz yönlendirici + dispatch) · `src/ui/AD.js` (her ekran ayrı dosya)
+  · `src/engines/` (ekonomi/piyasa/sponsor/seçim...) · `src/data/*.json` · `tests/*.mjs`.
 - Türkçe UI metinleri, Türkçe yorumlar. Değişken adları İngilizce olabilir.
-- localStorage kayıt sistemi ileride eklenecek ("Devam Et" o zaman aktifleşir).
+- **RNG determinizmi kutsal**: seed'li ana akışa (core/rng) haftalık döngüde YENİ çekiliş
+  eklenmez; prosedürel içerik hash-tabanlı yerel RNG ile üretilir (bkz. sponsorGen/market).
+- Kayıt: localStorage OTOKAYIT (her DEVAM'da) + açılışta "Devam Et"; JSON dışa/içe aktarma.
+- KURAL: hiçbir ekranda scroll yok — `fitVaat()` sahneyi ölçekleyip sığdırır.
+- Testler: `node tests/AD.test.mjs` (bağımsız betikler, "SONUÇ: X geçti, Y kaldı").
+- Eski tek-dosya iskelet `bib/eski-iskelet/` altında (referans; index artık kullanmıyor).
 
 ## Çalışma şekli (önemli)
 - Kullanıcı kısa yazar, çalışan prototip ister, hatayı hemen fark eder.

@@ -90,6 +90,41 @@ console.log('\n── Transfer v3: bütçe bağı + sorgu hakkı + ilgi/süre + 
   check('GM itirazı: kurul kapıyı kapatır + satışı işaret eder', A.gmBudgetItiraz(G, pahali.id) === true && G.inbox.some((m) => m.b.includes('Kurul kapıyı') && m.b.includes('satın')));
 }
 
+console.log('\n── Transfer A8: 80+ havuz + sekmeler + sayfalama + kurul bütçe + ilan sonucu ──');
+{
+  const G = fresh();
+  check('havuz 80+ oyuncu (çekirdek + deterministik uzatma)', (G.market || []).length >= 70, `${G.market.length} isim`);
+  const html = tv.render(G);
+  check('sekmeler: PİYASA / SATIŞ LİSTEM / GELEN TEKLİFLER', html.includes('SATIŞ LİSTEM') && html.includes('GELEN TEKLİFLER') && html.includes('trTab'));
+  check('sayfalama görünür (Sayfa 1/N)', html.includes('Sayfa 1/') && html.includes('trSayfa'));
+  check('kurula bütçe artışı butonu', html.includes('kurulButce'));
+  G._trTab = 'satis';
+  const hs = tv.render(G);
+  check('SATIŞ sekmesi: GM önerisi + satışa çıkar', hs.includes('GM ÖNERİSİ') && hs.includes('satışa çıkar'));
+  G._trTab = 'teklif';
+  check('TEKLİFLER sekmesi boş durumu anlamlı', tv.render(G).includes('vitrine koy'));
+  G._trTab = 'piyasa';
+}
+{
+  // KURUL BÜTÇE ARTIŞI: mali güçlüyse +%15, dönemde 1 kez; zayıfsa ret + bedel
+  const G = fresh();
+  G.gauges.mali = 70;
+  const b0 = G.directive.budget;
+  check('mali≥55 → tavan +%15 ve Mali −6', A.kurulButceArtisi(G) === true && G.directive.budget > b0 && G.gauges.mali === 64, `${b0} → ${G.directive.budget}`);
+  check('aynı dönem ikinci istek REDDEDİLİR', A.kurulButceArtisi(G) === false && G.inbox.some((m) => m.t.includes('ikinci kez toplanmaz')));
+  const G2 = fresh();
+  G2.gauges.mali = 40;
+  const b2 = G2.directive.budget;
+  check('mali zayıf → RET + Mali −3 (istemek bile bedelli)', A.kurulButceArtisi(G2) === false && G2.directive.budget === b2 && G2.gauges.mali === 37);
+}
+{
+  // İLANIN SOMUT SONUCU: piyasa o mevkide genişler
+  const G = fresh();
+  const onceDEF = G.market.filter((p) => p.pos === 'DEF').length;
+  A.ilanVer(G, { pos: 'DEF', yasMax: 28, tavan: 30 });
+  check('ilan → o mevkide +4 yeni isim + moral sızıntısı notu', G.market.filter((p) => p.pos === 'DEF').length === onceDEF + 4 && G.inbox.some((m) => m.t.includes('İlan verildi')), `DEF ${onceDEF} → ${G.market.filter((p) => p.pos === 'DEF').length}`);
+}
+
 console.log('\n── Teklif: Beklet (%20 kalır / %80 kaçar) ──');
 {
   const G = fresh();

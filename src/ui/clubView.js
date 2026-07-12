@@ -31,6 +31,7 @@ export function render(G) {
     <div class="overline">Künye</div>
     <div class="fin-lines klub-kunye-lines">
       <div class="l"><span>Kuruluş</span><b class="tnum">${G.club.founded || '—'}</b></div>
+      ${G.club.sehir ? `<div class="l"><span>Şehir</span><b>${esc(G.club.sehir)}</b></div>` : ''}
       <div class="l"><span>Stadyum</span><b>${esc(G.club.stadName || '—')}</b></div>
       <div class="l"><span>Ezeli rakip</span><b>${esc(G.club.rivalName || '—')}</b></div>
       <div class="l"><span>Statü</span><b>${tierTr} kulüp</b></div>

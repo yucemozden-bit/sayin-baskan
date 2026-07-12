@@ -89,7 +89,11 @@ button { font: inherit; cursor: pointer; border: 0; }
 .stage { flex: 1; padding: 22px; overflow: hidden; } /* KURAL: hiçbir ekranda scroll yok — main.js fitVaat() sahneyi ölçekleyip sığdırır */
 .stage.center { display: grid; place-items: center; }
 
-.devam-wrap { position: sticky; bottom: 0; display: flex; justify-content: flex-end; padding: 14px 22px; background: linear-gradient(0deg, var(--bg-pitch), transparent); z-index: 6; }
+/* SABİT ALT AKSİYON ŞERİDİ — CTA havada değil: sol bilgi (hafta+fısıltı), sağ buton */
+.devam-wrap { position: sticky; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 9px 22px; background: linear-gradient(180deg, rgba(10, 15, 26, .25), var(--bg-pitch) 55%); border-top: 1px solid var(--line); backdrop-filter: blur(4px); z-index: 6; }
+.devam-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; text-align: left; }
+.devam-hafta { font-size: 10.5px; letter-spacing: 1.2px; color: var(--ink-3); font-weight: 800; text-transform: uppercase; }
+.devam-sub { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 560px; }
 .devam {
   background: linear-gradient(180deg, var(--club-2), var(--club)); color: #241A06;
   font-weight: 800; font-family: var(--font-display); letter-spacing: 1px;
@@ -2254,3 +2258,39 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 .tr-dosya-row .cx-btn { padding: 3px 10px; font-size: 11px; }
 /* İhtiyaç ilanı kart yazıları okunur puntoda */
 .tr-ilan-btn i { font-size: 10.5px; }
+
+/* ═══ TEMA TUTARLILIĞI: tüm sahne başlıkları SERİF (skorbord ruhu) ═══ */
+.stage h1, .stage h2 { font-family: var(--font-display); letter-spacing: .3px; }
+
+/* Kâğıt/tutanak dokusu — sözleşme hissi (çok hafif) */
+.vaat-sahne, .direktif-wrap { background-image: repeating-linear-gradient(0deg, rgba(255, 255, 255, .012) 0 1px, transparent 1px 4px); }
+.tutanak-belge { background-image: repeating-linear-gradient(0deg, rgba(240, 235, 220, .05) 0 1px, transparent 1px 7px), linear-gradient(180deg, rgba(240, 235, 220, .04), transparent); }
+
+/* ═══ SETUP — KARİYER KURULUŞU (başkan adı · kulüp adı/renk · şehir · zorluk) ═══ */
+.setup-sahne { max-width: 880px; text-align: center; }
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; text-align: left; }
+.setup-card { padding: 14px 16px; }
+.setup-lbl { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ink-3); font-weight: 700; letter-spacing: .5px; margin-top: 8px; }
+.setup-inp { background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; color: var(--ink-1); padding: 8px 10px; font: inherit; font-size: 14px; }
+.setup-inp:focus { outline: none; border-color: var(--club); box-shadow: 0 0 0 2px var(--club-glow); }
+.setup-renkler { display: flex; gap: 7px; margin-top: 7px; flex-wrap: wrap; }
+.setup-renk { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; background: var(--sw); cursor: pointer; transition: transform .15s var(--ease), box-shadow .15s var(--ease); }
+.setup-renk:hover { transform: scale(1.12); }
+.setup-renk.on { border-color: #fff; box-shadow: 0 0 12px var(--sw); transform: scale(1.18); }
+.setup-onizle { margin-top: 12px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); }
+.setup-arma { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 18px; background: radial-gradient(circle at 35% 28%, var(--sw), rgba(0, 0, 0, .55)); color: #10131c; box-shadow: 0 4px 10px rgba(0, 0, 0, .4), inset 0 2px 0 rgba(255, 255, 255, .3); }
+.setup-onizle b { font-family: var(--font-display); font-size: 15px; }
+.setup-onizle i { font-size: 11px; margin-left: auto; }
+@media (max-width: 760px) { .setup-grid { grid-template-columns: 1fr; } }
+
+/* Devam Et banner'ı (açılış) */
+.devam-banner { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px auto 0; max-width: 640px; padding: 10px 16px; border-radius: 12px; background: linear-gradient(180deg, rgba(var(--club-rgb), .1), var(--bg-1)); border: 1px solid var(--club-glow); box-shadow: 0 8px 22px -10px rgba(var(--club-rgb), .4); font-size: 13px; }
+
+/* Transfer sekmeleri + sayfalama */
+.tr-tabs { display: flex; gap: 4px; margin: 8px 0 10px; border-bottom: 1px solid var(--line); }
+.tr-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--ink-3); font: inherit; font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 7px 14px; cursor: pointer; transition: color .2s, border-color .2s; }
+.tr-tab:hover { color: var(--ink-1); }
+.tr-tab.on { color: var(--club-2); border-bottom-color: var(--club-2); }
+.tr-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 8px; font-size: 11px; color: var(--ink-2); }
+.tr-pager .cx-btn { padding: 2px 12px; font-size: 13px; }
+.tr-tek { max-width: 980px; }

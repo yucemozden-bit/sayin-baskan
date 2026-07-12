@@ -29,6 +29,7 @@ export function render(G) {
       <span class="tr-cell" data-tip="Mevcut kadronun toplam yıllık maaşı — bedel değil, maaş batırır kulübü"><i>KADRO MAAŞ YÜKÜ</i><b>${fmt(maasYuk)}mn<em>/sezon</em></b></span>
       <span class="tr-cell"><i>ÇİZGİ</i><b>${lineTr[dir.line] || '—'}</b></span>
     </div>
+    <button class="cx-btn" data-act="kurulButce" ${G._kurulButceDonem === (G.meta?.term || 1) || G.mode === 'aile' ? 'disabled' : ''} data-tip="Dönemde 1 kez: kurulun mali güveni ≥55 ise tavan +%15 (Mali −6); zayıfsa RET + Mali −3" style="margin-top:8px;width:100%">🏛 Kurula bütçe artışı iste</button>
   </div>`;
 
   // ── Pencere kapalı: sade sahne ──
@@ -106,15 +107,24 @@ export function render(G) {
   let list = (G.market || []).slice().sort((a, b) => b.overall - a.overall);
   const nButce = list.filter((p) => askOf(p) <= kalan).length;
   const nMevki = list.filter((p) => p.pos === zayif).length;
+  const nToplam = list.length;
   if (filtre === 'butce') list = list.filter((p) => askOf(p) <= kalan);
   else if (filtre === 'mevki') list = list.filter((p) => p.pos === zayif);
-  list = list.slice(0, 10);
+  // SAYFALAMA (A8: 80+ havuz — 10'ar isim, ‹ › ile gez)
+  const toplamSayfa = Math.max(1, Math.ceil(list.length / 10));
+  const sayfa = Math.min(G._trSayfa || 0, toplamSayfa - 1);
+  const pageList = list.slice(sayfa * 10, sayfa * 10 + 10);
+  const pager = toplamSayfa > 1 ? `<div class="tr-pager">
+      <button class="cx-btn" data-act="trSayfa" data-arg="-1" ${sayfa === 0 ? 'disabled' : ''}>‹</button>
+      <span class="tnum">Sayfa ${sayfa + 1}/${toplamSayfa} · ${list.length} isim</span>
+      <button class="cx-btn" data-act="trSayfa" data-arg="1" ${sayfa >= toplamSayfa - 1 ? 'disabled' : ''}>›</button>
+    </div>` : '';
   const filtreBar = `<div class="tr-filtre">
     <button class="cx-btn ${filtre === 'butce' ? 'on' : ''}" data-act="trFiltre" data-arg="butce">Bütçeme uyanlar (${nButce})</button>
     <button class="cx-btn ${filtre === 'mevki' ? 'on' : ''}" data-act="trFiltre" data-arg="mevki">İhtiyacım: ${POS_TR[zayif]} (${nMevki})</button>
-    <button class="cx-btn ${filtre === 'hepsi' ? 'on' : ''}" data-act="trFiltre" data-arg="hepsi">Hepsi</button>
+    <button class="cx-btn ${filtre === 'hepsi' ? 'on' : ''}" data-act="trFiltre" data-arg="hepsi">Hepsi (${nToplam})</button>
   </div>`;
-  const tiles = list.map((p) => {
+  const tiles = pageList.map((p) => {
     const tier = p.overall >= 75 ? 't1' : p.overall >= 60 ? 't2' : p.overall >= 45 ? 't3' : 't4';
     const s = p._sorgu;
     const ask = askOf(p);
@@ -143,6 +153,7 @@ export function render(G) {
     <div class="cx-panel-head"><span class="overline">Scout Raporu · Piyasadaki İsimler</span><span class="cx-hint" data-tip="Gözlemci ağın güçlendikçe sis daralır ve haftalık sorgu hakkın artar">sis ±${h} · sorgu ${hak} hak</span></div>
     ${filtreBar}
     <div class="tr-market">${tiles || '<div class="muted">Bu filtrede isim yok — filtreyi genişlet.</div>'}</div>
+    ${pager}
     <div class="tr-not">${esc(G.gm?.name || 'GM')} bu havuzdan direktifine uygun dosyaları masana getirecek — onay/red/pazarlık <b>inbox'ta</b>.</div>
   </div>`;
 
@@ -164,6 +175,47 @@ export function render(G) {
     ${dosyaRows || '<div class="muted" style="font-size:12px;padding:6px 0">Masada açık dosya yok — sorgula, teklif iste; süreçler burada akar.</div>'}
   </div>`;
 
+  // ── SEKMELER: PİYASA | SATIŞ LİSTEM | GELEN TEKLİFLER (A8) ──
+  const tab = G._trTab || 'piyasa';
+  const vitrinli = G.squad.filter((p) => p.vitrin);
+  const listede = G.squad.filter((p) => p.kiralikListe && !p.loanIn);
+  const gelenSatis = acik.filter((m) => m.action === 'sfile');
+  const tabsBar = `<div class="tr-tabs">
+    <button class="tr-tab ${tab === 'piyasa' ? 'on' : ''}" data-act="trTab" data-arg="piyasa">PİYASA</button>
+    <button class="tr-tab ${tab === 'satis' ? 'on' : ''}" data-act="trTab" data-arg="satis">SATIŞ LİSTEM (${vitrinli.length})</button>
+    <button class="tr-tab ${tab === 'teklif' ? 'on' : ''}" data-act="trTab" data-arg="teklif">GELEN TEKLİFLER (${gelenSatis.length})</button>
+  </div>`;
+
+  // SATIŞ LİSTEM: vitrindekiler + kiralık listedekiler + GM'in satış önerileri
+  const satisRow = (p, tipEt) => `<div class="tr-dosya-row">
+      <b>${esc(p.name)}</b><span class="tr-pos-chip" style="--pc:${POS_COL[p.pos]}">${p.pos}</span>
+      <span class="tnum">${p.overall} güç · ${p.age}y</span><span class="tnum">değer ${fmt(p.marketValue)}mn</span>
+      ${tipEt}
+    </div>`;
+  const oneriler = G.squad.filter((p) => !p.vitrin && !p.loanIn && p.id !== G.captainId)
+    .sort((a, b) => b.marketValue - a.marketValue).slice(0, 5);
+  const satisPanel = `<div class="tr-panel">
+    <div class="cx-panel-head"><span class="overline">Satış Listem</span><span class="cx-hint">vitrindekilere teklifler 2-4 haftada telefonla gelir</span></div>
+    ${vitrinli.length ? vitrinli.map((p) => satisRow(p, `<button class="cx-btn" data-act="vitrin" data-arg="${p.id}">↩ listeden çek</button>`)).join('') : '<div class="muted" style="font-size:12px;padding:6px 0">Satış listesi boş — aşağıdan vitrine koy, bütçe rahatlasın.</div>'}
+    ${listede.length ? `<div class="tr-ilan-sub" style="margin-top:10px">KİRALIK LİSTESİNDE</div>${listede.map((p) => satisRow(p, `<button class="cx-btn" data-act="kiralikListe" data-arg="${p.id}">↩ çek</button>`)).join('')}` : ''}
+    <div class="tr-ilan-sub" style="margin-top:10px">GM ÖNERİSİ — EN DEĞERLİLER</div>
+    ${oneriler.map((p) => satisRow(p, `<button class="cx-btn" data-act="vitrin" data-arg="${p.id}" data-tip="Menajerlere sinyal gider — moral bedeli var">🏷 satışa çıkar</button>`)).join('')}
+    <div class="tr-not">Bütçe dışı bir yıldız mı istiyorsun? Önce birini sat — kurul ancak öyle ikna olur.</div>
+  </div>`;
+
+  // GELEN TEKLİFLER: açık satış dosyaları (karar inbox'ta)
+  const teklifPanel = `<div class="tr-panel">
+    <div class="cx-panel-head"><span class="overline">Gelen Teklifler</span><span class="cx-hint">satış dosyaları · dev kulüp panik telefonları ayrıca çalar</span></div>
+    ${gelenSatis.length ? gelenSatis.map((m) => {
+    const pl = G.squad.find((x) => x.id === (m.file && m.file.playerId)) || {};
+    return `<div class="tr-dosya-row"><b>${esc(pl.name || '—')}</b><span class="tr-dosya-durum sfile">SATIŞ TEKLİFİ</span><span class="tnum">${fmt((m.file && m.file.offer) || 0)}mn</span>${m.deadline ? '<span class="tr-sure krit">⏳ bu hafta</span>' : ''}<button class="cx-btn" data-act="nav" data-arg="inbox">Karar ver →</button></div>`;
+  }).join('') : '<div class="muted" style="font-size:12px;padding:6px 0">Masada satış teklifi yok. Oyuncuyu vitrine koy — kulüpler kapıyı çalar.</div>'}
+  </div>`;
+
+  const icerik = tab === 'satis' ? `<div class="tr-tek">${satisPanel}</div>`
+    : tab === 'teklif' ? `<div class="tr-tek">${teklifPanel}</div>`
+      : `<div class="tr-grid"><div class="tr-sol">${dirPanel}${ilanPanel}</div>${scoutPanel}</div>${dosyalarPanel}`;
+
   return `<div class="tr-wrap">
     <div class="tr-head">
       <div><div class="overline">Transfer Merkezi</div><h2 class="tr-serif">Pazar Görünümü</h2></div>
@@ -172,10 +224,7 @@ export function render(G) {
         <span class="tr-durum acik">● PENCERE AÇIK</span>
       </div>
     </div>
-    <div class="tr-grid">
-      <div class="tr-sol">${dirPanel}${ilanPanel}</div>
-      ${scoutPanel}
-    </div>
-    ${dosyalarPanel}
+    ${tabsBar}
+    ${icerik}
   </div>`;
 }

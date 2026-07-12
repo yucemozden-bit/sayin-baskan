@@ -75,6 +75,7 @@ export function clubPalette(hex) {
 }
 // Kulübün ham rengi: teams.json'dan (havuz kimliği) ya da varsayılan üçlü
 export function rawClubColor(G) {
+  if (G.club && G.club.renk) return G.club.renk; // SETUP: başkanın seçtiği özel renk her şeyi ezer
   const t = (G.data && G.data.teams || []).find((x) => x.name === G.club.name);
   if (t && t.colors && t.colors[0]) {
     // ilk renk çok koyuysa (lacivert formalar) ikinciyi dene — vurgu rengi olarak daha canlı olan
@@ -88,8 +89,9 @@ export function rawClubColor(G) {
 let sonUygulanan = null;
 export function applyClubTheme(G) {
   if (typeof document === 'undefined' || !G || !G.club || !G.club.name) return null;
-  if (sonUygulanan === G.club.name) return null;
-  sonUygulanan = G.club.name;
+  const anahtar = G.club.name + '|' + (G.club.renk || '');
+  if (sonUygulanan === anahtar) return null;
+  sonUygulanan = anahtar;
   const p = clubPalette(rawClubColor(G));
   const r = document.documentElement.style;
   r.setProperty('--club', p.club);

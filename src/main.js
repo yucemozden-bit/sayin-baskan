@@ -15,6 +15,7 @@ import * as matchday from './ui/matchday.js';
 import * as seasonEnd from './ui/seasonEnd.js';
 import * as electionNight from './ui/electionNight.js';
 import * as playerCard from './ui/playerCard.js';
+import * as setupUi from './ui/setup.js';
 import * as squadView from './ui/squadView.js';
 import * as transferView from './ui/transferView.js';
 import * as facilitiesView from './ui/facilitiesView.js';
@@ -44,6 +45,7 @@ async function boot() {
     const data = { teams: teams.teams, promises: promises.promises, names, media: mediaData, firms, events: eventsD, social, boardnames, scenarios, achievements, sponsors: sponsorsD.sponsors };
     G = A.newGame(data, 'normal');
     globalThis.SB = { G, TUNING, A }; // konsol kancası
+    autoLoadCheck(); // kayıtlı kariyer varsa açılışta "Devam Et" sunulur
     render();
   } catch (err) {
     app.innerHTML = `<div style="padding:40px;color:#E05252">Veri yüklenemedi. Live Server (http) ile açın.<br><small>${err}</small></div>`;
@@ -116,6 +118,8 @@ function render() {
   switch (G.phase) {
     case 'CLUB_SELECT':
       html = shell(G, { content: clubSelect.render(G), center: true, bare: true }); break; // AÇILIŞ 1a: topbar yok
+    case 'SETUP': // kariyer kuruluşu: başkan adı + kulüp adı/renk + şehir + zorluk (bare — kariyer henüz yok)
+      html = shell(G, { content: setupUi.render(G), center: true, bare: true }); break;
     case 'TERM_SETUP': {
       // M6: YENİ DÖNEM RİTÜELİ — vaatlerden önce tören: defter kartları + kurul önünde vizyon
       if (G.ritual && !G.ritual.done) { html = shell(G, { content: ritualScene(G), center: true }); break; }
@@ -200,6 +204,16 @@ function fitVaat() {
     el.style.transform = `scale(${s})`;
     el.style.width = `${(100 / s).toFixed(2)}%`;
   }
+}
+
+// SETUP inputları: re-render öncesi mevcut değerleri yakala (yoksa renk/zorluk tıkı yazılanı siler)
+function readSetupInputs() {
+  if (!G._setup) G._setup = {};
+  const v = (id) => { const el = app.querySelector('#' + id); return el ? el.value : undefined; };
+  const b = v('su-baskan'), k = v('su-kulup'), s = v('su-sehir');
+  if (b !== undefined) G._setup.baskanAd = b;
+  if (k !== undefined) G._setup.kulupAd = k;
+  if (s !== undefined) G._setup.sehir = s;
 }
 
 // Makam Odası: GM'in tepki repliği harf harf yazılır (~16ms/karakter). Aynı metin
@@ -347,10 +361,17 @@ function gameOver(G) {
 // ── Aksiyon yönlendirici (tek giriş) ──
 function dispatch(act, arg) {
   switch (act) {
-    case 'selectClub': { // B4b/B4c + 2. LİG başlangıcı (en zor mod): küçük ekonomi + lig=2 + terfi hedefi
-      G.mode = G._modeSel || 'klasik';
-      if (arg === 'lig2') A.selectClub(G, 'kucuk', (G._identities || {}).lig2 || null, { lig2: true });
-      else A.selectClub(G, arg, (G._identities || {})[arg] || null);
+    case 'selectClub': { // B4b/B4c → önce SETUP ekranı (başkan adı/kulüp adı/renk/şehir/zorluk), mühür sonra
+      G._setup = { tier: arg, identity: (G._identities || {})[arg] || null, mode: G._modeSel || 'klasik', zorluk: G.difficulty || 'normal' };
+      G.phase = 'SETUP';
+      break;
+    }
+    case 'setupRenk': readSetupInputs(); G._setup.renk = arg; break;
+    case 'setupZorluk': readSetupInputs(); G._setup.zorluk = arg; break;
+    case 'setupGeri': G.phase = 'CLUB_SELECT'; break;
+    case 'setupStart': { // kuruluş imzası: girilenleri uygula, kariyer başlasın
+      readSetupInputs();
+      A.applySetup(G, { ...(G._setup || {}) });
       break;
     }
     case 'setMode': G._modeSel = arg; break;                                                 // B4c mod seçimi
@@ -386,7 +407,10 @@ function dispatch(act, arg) {
     case 'kiralikListe': A.toggleKiralikListe(G, arg); break;                                  // kiralık listesine koy/çek
     case 'noop': break;                                                                        // kart içi boş tık (kapatmasın)
     case 'midPromise': A.makeMidPromise(G, arg); break;                                        // oyun-içi yeni söz
-    case 'trFiltre': G._trFiltre = arg; break;                                                 // piyasa filtresi (bütçe/mevki/hepsi)
+    case 'trFiltre': G._trFiltre = arg; G._trSayfa = 0; break;                                 // piyasa filtresi (bütçe/mevki/hepsi)
+    case 'trSayfa': G._trSayfa = Math.max(0, (G._trSayfa || 0) + Number(arg)); break;          // 80+ havuzda sayfalama
+    case 'trTab': G._trTab = arg; break;                                                       // PİYASA/SATIŞ/TEKLİFLER sekmeleri
+    case 'kurulButce': A.kurulButceArtisi(G); break;                                           // dönemde 1 kez tavan artışı iste
     case 'gmItiraz': A.gmBudgetItiraz(G, arg); break;                                          // bütçe dışı isim → GM görüşü
     case 'sorgula': A.sorgulaPlayer(G, arg); break;                                            // teklif öncesi şart öğren
     case 'reqOffer': A.requestOffer(G, arg); break;                                            // GM'e dosya iste
@@ -440,7 +464,9 @@ function dispatch(act, arg) {
     case 'debateSkip': A.skipDebate(G); break;
     case 'save': doSave(); return;
     case 'load': doLoad(); return;
-    case 'devam': onDevam(); return;
+    case 'devam': onDevam(); autoSave(); return;                                              // her ilerleyişte otokayıt
+    case 'contSave': autoContinue(); return;                                                  // açılış: kayıtlı kariyere devam
+    case 'contSil': { try { localStorage.removeItem(AUTO_KEY); } catch {} G._devamVar = null; break; }
     default: return;
   }
   render();
@@ -459,6 +485,7 @@ function onDevam() {
   switch (G.phase) {
     case 'TERM_SETUP': {
       if ((G._setupStep || 1) === 1) { G._setupStep = 2; render(); break; } // 1/2 → 2/2
+      FX.muhur(); // İmzala anında 'tak' — mühür töreni sahnesi hemen ardından gelir
       const d = G._dir || { budgetKey: 'orta', line: 'hazir' };
       const budget = Math.round(G.economy.kasa * (TUNING.APPROVAL.BUDGET_PRESET[d.budgetKey] ?? 0.5));
       A.startTerm(G, G._sel || [], { budget, line: d.line, budgetKey: d.budgetKey });
@@ -614,7 +641,35 @@ function konfetiAt() {
   }
 }
 
-// ── Kayıt/Yükleme (localStorage YOK — JSON dosya) ──
+// ── OTOKAYIT (localStorage): her hafta ilerleyişinde sessizce yazılır; açılışta "Devam Et" sunar ──
+const AUTO_KEY = 'sayin-baskan-auto';
+function autoSave() {
+  try {
+    if (!G || !G.club || !G.club.name || G.phase === 'CLUB_SELECT' || G.phase === 'SETUP') return;
+    localStorage.setItem(AUTO_KEY, serialize({ ...G, data: undefined }));
+  } catch { /* kota/gizli mod — otokayıt sessizce atlanır */ }
+}
+function autoLoadCheck() {
+  try {
+    const raw = localStorage.getItem(AUTO_KEY);
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    if (p && p.meta && p.club) G._devamVar = { season: p.meta.season, week: p.meta.week, club: p.club.name };
+  } catch { /* bozuk kayıt — banner gösterme */ }
+}
+function autoContinue() {
+  try {
+    const parsed = deserialize(localStorage.getItem(AUTO_KEY));
+    if (!parsed) return;
+    const data = G.data;
+    G = A.migrateLoaded(Object.assign(parsed, { data }));
+    globalThis.SB.G = G;
+    render();
+  } catch { /* yüklenemedi — mevcut akış sürer */ }
+}
+window.addEventListener('beforeunload', autoSave); // pencere kapanırken son durum yazılır
+
+// ── Kayıt/Yükleme (JSON dosya — dışa/içe aktarma) ──
 function doSave() {
   const snap = { ...G, data: undefined };
   const blob = new Blob([serialize(snap)], { type: 'application/json' });
@@ -651,9 +706,11 @@ app.addEventListener('click', (ev) => {
   // ve "tuşa basınca ekran yenileniyor" hissi doğar.
   if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
 });
-// Esc: açık oyuncu kartını kapat (başka tuşlar oyunu İLERLETMEZ)
+// Esc: açık overlay'i kapat — oyuncu kartı / başarım duvarı (başka tuşlar oyunu İLERLETMEZ)
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && G && G._pcard) { G._pcard = null; render(); }
+  if (e.key !== 'Escape' || !G) return;
+  if (G._pcard) { G._pcard = null; render(); }
+  else if (G._achModal) { G._achModal = false; render(); }
 });
 eventBus.on('TICK_END', () => {}); // ui eventBus dinler (ileride canlı widget'lar buraya bağlanacak)
 
