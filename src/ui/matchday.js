@@ -39,6 +39,14 @@ function oddsBar(t) {
 
 export function render(G) {
   const m = G.pendingMatch;
+  // SAVUNMA: maçsız hafta (router normalde engeller ama render tek başına da ayakta kalmalı)
+  if (!m) {
+    return `<div class="md-scene md-pre">
+      <div class="md-stad">${stadBg('club')}<span class="md-canli">STAT SESSİZ</span></div>
+      <div class="md-head"><span class="overline">Maç günü değil</span></div>
+      <p class="lore" style="text-align:center">Fikstürde bu hafta karşılaşma yok — projektörler kapalı, çimler dinleniyor.</p>
+    </div>`;
+  }
   if (m.phase === 'pre') return pre(G, m);
   if (m.phase === 'ht') return ht(G, m);
   if (m.phase === 'late') return late(G, m);

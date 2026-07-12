@@ -1733,6 +1733,10 @@ export function resolveTransferFile(G, msgId, choice) {
     G.ffp.spent += f.fee + f.player.wage;
     if (G.ffp.spent > G.ffp.limit && !G.ffp.taahhut) ffpStrike(G);
   }
+  // Piyasa id'leri ('mkt4' gibi) her pencere YENİDEN üretilir — kadrodaki biriyle çakışırsa
+  // (sezonlar arası aynı id'yi ikinci kez satın alma) kart/satış/sorgu yanlış oyuncuyu bulur.
+  // YALNIZ çakışmada yeni kimlik: normal akışta id sabit kalır (deterministik içerik kaymaz).
+  if (G.squad.some((x) => x.id === f.player.id)) f.player.id = 'sq' + (G._pid = (G._pid || 1000) + 1);
   G.squad.push(f.player);
   if (f.loan) { f.player.loanIn = true; f.player.contractYears = 1; } // A3: kiralık — sezon sonu döner
   G.kimya.kimya = clamp(G.kimya.kimya + TUNING.KIMYA_TRANSFER, 0, 100);
@@ -2698,8 +2702,8 @@ function applyPhoneChoice(G, ph, opt) {
       if (G.economy.kasa >= f.fee) G.economy.kasa -= f.fee; else { G.economy.borc += f.fee - G.economy.kasa; G.economy.kasa = 0; }
       G.termSpent = (G.termSpent || 0) + f.fee;
       G.sezonAlim = (G.sezonAlim || 0) + f.fee; // B4d
-  G.sezonAlim = (G.sezonAlim || 0) + f.fee; // B4d
       if (G.ffp) { G.ffp.spent += f.fee + f.player.wage; if (G.ffp.spent > G.ffp.limit && !G.ffp.taahhut) ffpStrike(G); } // B1d
+      if (G.squad.some((x) => x.id === f.player.id)) f.player.id = 'sq' + (G._pid = (G._pid || 1000) + 1); // id çakışması → yeni kimlik (bkz. resolveTransferFile)
       G.squad.push(f.player);
       if (f.loan) { f.player.loanIn = true; f.player.contractYears = 1; }
       G.kimya.kimya = clamp(G.kimya.kimya + TUNING.KIMYA_TRANSFER, 0, 100);
@@ -3348,6 +3352,14 @@ export function migrateLoaded(G) {
     if (G.meta && !G.meta.version) G.meta.version = 'v1.0-adayi';
     G.stateVersion = 2;
   }
+  // REHİDRASYON (her yüklemede): JSON, Player metotlarını (refreshValue) düşürür —
+  // prototip geri takılmazsa sezon sonu developSquad'da oyun ÇÖKER (Devam Et bug'ı).
+  const canlandir = (p) => { if (p && typeof p === 'object' && !(p instanceof Player)) Object.setPrototypeOf(p, Player.prototype); };
+  (G.squad || []).forEach(canlandir);
+  (G.market || []).forEach(canlandir);
+  (G.loanedOut || []).forEach(canlandir);
+  for (const m of G.inbox || []) if (m.file && m.file.player) canlandir(m.file.player);
+  if (G.delayedFile && G.delayedFile.player) canlandir(G.delayedFile.player);
   return G;
 }
 

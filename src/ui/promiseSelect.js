@@ -274,7 +274,7 @@ function personAvatar(name, kind) {
   let h = 0; for (const c of String(name || '?')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const skins = ['#e8c9a8', '#d9b48c', '#c99b6e', '#a97c50', '#8a5a34'];
   const hairs = ['#2b2118', '#43301c', '#6b4b2f', '#1c1c1c', '#5a4a3a'];
-  const skin = skins[h % skins.length], hair = hairs[(h >> 3) % hairs.length];
+  const skin = skins[h % skins.length], hair = hairs[(h >>> 3) % hairs.length]; // >>> işaretsiz: >> negatif indeks → undefined renk
   const govde = kind === 'gm' ? '#1e2740' : 'var(--club)';
   return `<span class="gm-portre"><svg viewBox="0 0 64 64" width="60" height="60" aria-hidden="true">
     <circle cx="32" cy="32" r="32" fill="var(--bg-3)"/>

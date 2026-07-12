@@ -255,7 +255,7 @@ function tweet(post, i) {
   const clean = String(post.text || '').replace(/\s*\[TREND\]\s*/g, '').trim();
   const hh = _hash(clean + '#' + i);
   const who = TW_PERSONA[hh % TW_PERSONA.length];
-  const col = TW_AVA[(hh >> 4) % TW_AVA.length];
+  const col = TW_AVA[(hh >>> 4) % TW_AVA.length]; // >>> işaretsiz: hash 2^31 üstündeyse >> negatif indeks üretir → undefined renk
   const likes = 8 + (hh % 620), rt = hh % 120, rep = hh % 45;
   const zaman = ['az önce', '2 dk', '6 dk', '14 dk', '31 dk'][i % 5];
   const kfmt = (n) => (n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'B' : String(n));
