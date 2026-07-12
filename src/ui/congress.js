@@ -107,9 +107,11 @@ function yeniSozCard(G) {
     : (opts.length
       ? opts.map((p) => `<button class="cx-btn kongre-soz-btn" data-act="midPromise" data-arg="${p.id}"><span>${esc(p.name)}</span><span class="muted">${'★'.repeat(p.difficulty)}</span></button>`).join('')
       : '<div class="muted" style="font-size:11px">Verilebilecek uygun söz kalmadı.</div>');
+  const sp = G.term?.socialProjects || 0;
   return `<div class="card kongre-yenisoz"><div class="overline">Kürsüye Çık · Yeni Söz</div>
     <div class="muted" style="font-size:11px;margin:4px 0 8px">Sezon ortasında söz vermek tribünü coşturur, sandıktaki elini güçlendirir. Ama tutmazsan dönem sonu yaptırım.</div>
-    ${inner}</div>`;
+    ${inner}
+    <button class="cx-btn" data-act="sosyalProje" data-tip="2mn: semt sahaları/okul ziyaretleri — taraftar +1; 3 proje 'Kulüp Mahalleye İnecek' sözünü tutar" style="margin-top:8px;width:100%">🏘 Sosyal Proje Başlat (2mn) · ${sp}/3</button></div>`;
 }
 
 // §4: her bileşene tek soluk "neden" cümlesi (kural tabanlı)

@@ -140,6 +140,11 @@ export function render(G) {
     <div class="cx-panel-head"><span class="overline">Sponsorluk Pazarı</span><span class="cx-hint">her kariyerde farklı markalar · peşinat kasaya · haftalık gelir</span></div>
     <div class="spo-grid">${['gogus', 'naming', 'kol'].map(slotCell).join('')}</div>
     <div class="tr-not">Teklifler bekletilirse çekilir; reddedersen piyasaya haber gider, yeni markalar sonraki haftalarda kapıyı çalar. Bahis/kripto çok getirir ama taraftar/itibar riski + kısa süre. Süre dolunca cezasız biter; erken fesih AĞIR bedellidir.</div>
+    <div class="btnrow" style="margin-top:8px">
+      ${G.expansion && G.expansion.officeCount >= 1
+    ? '<span class="badge">🌍 Yurt dışı ofisi AÇIK — sponsor geliri +%6</span>'
+    : `<button class="cx-btn" data-act="yurtOfis" ${G.economy.kasa < 25 || (G.club.reputation ?? 50) < 60 ? 'disabled' : ''} data-tip="25mn · itibar ≥60 ister. Sponsor geliri kalıcı +%6; 'Adımızı Sınırın Ötesine Taşıyacağım' sözünü tutar">🌍 Yurt Dışı Ofisi Aç · 25mn</button>`}
+    </div>
   </div>`;
 
   return `<div class="tr-wrap fin-wrap">

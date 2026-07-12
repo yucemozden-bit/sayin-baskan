@@ -125,6 +125,22 @@ console.log('\n── Transfer A8: 80+ havuz + sekmeler + sayfalama + kurul büt
   check('ilan → o mevkide +4 yeni isim + moral sızıntısı notu', G.market.filter((p) => p.pos === 'DEF').length === onceDEF + 4 && G.inbox.some((m) => m.t.includes('İlan verildi')), `DEF ${onceDEF} → ${G.market.filter((p) => p.pos === 'DEF').length}`);
 }
 
+console.log('\n── Çok-turlu pazarlık (2 şart hakkı) ──');
+{
+  const G = fresh();
+  G.gm.skill = 500; // shift devasa → her tur "İNDİ" garantili (yapıyı ölçüyoruz, şansı değil)
+  const p = { id: 'pz1', name: 'Pazarlık Testi', pos: 'MID', overall: 70, age: 25, wage: 5, marketValue: 30 };
+  G.inbox.push({ id: 'tf-pz', cat: 'transfer', t: 'dosya', b: '', action: 'tfile', file: { player: p, fee: 30, gerekce: 'test', range: [66, 74], sartTried: false } });
+  const f = G.inbox.find((m) => m.id === 'tf-pz').file;
+  const r1 = A.resolveTransferFile(G, 'tf-pz', 'sart');
+  check('TUR 1: %20 iner + dosya AÇIK kalır', r1.outcome === 'indi' && Math.round(f.fee) === 24 && f.round === 1);
+  const r2 = A.resolveTransferFile(G, 'tf-pz', 'sart');
+  check('TUR 2: %10 daha iner (azalan getiri)', r2.outcome === 'indi' && Math.abs(f.fee - 21.6) < 0.01 && f.round === 2, `fee ${f.fee.toFixed(1)}`);
+  const r3 = A.resolveTransferFile(G, 'tf-pz', 'sart');
+  check('TUR 3 YOK: masa kapandı — onay ya da red', r3.ok === false);
+  check('onay hâlâ çalışır (pazarlıklı bedelle)', A.resolveTransferFile(G, 'tf-pz', 'onay').ok === true && G.squad.some((x) => x.id === 'pz1'));
+}
+
 console.log('\n── Teklif: Beklet (%20 kalır / %80 kaçar) ──');
 {
   const G = fresh();

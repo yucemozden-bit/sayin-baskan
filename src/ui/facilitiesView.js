@@ -135,11 +135,21 @@ export function render(G) {
       </div>
     </div>`;
   }).join('');
+  // KADIN TAKIMI ŞUBESİ — "Kadın Takımını Kuracağım" sözünün gerçek mekaniği
+  const kt = G.womensTeam && G.womensTeam.active;
+  const kadinSerit = `<div class="tesis-kadin ${kt ? 'aktif' : ''}">
+    <span class="tesis-ikon">⚽</span>
+    <div class="tesis-ad"><b>Kadın Futbol Şubesi</b><i>${kt ? `KURULDU · Sezon ${G.womensTeam.kurulusSezon}` : 'KURULMADI'}</i></div>
+    ${kt
+    ? '<span class="badge" style="margin-left:auto">aktif — camia gururlu</span>'
+    : `<button class="cx-btn" data-act="kadinTakim" style="margin-left:auto" ${G.economy.kasa < 8 ? 'disabled' : ''} data-tip="Kuruluş 8mn + haftalık bakım. Taraftar +3, itibar +2; 'Kadın Takımını Kuracağım' sözünü tutar">Kur · 8mn</button>`}
+  </div>`;
   return `<div class="tesis-wrap">
     <div class="tesis-head">
       <div><div class="overline">Tesisler · Kulüp Kampüsü</div><h2>Altyapı Yatırımı</h2></div>
       <span class="tesis-kasa" data-tip="Yatırıma hazır nakit"><i>KASA</i><b>${fmt(G.economy.kasa)}mn</b></span>
     </div>
     <div class="tesis-grid">${cards}</div>
+    ${kadinSerit}
   </div>`;
 }

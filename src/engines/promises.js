@@ -4,11 +4,14 @@
 // etkileri sozTutma/taraftar/guven/rakip'e uygulanır. Katsayılar TUNING'den.
 
 import { TUNING } from '../config.js';
+import { sponsor, forma, uyelik } from './economy.js';
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
 // Vaat için baseline metriği anlık kaydet (dönem sonu karşılaştırması).
 function snapshot(state) {
+  let ticariHaft = 0;
+  try { ticariHaft = sponsor(state) + forma(state) + uyelik(state); } catch { /* eksik state (test fixture) — 0 kalır */ }
   return {
     borc: state.economy?.borc,
     kadroDeger: state.club?.kadroDeger,
@@ -18,6 +21,8 @@ function snapshot(state) {
     akademi: state.facilities?.akademi,
     scout: state.facilities?.scout,
     brandValue: state.club?.brandValue,
+    fanCount: state.club?.fanCount,   // P14: marka = taraftar tabanı büyümesi
+    ticariHaft,                        // P16: haftalık ticari gelir tabanı
   };
 }
 

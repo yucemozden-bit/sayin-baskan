@@ -170,7 +170,7 @@ export function selectClub(G, tier, identity = null, opts = {}) {
   G.worldSeason = 0;                        // D1: AI drift sayacı (ilk sezon drift yok)
   G.flags = {}; G.rival = { attractiveness: 0 }; G.sozTutmaBirikim = 0;
   G.promises = []; G.history = { seasons: [] };
-  G.term = { income: 0, wage: 0, starBought: false, maxTicket: G.economy.ticketPrice };
+  G.term = { income: 0, wage: 0, starBought: false, maxTicket: G.economy.ticketPrice, weeks: 0, ticari: 0, academyGraduates: 0, socialProjects: 0 };
   G.termStartBorc = G.economy.borc;
   // v4.1: TD ilişkisi + telkin/prim varsayılanları (standing tercihler)
   G.tdRelation = 70; G.telkin = null; G.matchPrim = 'yok'; G.seriPrim = false;
@@ -355,6 +355,22 @@ function initSeason(G) {
   G.ticketLetterDone = false;
   G.transferWindow = windowOpen(1);
   if (G.transferWindow) G.market = makeMarket(G);
+  // BASIN REHBERİ (sezon açılışı — deterministik, RNG'siz): favoriler + SENİN tahmini yerin
+  // + küme adayları. Oyuncuya sezonun hikâyesini baştan verir — beklenti çıtası somutlaşır.
+  {
+    const guclu = [...G.opponents].sort((a, b) => b.strength - a.strength);
+    const benim = Math.round(G.temelGuc);
+    const tahmin = 1 + guclu.filter((o) => o.strength > benim).length; // güç sıralamasındaki yerin
+    const fav = guclu.slice(0, 3).map((o, i) => `${i + 1}) ${o.name}`).join(' · ');
+    const kume = guclu.slice(-2).map((o) => o.name).join(', ');
+    const yorum = tahmin <= 3 ? 'Basın seni şampiyonluk atına yazdı — beklenti yükü sırtında.'
+      : tahmin <= Math.max(3, G.club.hedefSira) ? `Kurul hedefi (${G.club.hedefSira}.) ulaşılabilir görünüyor — ama kâğıt üstünde maç kazanılmıyor.`
+        : `Kâğıt üstünde hedefin (${G.club.hedefSira}.) ALTINDASIN — bu sezon fazlasını koşacaksın.`;
+    pushInbox(G, {
+      cat: 'manset', t: `📰 SEZON REHBERİ ${G.worldSeason}. YIL — basın tahminleri`, sig: 'rehber-' + G.worldSeason,
+      b: `Favoriler: ${fav}. Küme adayları: ${kume}. ${G.club.name} için tahmin: ${tahmin}. sıra. ${yorum}`, noQueue: true,
+    });
+  }
   // Y1: HİKAYE TOHUMU — sezonun ana gerilim hattı (olay ağırlığı + sezon karnesi cümlesi)
   G.storyArc = pickStorySeed(G);
   pushInbox(G, { cat: 'manset', t: `Sezonun sorusu: ${G.storyArc.label}`, sig: 'arc-' + G.worldSeason, b: G.storyArc.key === 'yildiz_veda' && G.storyArc.starName ? `Herkes aynı şeyi soruyor: ${G.storyArc.starName} kalacak mı?` : 'Medya sezona bu çerçeveden bakacak.' });
@@ -775,6 +791,8 @@ function finishWeekTail(G, lateMove) {
 
   const led = applyEconomy(G, { isHomeMatch: isHome, isSeasonWeek: true, ticketMult: isDerby && isHome ? TUNING.DERBY_TICKET : 1 });
   G.term.income += led.gelir.toplam; G.term.wage += led.gider.maas;
+  G.term.weeks = (G.term.weeks || 0) + 1; // P16 haftalık ortalama için
+  G.term.ticari = (G.term.ticari || 0) + led.gelir.sponsor + led.gelir.forma + led.gelir.uyelik; // ticari gelir izi
   G.seasonIncome = (G.seasonIncome || 0) + led.gelir.toplam; // A2: FFP gelecek sezon limiti için
   G.lastLedger = led;
   const targets = computeTargets(G, { myPos: G.myPos, maliHedef: led.maliHedef });
@@ -817,6 +835,7 @@ function finishWeekTail(G, lateMove) {
   if (wk === CAL.YOUTH_WEEK) {
     const youths = youthIntake(G.facilities, { names: G.data.names, used: G.usedNames });
     for (const y of youths) y.ocak = true; // B4d: ocak çocuğu izi
+    G.term.academyGraduates = (G.term.academyGraduates || 0) + youths.length; // P05/P12: akademi mezunu sayacı
     // A1: Akademi Direktörü — potansiyel dağılımı + altın çocuk şansı çarpanı
     const akDir = G.staff?.akademi;
     const goldenP = CAL.GOLDEN_P + (akDir ? akDir.skill * TUNING.STAFF.GOLDEN_PER_SKILL : 0);
@@ -1634,24 +1653,30 @@ export function resolveTransferFile(G, msgId, choice) {
     return { ok: true, outcome: 'red' };
   }
   if (choice === 'sart') {
-    if (f.sartTried) return { ok: false, why: 'Pazarlık hakkı kullanıldı' };
-    f.sartTried = true;
+    // ÇOK-TURLU PAZARLIK: 2 şart hakkı. 2. turda indirim KÜÇÜLÜR, kaçma riski BÜYÜR —
+    // ısrar gerçek bir kumar (karşı-teklif durum makinesi: İNDİ / UZADI / RAKİP KAPTI).
+    const tur = (f.round || 0) + 1;
+    if (tur > 2) return { ok: false, why: 'Pazarlık masası kapandı' };
+    f.round = tur; f.sartTried = true;
     registerDecision(G, 'sart');
     if (G.windowStats) G.windowStats.pazarlik++;
     const shift = (G.gm.skill - 60) / TUNING.APPROVAL.SART.GM_SHIFT; // iyi GM oranları lehine oynatır
+    const inP = tur === 1 ? AP.IN + shift : (AP.IN + shift) * 0.55;
+    const delayP = tur === 1 ? AP.DELAY : AP.DELAY * 0.6;
+    const disc = tur === 1 ? AP.DISCOUNT : 0.9;
     const r = rand(0, 1);
-    if (r < AP.IN + shift) {
-      f.fee *= AP.DISCOUNT;
-      m.b = `Pazarlık tuttu! Yeni bedel ${fmt1(f.fee)}mn (%20 indi). ${f.gerekce}`;
+    if (r < inP) {
+      f.fee *= disc;
+      m.b = `Pazarlık tuttu (tur ${tur})! Yeni bedel ${fmt1(f.fee)}mn. ${tur < 2 ? 'GM: "Bir tur daha üsteleyebiliriz ama menajer sabırsız."' : 'Masa kapandı — ya onay ya red.'} ${f.gerekce}`;
       return { ok: true, outcome: 'indi' };
-    } else if (r < AP.IN + shift + AP.DELAY) {
+    } else if (r < inP + delayP) {
       m.resolved = true;
       G.delayedFile = f; // gelecek pencere haftası geri döner
-      pushInbox(G, { cat: 'transfer', t: `${G.gm.name} (GM): Tur uzadı`, b: `${f.player.name} pazarlığı bir tur daha sürecek; önümüzdeki hafta masaya döneriz.` });
+      pushInbox(G, { cat: 'transfer', t: `${G.gm.name} (GM): Tur uzadı`, b: `${f.player.name} pazarlığı (tur ${tur}) bir hafta daha sürecek; masaya karşı teklifle döneriz.` });
       return { ok: true, outcome: 'uzadi' };
     }
     m.resolved = true;
-    pushInbox(G, { cat: 'transfer', t: 'Rakip kaptı!', b: `${f.player.name} pazarlık sürerken başka kulüple anlaştı. GM: "Bir dahakine hızlı davranalım."` });
+    pushInbox(G, { cat: 'transfer', t: 'Rakip kaptı!', b: `${f.player.name} pazarlık sürerken başka kulüple anlaştı.${tur === 2 ? ' İkinci tur ısrarı pahalıya patladı —' : ''} GM: "Bir dahakine hızlı davranalım."` });
     return { ok: true, outcome: 'kapti' };
   }
   // ONAY: bedel öde (nakit yoksa borç), kadroya kat
@@ -2331,8 +2356,55 @@ function evaluatePromise(pr, G) {
     case 'P22': return teknikEkip(G.coach) >= 75;                           // yıldız TD
     case 'P23': return G.history.seasons.every((s) => s.pos < TUNING.LEAGUE.RELEGATION_FROM); // ligde kalma
     case 'P24': return (G.term.maxTicket ?? 1) <= 1.0;                      // kombine zammı yok
-    default: return false; // marka/akademi-genç/kadın takımı vb. henüz MVP dışı
+    // ── HER SÖZ OYNANABİLİR (tuzak vaat yok — her koşulun gerçek mekaniği var) ──
+    case 'P05': return G.facilities.akademi >= (b.akademi || 0) + 2 && (G.term.academyGraduates || 0) >= 2; // altyapı: tesis+2 & 2 mezun
+    case 'P07': return G.facilities.stadyum >= (b.stadyum || 0) + 1 && (G.term.maxTicket ?? 1) <= 1.2;      // taraftar deneyimi: stad+1 & makul bilet
+    case 'P09': return teknikEkip(G.coach) >= 75;                                                            // teknik ekip tam kadro (P22 ölçütü)
+    case 'P10': return (G.term.socialProjects || 0) >= 3;                                                    // 3 sosyal proje (Kongre ekranından)
+    case 'P11': return !!(G.womensTeam && G.womensTeam.active);                                              // kadın takımı (Tesisler'den kurulur)
+    case 'P12': return (G.term.academyGraduates || 0) >= 1;                                                  // en az 1 akademi mezunu
+    case 'P14': return G.club.fanCount >= (b.fanCount || G.club.fanCount) * 1.15;                            // marka: taraftar tabanı +%15
+    case 'P16': return (G.term.weeks || 0) > 0 && (G.term.ticari / G.term.weeks) >= (b.ticariHaft || 0.01) * 1.25; // ticari haftalık ort +%25
+    case 'P19': return (G.museum || []).length >= 1 || (G.defter || []).length >= 6;                          // miras: müze kaydı ya da dolu defter
+    case 'P20': return ((G.expansion && G.expansion.officeCount) || 0) >= 1;                                  // yurt dışı ofis (Finans'tan açılır)
+    default: return false;
   }
+}
+
+// ── VAAT MEKANİĞİ AKSİYONLARI: sosyal proje / kadın takımı / yurt dışı ofisi ──
+export function sosyalProje(G) {
+  const BEDEL = 2;
+  if (G.economy.kasa < BEDEL) { pushInbox(G, { cat: 'kongre', t: 'Sosyal proje ertelendi', b: 'Kasa 2mn bile kaldıramıyor — önce nakit.', noQueue: true }); return false; }
+  G.economy.kasa -= BEDEL;
+  G.term.socialProjects = (G.term.socialProjects || 0) + 1;
+  G.gauges.taraftar = clamp(G.gauges.taraftar + 1, 0, 100);
+  const N = G.term.socialProjects;
+  pushInbox(G, { cat: 'kongre', t: `Sosyal proje #${N}: kulüp mahalleye indi`, b: `${BEDEL}mn ile semt sahaları/okul ziyaretleri programı. Taraftar +1.${N >= 3 ? ' "Kulüp Mahalleye İnecek" sözü YOLUNDA.' : ` (Söz için ${3 - N} proje daha.)`}`, noQueue: true });
+  return true;
+}
+export function kadinTakimiKur(G) {
+  const BEDEL = 8;
+  if (G.womensTeam && G.womensTeam.active) return false;
+  if (G.economy.kasa < BEDEL) { pushInbox(G, { cat: 'kongre', t: 'Kadın takımı bekliyor', b: `Kuruluş ${BEDEL}mn ister — kasa yetmiyor.`, noQueue: true }); return false; }
+  G.economy.kasa -= BEDEL;
+  G.womensTeam = { active: true, kurulusSezon: G.meta.season };
+  G.gauges.taraftar = clamp(G.gauges.taraftar + 3, 0, 100);
+  G.club.reputation = clamp((G.club.reputation ?? 50) + 2, 0, 100);
+  pushInbox(G, { cat: 'kongre', t: '⚽ KADIN TAKIMI KURULDU', b: `${BEDEL}mn kuruluş bütçesiyle kulübün kadın futbol şubesi açıldı. Taraftar +3, itibar +2; bakım gideri haftalık işler. Camia gurur duyuyor.` });
+  anKarti(G, { t: 'Kadın takımı kuruldu', b: 'Kulüp tarihine yeni bir şube yazıldı.', etki: 5 });
+  return true;
+}
+export function yurtdisiOfisAc(G) {
+  const BEDEL = 25;
+  if (G.expansion && G.expansion.officeCount >= 1) return false;
+  if ((G.club.reputation ?? 50) < 60) { pushInbox(G, { cat: 'mali', t: 'Yurt dışı ofisi reddedildi', b: 'İtibar 60 altında — yabancı pazar bu armayı henüz tanımıyor. Önce itibar.', noQueue: true }); return false; }
+  if (G.economy.kasa < BEDEL) { pushInbox(G, { cat: 'mali', t: 'Yurt dışı ofisi bekliyor', b: `Açılış ${BEDEL}mn ister — kasa yetmiyor.`, noQueue: true }); return false; }
+  G.economy.kasa -= BEDEL;
+  G.expansion = { officeCount: 1, sezon: G.meta.season };
+  G.club.sponsorMult = (G.club.sponsorMult ?? 1) * 1.06; // yabancı pazar sponsor gelirini kalıcı besler
+  pushInbox(G, { cat: 'mali', t: '🌍 YURT DIŞI OFİSİ AÇILDI', b: `${BEDEL}mn ile ilk uluslararası ofis. Sponsor geliri kalıcı +%6 — arma artık sınırın ötesinde konuşuluyor.` });
+  anKarti(G, { t: 'Uluslararası genişleme', b: 'Kulübün adı yurt dışında bir kapıya yazıldı.', etki: 6 });
+  return true;
 }
 
 export function runElection(G) {
@@ -2395,7 +2467,7 @@ export function startNewTerm(G) {
   if (tierMove) { applyTier(G, tierMove); G.consecTerms = 0; }
   G.meta.term++; G.meta.season = 1;
   G.termStartBorc = G.economy.borc;
-  G.term = { income: 0, wage: 0, starBought: false, maxTicket: G.economy.ticketPrice };
+  G.term = { income: 0, wage: 0, starBought: false, maxTicket: G.economy.ticketPrice, weeks: 0, ticari: 0, academyGraduates: 0, socialProjects: 0 };
   G.promises = []; G.sozTutmaBirikim = 0; G.rival = { attractiveness: 0 };
   G.history = { seasons: [] };
   G.coachCandidates = generateCoaches(G.club.reputation, { names: G.data.names }); // yeni dönem TD havuzu

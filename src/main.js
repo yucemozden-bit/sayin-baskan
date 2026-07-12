@@ -178,6 +178,7 @@ function render() {
   document.body.classList.toggle('kontrast', !!G.uiKontrast); // Ayarlar → Yüksek Kontrast
   fitVaat(); // KAYDIRMASIZ GARANTİ: sahne ekrandan uzunsa orantılı küçült — asla taşmaz
   typewriterTepki(); // Makam Odası: GM tepkisi harf harf yazılır (toplantı hissi)
+  canliSkorSayimi(); // Maç yayını: skor 0-0 başlar, goller ticker'a düştükçe TEK TEK artar
   // GÖRSEL KİMLİK §2: kulüp rengi runtime sızması (kariyer başında bir kez uygular)
   if (G.club && G.club.name) applyClubTheme(G);
   // Y7: kriz kırmızı vinyeti — gece yarısı telefonu ya da kritik gösterge
@@ -214,6 +215,29 @@ function readSetupInputs() {
   if (b !== undefined) G._setup.baskanAd = b;
   if (k !== undefined) G._setup.kulupAd = k;
   if (s !== undefined) G._setup.sehir = s;
+}
+
+// CANLI SKOR SAYIMI (ekrana kitleme): yayın skorbordu 0-0 açılır; her gol, ticker
+// satırı belirirken TEK TEK işlenir (bizim goller gol sesiyle). DEVAM her an atlar;
+// animasyon sonunda gerçek skor garantiye alınır.
+function canliSkorSayimi() {
+  const m = G && G.pendingMatch;
+  if (!m || m.phase !== 'live' || m._canliOynadi) return;
+  const board = app.querySelector('.md-board-score.led');
+  if (!board) return;
+  m._canliOynadi = true;
+  const goller = (m.highlights || []).map((h, i) => ({ h, i })).filter((x) => x.h.type === 'gol');
+  let my = 0, opp = 0;
+  board.innerHTML = '0<i>-</i>0';
+  goller.forEach((g, k) => {
+    setTimeout(() => {
+      if (!board.isConnected) return;
+      if (g.h.side === 'biz') { my++; try { FX.gol(); } catch {} } else { opp++; try { FX.sayim && FX.sayim(); } catch {} }
+      board.innerHTML = `${my}<i>-</i>${opp}`;
+      board.classList.remove('skor-vurgu'); void board.offsetWidth; board.classList.add('skor-vurgu');
+    }, 450 + Math.min(g.i, 8) * 90 + k * 140);
+  });
+  setTimeout(() => { if (board.isConnected) board.innerHTML = `${m.myGoals ?? 0}<i>-</i>${m.oppGoals ?? 0}`; }, 450 + goller.length * 240 + 900);
 }
 
 // Makam Odası: GM'in tepki repliği harf harf yazılır (~16ms/karakter). Aynı metin
@@ -411,6 +435,9 @@ function dispatch(act, arg) {
     case 'trSayfa': G._trSayfa = Math.max(0, (G._trSayfa || 0) + Number(arg)); break;          // 80+ havuzda sayfalama
     case 'trTab': G._trTab = arg; break;                                                       // PİYASA/SATIŞ/TEKLİFLER sekmeleri
     case 'kurulButce': A.kurulButceArtisi(G); break;                                           // dönemde 1 kez tavan artışı iste
+    case 'sosyalProje': A.sosyalProje(G); break;                                               // P10: kulüp mahalleye iner
+    case 'kadinTakim': A.kadinTakimiKur(G); break;                                             // P11: kadın futbol şubesi
+    case 'yurtOfis': A.yurtdisiOfisAc(G); break;                                               // P20: uluslararası ofis
     case 'gmItiraz': A.gmBudgetItiraz(G, arg); break;                                          // bütçe dışı isim → GM görüşü
     case 'sorgula': A.sorgulaPlayer(G, arg); break;                                            // teklif öncesi şart öğren
     case 'reqOffer': A.requestOffer(G, arg); break;                                            // GM'e dosya iste

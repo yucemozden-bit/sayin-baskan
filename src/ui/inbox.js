@@ -36,7 +36,7 @@ function renderMsg(G, m) {
       opts = `<div class="opts">
         <button data-act="tfile" data-arg="${m.id}|onay" style="border-color:var(--pos)">ONAYLA</button>
         <button data-act="tfile" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET</button>
-        ${m.file && m.file.sartTried ? '' : `<button data-act="tfile" data-arg="${m.id}|sart">ŞARTLI — "pahalı, %20 in"</button>`}
+        ${(m.file && (m.file.round || 0) >= 2) ? '' : `<button data-act="tfile" data-arg="${m.id}|sart">${m.file && m.file.round === 1 ? 'ŞARTLI · TUR 2 — "üsteleyelim, %10 daha" (riskli)' : 'ŞARTLI — "pahalı, %20 in"'}</button>`}
       </div>`;
     } else if (active && m.action === 'sfile') {
       opts = `<div class="opts">

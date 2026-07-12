@@ -162,7 +162,9 @@ export function render(G) {
   const dosyaRows = acik.map((m) => {
     const pl = m.file && m.file.player;
     const ad = pl ? pl.name : (m.file && m.file.playerId ? (G.squad.find((x) => x.id === m.file.playerId) || {}).name : '—') || '—';
-    const durum = m.action === 'tfile' ? 'TEKLİF MASADA' : 'SATIŞ TEKLİFİ';
+    const durum = m.action === 'tfile'
+      ? ((m.file && m.file.round) ? `KARŞI TEKLİF · TUR ${m.file.round}` : 'TEKLİF MASADA')
+      : 'SATIŞ TEKLİFİ';
     const tutar = m.action === 'tfile' ? (m.file ? m.file.fee : 0) : (m.file ? m.file.offer : 0);
     return `<div class="tr-dosya-row">
       <b>${esc(ad)}</b><span class="tr-dosya-durum ${m.action}">${durum}</span><span class="tnum">${fmt(tutar || 0)}mn</span>

@@ -9,7 +9,9 @@ const NAMES = { sportif: 'Sportif', taraftar: 'Taraftar', mali: 'Mali', itibar: 
 const KEYS = ['sportif', 'taraftar', 'mali', 'itibar', 'soz'];
 
 export function render(G) {
-  const e = G.election, b = e.breakdown;
+  const e = G.election;
+  if (!e || !e.breakdown) return '<div class="scene"><div class="overline">Seçim Gecesi</div><p class="muted">Sandık kuruluyor…</p></div>'; // savunma: seçim verisi henüz yoksa çökme
+  const b = e.breakdown;
   const step = e.revealStep ?? 0;
 
   const cards = KEYS.map((k, i) =>

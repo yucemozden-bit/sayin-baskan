@@ -84,7 +84,8 @@ export function haftalikGider(state) {
   const bakim = Object.values(state.facilities).reduce((s, lv) => s + lv, 0) * E.BAKIM_K;
   // A1: yönetici maaşları idari kaleme işler (gerçek maliyet)
   const staffWages = state.staff ? Object.values(state.staff).reduce((s, m) => s + (m ? m.wage : 0), 0) : 0;
-  const idari = E.IDARI_BASE + state.club.fanCount * E.IDARI_FAN_K + staffWages / E.WEEKS_PER_YEAR;
+  const kadinTakim = state.womensTeam && state.womensTeam.active ? 0.06 : 0; // kadın şubesi bakımı (mn/hafta)
+  const idari = E.IDARI_BASE + state.club.fanCount * E.IDARI_FAN_K + staffWages / E.WEEKS_PER_YEAR + kadinTakim;
   const faiz = state.economy.borc * state.economy.faizOrani / E.WEEKS_PER_YEAR;
   const amortisman = 0; // MVP: transfer yok
   return { maas, teknik, bakim, idari, faiz, amortisman, toplam: maas + teknik + bakim + idari + faiz + amortisman };

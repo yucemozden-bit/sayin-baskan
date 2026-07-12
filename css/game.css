@@ -2294,3 +2294,12 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 .tr-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 8px; font-size: 11px; color: var(--ink-2); }
 .tr-pager .cx-btn { padding: 2px 12px; font-size: 13px; }
 .tr-tek { max-width: 980px; }
+
+/* Tesisler: Kadın Futbol Şubesi şeridi */
+.tesis-kadin { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 10px 16px; border-radius: 12px; border: 1px dashed var(--line); background: rgba(255, 255, 255, .02); }
+.tesis-kadin.aktif { border-style: solid; border-color: var(--club-glow); background: rgba(var(--club-rgb), .06); box-shadow: 0 8px 20px -12px rgba(var(--club-rgb), .4); }
+.tesis-kadin .tesis-ad b { font-size: 14px; }
+
+/* Canlı skor vurgusu — gol düşünce skorbord "patlar" */
+.skor-vurgu { animation: skorPat .35s var(--ease); }
+@keyframes skorPat { 30% { transform: scale(1.28); filter: brightness(1.4); } }
