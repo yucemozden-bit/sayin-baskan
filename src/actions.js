@@ -13,6 +13,7 @@ import { createLeague, playWeek, standings, simulateLeagueMatch, applyResult } f
 import { applyEconomy, payDebt, sponsorSlotWeekly } from './engines/economy.js';
 import { generateSponsorOffer } from './engines/sponsorGen.js';
 import { extendMarketDet } from './engines/market.js';
+import { MUHABIRLER } from './data/pressPool.js';
 import { computeTargets, applyInertia } from './engines/gauges.js';
 import { checkThresholdEvents, tickEventFlags } from './engines/events.js';
 import { selectPromises, decayPromiseHope, judgePromises, isSelectable, addMidPromise } from './engines/promises.js';
@@ -2031,27 +2032,74 @@ export function chooseTender(G, idx) {
 export function cancelTender(G) { G.tender = null; }
 
 // ── Demeç (V3-F) — haftada 1 ──
+// YARININ MANŞETİ: ton × muhabir stili × hafta varyantı → gazete kupürü (deterministik; rng tüketmez)
+function mansetUret(G, tone, muhabir) {
+  const K = (G.club.name || '').toUpperCase();
+  const S = {
+    sert: {
+      iddiali: [`BAŞKANDAN GÖZDAĞI: "BU KADRO FAZLASINA LAYIK"`, `BAŞKAN ÇITAYI KOYDU: "HEDEFİ HERKES GÖRECEK"`, `${K}'DA MEYDAN OKUMA: "KİMSE RAHAT UYUMASIN"`],
+      sakin: [`${K} CEPHESİNDE SOĞUKKANLI MESAJ`, `BAŞKAN FIRTINAYI DİNDİRDİ: "İŞİMİZE BAKIYORUZ"`, `SESSİZ VE DERİNDEN: ${K} PLANINDAN ŞAŞMIYOR`],
+      savunmaci: [`BAŞKAN SAVUNMADA: "SÜREÇ İŞLİYOR"`, `${K}'DA HESAP GÜNÜ ERTELENDİ`, `BAŞKAN KALKANI KALDIRDI: "SABIR İSTİYORUZ"`],
+      atesli: [`KÜRSÜDE YANGIN! BAŞKAN AĞZINDAKİ BAKLAYI ÇIKARDI`, `BAŞKAN KÜPLERE BİNDİ — SALON BUZ KESTİ`, `SERT ÇIKIŞ: "BU DÜZENİN HESABINI SORACAĞIZ"`],
+    },
+    babacan: {
+      iddiali: [`BAŞKAN İDDİALI: "BU ŞEHİR DAHA İYİSİNİ GÖRECEK"`, `"BU ARMANIN ALTINDA YATANLAR UTANACAK" — BAŞKAN UMUT DAĞITTI`, `ŞEHRİN BAŞKANI KONUŞTU: "GÜZEL GÜNLER YAKIN"`],
+      sakin: [`SAĞDUYU KONUŞTU: "SABIR VE İŞ"`, `BAŞKANDAN BABA NASİHATİ: "PANİK YOK"`, `${K}'DA HUZUR İKLİMİ — BAŞKAN GÜVEN TAZELEDİ`],
+      savunmaci: [`BAŞKAN: "ELEŞTİRİYİ DİNLERİZ, YOLUMUZA BAKARIZ"`, `"KİMSE BİZDEN ÇOK ÜZÜLEMEZ" — BAŞKAN DERTLİ`, `BAŞKAN MAZERET DEĞİL MÜHLET İSTEDİ`],
+      atesli: [`BAŞKAN CELALLENDİ — TRİBÜN BUNU KONUŞUYOR`, `KÜRSÜDE ŞİMŞEKLER: "ARTIK YETER!"`, `BABACAN BAŞKANIN SABRI TAŞTI`],
+    },
+    magazin: {
+      iddiali: [`BOMBA SÖZLER! ${K} BAŞKANI RESTİ ÇEKTİ 💣`, `BÜYÜK KONUŞTU! BU SÖZLER EKRAN KAYDI OLDU 📸`, `BAŞKANDAN KAPAK: "NOT ALIN, GÜLECEĞİZ" 😎`],
+      sakin: [`${K} BAŞKANINDAN "SAKİN OLUN" POZU 😌`, `BAŞKAN MODU: ZEN 🧘 SALON ŞAŞKIN`, `TIK YOK! BAŞKAN POLEMİĞE GİRMEDİ 🙅`],
+      savunmaci: [`BAŞKAN TOPU TAÇA ATTI 🙈`, `KAÇAK DÖVÜŞ! SORULAR CEVAPSIZ KALDI 🤐`, `BAŞKAN "SÜREÇ" DEDİ, SALON GÜLDÜ 😬`],
+      atesli: [`OLAY ÇIKIŞ! PFDK BU SÖZLERE BAKACAK 🔥`, `KÜRSÜ ALEV ALDI! VİRAL OLDU BİLE 🚨`, `BAŞKAN PATLADI! YÖNETMELİK EKİBİ İZLEMEDE 👀`],
+    },
+  };
+  const varyant = (S[muhabir.stil] || S.sert)[tone] || [`${K} BAŞKANI KONUŞTU`];
+  return varyant[((G.meta?.season || 1) * 7 + (G.meta?.week || 1)) % varyant.length];
+}
+
 export function makeDemec(G, tone) {
   if (G.demecUsed) return { ok: false };
   // Basın toplantısı UI: verilen cevabın GERÇEK +/- etkisini göstermek için delta yakala
-  const snap = { taraftar: G.gauges.taraftar, guven: G.gauges.guven, itibar: G.gauges.itibar, medya: (G.mediaTone || 0), kimya: (G.kimya ? G.kimya.kimya : null) };
+  const snap = { taraftar: G.gauges.taraftar, guven: G.gauges.guven, itibar: G.gauges.itibar, medya: (G.mediaTone || 0), kimya: (G.kimya ? G.kimya.kimya : null), hedef: G.club.hedefSira };
   const r = applyDemec(G, tone);
   if (!r.ok && r.ok !== undefined) return r;
   G.demecUsed = true;
   G.lastDemecTone = tone;
+  // İDDİANIN GİZLİ MALİYETİ: kurul beklentiyi yükseltir (sezonda 1 kez) — kongre gerilimi beslenir
+  if (tone === 'iddiali' && G._demecIddiaSezon !== G.meta.season) {
+    G._demecIddiaSezon = G.meta.season;
+    G.club.hedefSira = Math.max(1, G.club.hedefSira - 1);
+  }
   G.lastDemecFx = {
     taraftar: G.gauges.taraftar - snap.taraftar,
     guven: G.gauges.guven - snap.guven,
     itibar: G.gauges.itibar - snap.itibar,
     medya: (G.mediaTone || 0) - snap.medya,
     kimya: snap.kimya != null ? (G.kimya.kimya - snap.kimya) : 0,
+    hedef: G.club.hedefSira - snap.hedef, // −1 = çıta yükseldi
     ceza: r.pfdk ? r.ceza : 0,
+    snap, // "önce → sonra" gösterimi için
   };
+  // YARININ MANŞETİ: muhabir rotasyonuna göre kupür üret → arşive + inbox'a düşer
+  const muhabir = MUHABIRLER[(G.meta.week || 1) % MUHABIRLER.length];
+  const manset = mansetUret(G, tone, muhabir);
+  (G.mansetArsiv = G.mansetArsiv || []).unshift({ t: manset, kim: muhabir.ad, kimlik: muhabir.kimlik, sezon: G.meta.season, hafta: G.meta.week, ton: tone });
+  if (G.mansetArsiv.length > 24) G.mansetArsiv.pop();
+  // Sosyal akış CEVABA TEPKİ verir (deterministik havuz) — asıl ödül tribünün sesi
+  const tepki = {
+    iddiali: ['İşte başkan böyle konuşur! ❤ 1,2b — KapalıTribün', 'Sözün arkası gelsin de… — SkeptikTaraftar'],
+    atesli: ['KÜRSÜ YANDI 🔥 helal olsun — GüneyYakası', 'PFDK dosyayı açmıştır bile 🙄 — LigRadarı'],
+    sakin: ['Sakin ama net. Beyefendi başkan. — YıldızlıYıllar34', 'Biraz heyecan da fena olmazdı hocam… — TribünSesi'],
+    savunmaci: ['Yine topu taca attı… — MuhalifKöşe', 'Süreç süreç süreç. Bıktık. — SabırsızFanatik'],
+  }[tone] || [];
+  G.socialFeed = [...tepki.map((t, i) => ({ text: t, mood: i === 0 && (tone === 'iddiali' || tone === 'atesli') ? 'pos' : 'notr', viral: tone === 'atesli' && i === 0 })), ...(G.socialFeed || [])].slice(0, 4);
   // B1c: GİZLİ federasyon hattı — ateşli çıkış yıpratır, sakin diplomasi onarır (asla gösterilmez)
   const F = TUNING.MEGA.FED;
   if (tone === 'atesli') G.fedIliski = clamp((G.fedIliski ?? F.START) + F.ATESLI, 0, 100);
   else if (tone === 'sakin') G.fedIliski = clamp((G.fedIliski ?? F.START) + F.SAKIN, 0, 100);
-  pushInbox(G, { cat: 'demec', t: 'Başkan demeci: ' + tone, b: r.pfdk ? `PFDK cezası −${fmt1(r.ceza)}mn.` : 'Ton medyaya yansıdı.' });
+  pushInbox(G, { cat: 'manset', t: manset, sig: `kupur-${G.meta.season}-${G.meta.week}`, b: `${muhabir.ad} · ${muhabir.kimlik}${r.pfdk ? ` — PFDK cezası −${fmt1(r.ceza)}mn.` : ''}`, noQueue: true });
   return { ok: true, ...r };
 }
 

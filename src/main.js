@@ -27,7 +27,7 @@ import { renderCampaign, renderDebate } from './ui/campaignView.js';
 import * as opposition from './ui/opposition.js';
 import * as careerEnd from './ui/careerEnd.js';
 import * as settings from './ui/settings.js';
-import { setVolume, setAmbience } from './core/sound.js';
+import { setVolume, setAmbience, ugultu } from './core/sound.js';
 import { applyClubTheme } from './ui/theme.js';
 import { FX, setEnabled, getSound } from './core/sound.js';
 import { esc as escH } from './ui/frame.js';
@@ -461,7 +461,7 @@ function dispatch(act, arg) {
     case 'setupBack': G._setupStep = 1; break;                                                 // v4.3-4: adım 2→1
     case 'setupToClub': G.phase = 'CLUB_SELECT'; G._sel = []; G._dir = null; G._setupStep = 1; break; // adım 1 → kulüp seçimi
     case 'upgrade': A.upgradeFacility(G, arg); break;
-    case 'demec': A.makeDemec(G, arg); break;
+    case 'demec': { const r = A.makeDemec(G, arg); if (r && r.ok) { try { ugultu(0.14); } catch {} } break; } // cevap → salon mırıltısı
     // NOT: 'hireCoach' (hireCoachAction/coachCandidates) ve 'toggleReport' (showReport) eski
     // ölü yollardı — hiçbir buton emit etmiyordu (TD'ler cfile/inbox ile alınır, rapor hep açık).
     case 'ligDetay': G.ligDetay = !G.ligDetay; break;                                        // detaylı puan tablosu (modal)

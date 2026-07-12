@@ -7,6 +7,13 @@
 // Seçim deterministik (media.js soruSec): lig + bağlam + kariyer tohumu — rng TÜKETİLMEZ.
 // 2. Lig havuzu tamamen kendine yeter: Avrupa/şampiyonluk gibi üst-lig kavramları YOKTUR.
 
+// MUHABİR KADROSU (rotasyon: hafta%3) — aynı cevap farklı gazetecide FARKLI manşete döner.
+export const MUHABIRLER = [
+  { ad: 'Nazlı Ekinci', kimlik: 'ulusal · sert kalem', stil: 'sert' },
+  { ad: 'Kadir Us', kimlik: 'yerel gazete · babacan', stil: 'babacan' },
+  { ad: 'Sarp Öz', kimlik: 'internet · magazin', stil: 'magazin' },
+];
+
 export const PRESS_POOL = {
   // ═══════════════ SÜPER LİG (200) ═══════════════
   derbi: [

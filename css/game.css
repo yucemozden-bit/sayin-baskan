@@ -2335,3 +2335,41 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 .karar-uc { align-items: stretch; }
 .karar-uc .btn.replik { min-height: 92px; }
 .dir-dosya { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* ═══ BASIN TOPLANTISI v3 — kupür + hava şeridi + canlı sahne ═══ */
+/* Yarının manşeti: gazete kupürü */
+.med-kupur { margin: 10px 0; padding: 12px 18px; border-radius: 4px; position: relative;
+  background: linear-gradient(180deg, rgba(240, 236, 224, .10), rgba(240, 236, 224, .05)),
+    repeating-linear-gradient(0deg, rgba(240, 235, 220, .04) 0 1px, transparent 1px 6px);
+  border: 1px solid rgba(220, 210, 180, .3); box-shadow: 2px 3px 0 rgba(0, 0, 0, .35), inset 0 0 30px rgba(0, 0, 0, .2);
+  transform: rotate(-.6deg); animation: kupurGir .4s var(--ease); }
+@keyframes kupurGir { from { transform: rotate(-.6deg) translateY(10px) scale(.96); opacity: 0; } }
+.med-kupur-ust { font-size: 9px; font-weight: 800; letter-spacing: 3px; color: rgba(232, 217, 168, .8); border-bottom: 1px solid rgba(220, 210, 180, .25); padding-bottom: 3px; }
+.med-kupur-manset { font-family: var(--font-display); font-weight: 800; font-size: 19px; line-height: 1.2; color: #EFE7D2; margin: 7px 0 5px; letter-spacing: .3px; }
+.med-kupur-alt { font-size: 10.5px; color: var(--ink-3); font-style: italic; }
+/* Basın havası: 5 kademeli şerit */
+.med-hava { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: .5px; color: var(--ink-3); padding: 6px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-1); }
+.med-hava i { color: var(--line); font-style: normal; }
+.med-hava-k { opacity: .45; }
+.med-hava-k.on { opacity: 1; font-size: 12px; padding: 1px 8px; border-radius: 8px; border: 1px solid var(--club-glow); color: var(--club-2); }
+.med-hava-k.on.neg { border-color: rgba(224, 82, 82, .5); color: #FF9A8A; }
+.med-hava-k.on.pos { border-color: rgba(63, 191, 127, .5); color: #7FE0AC; }
+/* Etki satırları: okunur punto + ok+sayı */
+.med-fx { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; padding: 5px 10px; border-radius: 8px; margin-top: 4px; }
+.med-fx.arti { background: rgba(63, 191, 127, .09); color: #9FE8C2; }
+.med-fx.eksi { background: rgba(224, 82, 82, .09); color: #FFAC9E; }
+.med-fx b { font-size: 13px; }
+/* Cevap kartı hover (tema tutarlılığı) */
+.med-cevap { transition: transform .15s var(--ease), border-color .15s var(--ease), box-shadow .15s var(--ease); }
+.med-cevap:hover { transform: translateY(-2px); border-color: var(--club-glow); box-shadow: 0 8px 18px -8px rgba(var(--club-rgb), .45); }
+/* Sahne canlansın: periyodik flaş patlaması + CANLI pulse */
+.med-stage { position: relative; }
+.med-stage::after { content: ''; position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; animation: medFlas 4.6s linear infinite; }
+@keyframes medFlas { 0%, 96.5%, 100% { opacity: 0; } 97% { opacity: .14; } 97.6% { opacity: 0; } 98.4% { opacity: .08; } 99% { opacity: 0; } }
+.med-canli { animation: canliYanip 1.6s ease-in-out infinite; }
+/* Sağ ray: mühürlü söz mini + arşiv kupürleri */
+.med-soz-mini { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; padding: 3px 0; color: var(--ink-2); }
+.med-soz-mini em { font-style: normal; color: var(--ink-3); font-size: 10.5px; white-space: nowrap; }
+.med-arsiv-kupur { padding: 6px 8px; border-left: 2px solid rgba(220, 210, 180, .3); margin-top: 6px; background: rgba(240, 236, 224, .03); }
+.med-arsiv-kupur b { display: block; font-family: var(--font-display); font-size: 12px; color: #E8DFC8; line-height: 1.25; }
+.med-arsiv-kupur i { font-size: 10px; color: var(--ink-3); font-style: italic; }
