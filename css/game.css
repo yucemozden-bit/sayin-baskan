@@ -2412,3 +2412,34 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 /* Gizli reyting: derin rapor rozet/buton */
 .tr-derin { display: inline-block; margin-left: 6px; font-size: 10px; color: var(--club-2); }
 .tr-derin-btn { padding: 2px 8px; font-size: 10px; margin-left: 6px; border-color: var(--club-glow) !important; color: var(--club-2); }
+
+/* ═══ ÇAKIŞMA AVI (kullanıcı ekran görüntüleri): 4 taşma tek yamada ═══ */
+/* 1) SCROLL KİLİDİ — overflow:hidden çubukları gizler ama odak kaydırmasını ENGELLEMEZ:
+   alt kenardaki butona tıklamak sahneyi kaydırıp sticky paneli koparıyor, sayfalayıcıyı
+   yutuyordu. clip = kaydırma fiziken imkânsız (fitVaat scrollTop sıfırlaması da eklendi). */
+.stage:has(> .md-scene), .stage:has(> .cx-desk-wrap), .stage:has(> .klub-wrap),
+.stage:has(> .kadro-wrap), .stage:has(> .tesis-wrap), .stage:has(> .tr-wrap),
+.stage:has(> .dh-wrap), .stage:has(> .ib-wrap), .stage:has(> .direktif-wrap),
+.stage:has(> .panel-sayfa), .stage:has(.vaat-sahne) { overflow: clip; }
+
+/* 2) BÜYÜYEN İÇERİK fitVaat'a GÖRÜNSÜN — kökler sabit 100% olunca taşma ölçülemiyor,
+   içerik (sorgu detayı, GM itirazı) alttaki panelin/tutanağın ÜSTÜNE biniyordu. */
+.tr-wrap { height: auto; min-height: 100%; }
+.direktif-wrap { height: auto; min-height: 100%; }
+
+/* 3) MAKAM/VAAT sağ rayı: scroll yokken sticky işlevsiz — koparsa üstteki balonun
+   üstüne biner. Statik + OPAK zemin (altına giren metin hayaleti biter). */
+.makam-sag, .vaat-sag { position: static; }
+.makam-sag { background: linear-gradient(180deg, #1B2540, var(--bg-1)); }
+.masa { min-width: 0; }
+
+/* 4) VOW FISILTISI: kartın overflow'u üstte açılan ipucunu kırpıp metni kartın
+   ÜSTÜNE bindiriyordu (MÜHÜRLENDİ damgasıyla iç içe). İpucu artık kartın İÇİNDE
+   OPAK alt şerit; damga hover'da kenara çekilir. */
+.vow[data-tip]:hover::after {
+  left: 0; right: 0; bottom: 0; top: auto; transform: none;
+  width: auto; max-width: none; border-radius: 0 0 13px 13px;
+  border: 0; border-top: 1px solid var(--line); background: var(--bg-3);
+  padding: 6px 11px; z-index: 8; box-shadow: 0 -6px 14px -8px rgba(0, 0, 0, .6);
+}
+.vow:hover .muhur-damga { opacity: 0; transition: opacity .12s var(--ease); }

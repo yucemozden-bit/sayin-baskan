@@ -195,6 +195,9 @@ function render() {
 function fitVaat() {
   const stage = app.querySelector('.stage');
   if (!stage) return;
+  // overflow:hidden çubukları gizler ama ODAK kaydırmasını ENGELLEMEZ — alt kenardaki
+  // butona tıklayınca tarayıcı sahneyi kaydırıp sticky panelleri koparıyordu. Sıfırla.
+  stage.scrollTop = 0; stage.scrollLeft = 0;
   const el = stage.firstElementChild;
   if (!el) return;
   el.style.transform = ''; el.style.width = '';
