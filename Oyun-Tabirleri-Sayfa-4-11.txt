@@ -1,0 +1,1720 @@
+﻿SAYIN BAŞKAN — OYUN İÇİ TABİRLER (Sayfa 4-11)
+Her tabirin altındaki "Yeni :" satırına, o metnin ne olmasını istediğini yaz.
+«X» işareti oyunun doldurduğu sayı/isim — yeni metinde de yerinde kalmalı.
+======================================================================
+
+
+######################################################################
+#  SAYFA 4 · KOKPIT
+######################################################################
+
+[1] Overline   (hero paneli başlığı, sol üst)
+    Mevcut : Takım Gücü
+    Yeni   : 
+
+[2] Etiket   (takım gücü sayı bloğu)
+    Mevcut : TEMEL
+    Yeni   : 
+
+[3] Etiket   (takım gücü sayı bloğu (efektif güç))
+    Mevcut : MAÇ GÜNÜ
+    Yeni   : 
+
+[4] Çip etiketi   (takım gücü çipi)
+    Mevcut : REVİR
+    Yeni   : 
+
+[5] Çip değeri   (revir çipi — sakat yok / var)
+    Mevcut : Sakin / «X» kişi
+    Yeni   : 
+
+[6] Çip etiketi   (takım gücü çipi)
+    Mevcut : MORAL
+    Yeni   : 
+
+[7] Durum havuzu   (moral çipi değerleri)
+    Mevcut : düşük / orta / yüksek
+    Yeni   : 
+
+[8] Çip etiketi   (takım gücü çipi)
+    Mevcut : FORM
+    Yeni   : 
+
+[9] Durum havuzu   (form çipi (ilk 2 hafta 'sezon başı'))
+    Mevcut : sezon başı / formsuz / dalgalı / formda
+    Yeni   : 
+
+[10] Çip etiketi   (takım gücü çipi)
+    Mevcut : KONDİSYON
+    Yeni   : 
+
+[11] Durum havuzu   (kondisyon çipi değerleri)
+    Mevcut : bitkin / yorgun / zinde
+    Yeni   : 
+
+[12] İmza   (haftalık GM raporu sonunda)
+    Mevcut : — Genel Menajer
+    Yeni   : 
+
+[13] Overline   (gauge paneli başlığı)
+    Mevcut : Göstergeler
+    Yeni   : 
+
+[14] Overline   (fikstür paneli, sezon öncesi modunda)
+    Mevcut : Hazırlık Dönemi
+    Yeni   : 
+
+[15] Rozet   (hazırlık paneli sağ üst rozeti)
+    Mevcut : KAMP
+    Yeni   : 
+
+[16] Şerit   (hazırlık paneli kalın başlık)
+    Mevcut : Sezona «X» hafta
+    Yeni   : 
+
+[17] Flavor   (hazırlık paneli açıklama)
+    Mevcut : Transfer masası açık — kadronu kur, eksikleri kapat. Lig hazırlık bitince başlıyor.
+    Yeni   : 
+
+[18] Adım etiketi   (hazırlık adım şeridi)
+    Mevcut : ⇄ Transfer masası / 🎙 Basın / 🏋 Kamp
+    Yeni   : 
+
+[19] Dipnot   (hazırlık paneli alt satırı)
+    Mevcut : Sezon henüz başlamadı · Beklenti «X». sıra
+    Yeni   : 
+
+[20] Overline   (fikstür paneli başlığı, sezon içinde)
+    Mevcut : Sonraki Maç
+    Yeni   : 
+
+[21] Rozet   (fikstür paneli, derbi haftasında)
+    Mevcut : DERBİ
+    Yeni   : 
+
+[22] Etiket   (iki arma arasında)
+    Mevcut : VS
+    Yeni   : 
+
+[23] Etiket   (maç yeri, VS altında)
+    Mevcut : 🏟 EV / ✈ DEPLASMAN
+    Yeni   : 
+
+[24] Etiket   (olasılık barı alt etiketleri)
+    Mevcut : Galibiyet %«X» / Berabere %«X» / Mağlubiyet %«X»
+    Yeni   : 
+
+[25] Boş durum   (fikstür paneli, fikstür bittiğinde)
+    Mevcut : Sezon tamamlandı.
+    Yeni   : 
+
+[26] Dipnot   (fikstür paneli alt satırı)
+    Mevcut : Lig sırası «X». · «X»G «X»B «X»M · Hedef «X».
+    Yeni   : 
+
+[27] Overline   (hazırlık/telkin paneli başlığı)
+    Mevcut : Maç Öncesi · Soyunma Odası
+    Yeni   : 
+
+[28] İpucu   (soyunma odası paneli sağ üst)
+    Mevcut : TD ilişkisi: «X»
+    Yeni   : 
+
+[29] Şerit   (lead cümlesi başı, kritik haftada)
+    Mevcut : ⚡ Kritik maç.
+    Yeni   : 
+
+[30] Flavor   (soyunma odası lead cümlesi)
+    Mevcut : Rakip «X», revir «X», bacaklar «X». Ekibe ne diyorsun, Başkanım?
+    Yeni   : 
+
+[31] Durum havuzu   (rakip gücü kelimesi (lead içinde))
+    Mevcut : zayıf / denk / güçlü / dev gibi
+    Yeni   : 
+
+[32] Durum kelimesi   (revir kelimesi, sakat yoksa (lead içinde))
+    Mevcut : boş
+    Yeni   : 
+
+[33] Buton   (telkin kartı)
+    Mevcut : Tam Kadro
+    Yeni   : 
+
+[34] İpucu   (Tam Kadro kartı fısıltısı)
+    Mevcut : En güçlü 11 · güç ↑, yorgunluk riski
+    Yeni   : 
+
+[35] Buton   (telkin kartı)
+    Mevcut : Rotasyon
+    Yeni   : 
+
+[36] İpucu   (Rotasyon kartı fısıltısı)
+    Mevcut : Yükü böl · kondisyon toparlar
+    Yeni   : 
+
+[37] Buton   (telkin kartı)
+    Mevcut : Gençlere Şans
+    Yeni   : 
+
+[38] İpucu   (Gençlere Şans kartı fısıltısı)
+    Mevcut : Gelişim ↑ · sonuç riski
+    Yeni   : 
+
+[39] Buton   (telkin kartı)
+    Mevcut : Kaleyi Koruyalım
+    Yeni   : 
+
+[40] İpucu   (Kaleyi Koruyalım kartı fısıltısı)
+    Mevcut : Az gol ye · hücum kısılır
+    Yeni   : 
+
+[41] Buton   (telkin kartı (varsayılan))
+    Mevcut : Karışma
+    Yeni   : 
+
+[42] İpucu   (Karışma kartı fısıltısı)
+    Mevcut : TD'ye güven · müdahale yok
+    Yeni   : 
+
+[43] Alt başlık   (prim satırı üstü)
+    Mevcut : Maç Primi
+    Yeni   : 
+
+[44] Buton   (prim seçeneği)
+    Mevcut : Yok
+    Yeni   : 
+
+[45] İpucu   (Yok primi alt yazısı)
+    Mevcut : kasa korunur
+    Yeni   : 
+
+[46] Buton   (prim seçeneği)
+    Mevcut : Normal
+    Yeni   : 
+
+[47] İpucu   (Normal prim alt yazısı)
+    Mevcut : her maç · kasa ↓
+    Yeni   : 
+
+[48] Buton   (prim seçeneği)
+    Mevcut : Yüksek
+    Yeni   : 
+
+[49] İpucu   (Yüksek prim alt yazısı)
+    Mevcut : motivasyon ↑↑ · kasa ↓↓
+    Yeni   : 
+
+[50] Buton   (kritik/derbi maçta aktif prim)
+    Mevcut : ⚡ Özel Prim
+    Yeni   : 
+
+[51] İpucu   (Özel Prim alt yazısı, aktifken)
+    Mevcut : tek atış · 1/sezon
+    Yeni   : 
+
+[52] İpucu   (Özel Prim alt yazısı, harcandıysa)
+    Mevcut : kullanıldı
+    Yeni   : 
+
+[53] İpucu   (Özel Prim tooltip'i, pasifken)
+    Mevcut : Yalnız kritik/derbi maçta
+    Yeni   : 
+
+[54] İpucu   (Özel Prim alt yazısı, pasifken)
+    Mevcut : derbiye sakla
+    Yeni   : 
+
+[55] Etiket   (günlük direktif şeridi, soyunma odası altında)
+    Mevcut : BUGÜNÜN DOKUNUŞU
+    Yeni   : 
+
+[56] Overline   (lig paneli başlığı, sağ kolon)
+    Mevcut : Puan Tablosu
+    Yeni   : 
+
+[57] İpucu   (lig paneli sağ üst)
+    Mevcut : 📰 gündem · detay için tıkla ⤢
+    Yeni   : 
+
+[58] Şerit   (mini tablo hat ayraç etiketleri)
+    Mevcut : Terfi hattı ⬆️ / Avrupa hattı / Küme hattı
+    Yeni   : 
+
+[59] Overline   (vaat paneli başlığı)
+    Mevcut : Vaat Şeridi
+    Yeni   : 
+
+[60] Durum havuzu   (vaat satırı durum kelimesi)
+    Mevcut : başlangıç / yolunda / riskte / tehlikede
+    Yeni   : 
+
+[61] Overline   (tweet paneli başlığı)
+    Mevcut : Sosyal Nabız
+    Yeni   : 
+
+[62] Persona havuzu   (tweet kullanıcı adları)
+    Mevcut : Tribün Sesi / 12. Adam / Kombine Delisi / Kale Arkası / Maraton Üst / Saha Kenarı / Forma Aşkı / Amigo Reis / Sadece Futbol / Statçı Baba
+    Yeni   : 
+
+[63] Zaman havuzu   (tweet zaman damgaları)
+    Mevcut : az önce / 2 dk / 6 dk / 14 dk / 31 dk
+    Yeni   : 
+
+[64] Rozet   (viral tweet rozeti)
+    Mevcut : 🔥 Trend
+    Yeni   : 
+
+[65] Başlık   (lig detay modali başlığı)
+    Mevcut : «X» · Puan Durumu
+    Yeni   : 
+
+[66] Ad havuzu   (lig adı yedek değerleri (modal başlığında))
+    Mevcut : Süper Lig / 2. Lig
+    Yeni   : 
+
+[67] Alt başlık   (modal başlık altı)
+    Mevcut : Sezon «X» · Hafta «X»
+    Yeni   : 
+
+[68] Sütun havuzu   (modal tablo başlıkları)
+    Mevcut : # / Takım / O / G / B / M / A / Y / Av / P
+    Yeni   : 
+
+[69] İpucu havuzu   (sütun başlığı ipuçları)
+    Mevcut : Oynanan / Galibiyet / Beraberlik / Mağlubiyet / Attığı gol / Yediği gol / Averaj / Puan
+    Yeni   : 
+
+[70] Şerit   (modal lejant, 2. ligde)
+    Mevcut : Terfi hattı (1–3)
+    Yeni   : 
+
+[71] Şerit   (modal lejant, üst ligde)
+    Mevcut : Avrupa (1–4) / Küme hattı (16–18)
+    Yeni   : 
+
+[72] İpucu   (modal lejant sağ kenarı)
+    Mevcut : boş alana veya ✕'e tıkla → kapat
+    Yeni   : 
+
+
+######################################################################
+#  SAYFA 5 · KADRO
+######################################################################
+
+[1] Overline   (ekran üst bilgi satırı)
+    Mevcut : Kadro · «X» oyuncu · Toplam değer «X»mn · gözlem ±«X»
+    Yeni   : 
+
+[2] İpucu   ('gözlem ±X' ibaresi ipucu)
+    Mevcut : Gözlemci ağın güçlendikçe oyuncu güçleri netleşir
+    Yeni   : 
+
+[3] Başlık   (ekran ana başlığı)
+    Mevcut : Takım
+    Yeni   : 
+
+[4] Etiket   (TD bandı, isim altı rol)
+    Mevcut : TEKNİK DİREKTÖR
+    Yeni   : 
+
+[5] Etiket   (TD bandı hücre etiketi)
+    Mevcut : PROFİL
+    Yeni   : 
+
+[6] Flavor   (TD profil cümlesi)
+    Mevcut : «X». Takımı sahada o yönetir — maç planı ve kadro onun işi; sen telkin verirsin, o tartar.
+    Yeni   : 
+
+[7] Etiket   (TD bandı hücre etiketi)
+    Mevcut : SENİNLE İLİŞKİSİ
+    Yeni   : 
+
+[8] İpucu   (ilişki hücresi ipucu)
+    Mevcut : Bozulursa telkinlerini geri çevirir, ipler gerilir
+    Yeni   : 
+
+[9] Etiket   (TD bandı hücre etiketi)
+    Mevcut : OTORİTE
+    Yeni   : 
+
+[10] İpucu   (otorite hücresi ipucu)
+    Mevcut : Otoritesi yüksekse soyunma odası onu dinler; mantıksız telkini reddedebilir
+    Yeni   : 
+
+[11] Durum havuzu   (TD otorite kelimesi)
+    Mevcut : sözü geçer / dengeli / tartışılır
+    Yeni   : 
+
+[12] Etiket   (TD bandı hücre etiketi («X»mn/sezon))
+    Mevcut : MAAŞ
+    Yeni   : 
+
+[13] Rozet   (TD kovulduysa, kovma butonu yerine)
+    Mevcut : aday süreci inbox'ta
+    Yeni   : 
+
+[14] Buton   (TD bandı sağ ucu)
+    Mevcut : TD'yi Kov
+    Yeni   : 
+
+[15] Uyarı   (kovma butonu altı)
+    Mevcut : bedeli: tazminat + medya fırtınası + taraftar tepkisi
+    Yeni   : 
+
+[16] Grup başlığı   (mevki grubu başlıkları)
+    Mevcut : KALECİLER / DEFANS / ORTA SAHA / HÜCUM
+    Yeni   : 
+
+[17] Etiket   (grup başlığı sağında sayaç)
+    Mevcut : «X» oyuncu
+    Yeni   : 
+
+[18] İpucu   (oyuncu karosu ipucu)
+    Mevcut : Oyuncu kartını aç
+    Yeni   : 
+
+[19] İpucu   (güç sayısı ipucu)
+    Mevcut : Güç «X»–«X» (gözlem netliği ±«X»)
+    Yeni   : 
+
+[20] Etiket   (oyuncu adı altı)
+    Mevcut : «X» yaş
+    Yeni   : 
+
+[21] Rozet   (kaptan rozeti)
+    Mevcut : C
+    Yeni   : 
+
+[22] İpucu   (C rozeti ipucu)
+    Mevcut : Kaptan
+    Yeni   : 
+
+[23] Rozet   (takım yıldızı rozeti)
+    Mevcut : ★ YILDIZ
+    Yeni   : 
+
+[24] İpucu   (YILDIZ rozeti ipucu)
+    Mevcut : Takımın yıldızı
+    Yeni   : 
+
+[25] Rozet   (21 yaş altı rozeti)
+    Mevcut : GENÇ
+    Yeni   : 
+
+[26] İpucu   (GENÇ rozeti ipucu)
+    Mevcut : 21 yaş altı — gelişime açık
+    Yeni   : 
+
+[27] Rozet   (sakatlık rozeti)
+    Mevcut : 🩹 «X» HAFTA
+    Yeni   : 
+
+[28] İpucu   (sakatlık rozeti ipucu)
+    Mevcut : Sakat — «X» hafta yok
+    Yeni   : 
+
+[29] Rozet   (ceza rozeti)
+    Mevcut : 🟥 «X» HAFTA
+    Yeni   : 
+
+[30] İpucu   (ceza rozeti ipucu)
+    Mevcut : Cezalı
+    Yeni   : 
+
+[31] Metre etiketi   (oyuncu karosu mini barları)
+    Mevcut : FORM / KND / MRL
+    Yeni   : 
+
+[32] Durum havuzu   (form kelimesi (metre ipucunda))
+    Mevcut : formda / dalgalı / formsuz
+    Yeni   : 
+
+[33] Durum havuzu   (kondisyon kelimesi (metre ipucunda))
+    Mevcut : zinde / yorgun / bitkin
+    Yeni   : 
+
+[34] Durum havuzu   (moral kelimesi (metre ipucunda))
+    Mevcut : yüksek / iyi / düşük / dipte
+    Yeni   : 
+
+[35] Etiket   (karo sağ sütunu)
+    Mevcut : DEĞER
+    Yeni   : 
+
+[36] Etiket   (karo sağ sütunu)
+    Mevcut : MAAŞ
+    Yeni   : 
+
+[37] Rozet   (kiralık oyuncuda satış butonu yerine)
+    Mevcut : 🔒 KİRALIK
+    Yeni   : 
+
+[38] İpucu   (KİRALIK rozeti ipucu)
+    Mevcut : Kiralık oyuncu — sezon sonu asıl kulübüne döner, satılamaz
+    Yeni   : 
+
+[39] Buton   (vitrin butonu, listede değilken)
+    Mevcut : SATIŞA ÇIKAR
+    Yeni   : 
+
+[40] İpucu   (SATIŞA ÇIKAR ipucu)
+    Mevcut : Satış listesine çıkar — kulüpler teklifle gelir
+    Yeni   : 
+
+[41] Buton   (vitrin butonu, listedeyken)
+    Mevcut : 🏷 SATIŞTA ↩
+    Yeni   : 
+
+[42] İpucu   (SATIŞTA butonu ipucu)
+    Mevcut : Satış listesinden geri çek
+    Yeni   : 
+
+
+######################################################################
+#  SAYFA 6 · TRANSFER
+######################################################################
+
+[1] Overline   (ekran başlığı üstü)
+    Mevcut : Transfer Merkezi
+    Yeni   : 
+
+[2] Başlık   (pencere açıkken ana başlık)
+    Mevcut : Pazar Görünümü
+    Yeni   : 
+
+[3] Başlık   (pencere kapalıyken ana başlık)
+    Mevcut : Pazar
+    Yeni   : 
+
+[4] Rozet   (başlık sağı — pencere açık)
+    Mevcut : ● PENCERE AÇIK
+    Yeni   : 
+
+[5] Rozet   (başlık sağı — pencere kapalı)
+    Mevcut : PENCERE KAPALI
+    Yeni   : 
+
+[6] Buton   (başlıkta, açık dosya varsa)
+    Mevcut : 📬 Masada «X» dosya → Inbox
+    Yeni   : 
+
+[7] İpucu   (Inbox köprü butonu ipucu)
+    Mevcut : Onay/red/pazarlık inbox'ta
+    Yeni   : 
+
+[8] Sekme   (sekme çubuğu)
+    Mevcut : PİYASA
+    Yeni   : 
+
+[9] Sekme   (sekme çubuğu)
+    Mevcut : SATIŞ LİSTEM («X»)
+    Yeni   : 
+
+[10] Sekme   (sekme çubuğu)
+    Mevcut : GELEN TEKLİFLER («X»)
+    Yeni   : 
+
+[11] Panel başlığı   (direktif paneli)
+    Mevcut : Dönem Direktifi
+    Yeni   : 
+
+[12] Panel ipucu   (direktif paneli sağ ipucu)
+    Mevcut : GM'in çerçevesi
+    Yeni   : 
+
+[13] Etiket   (kalan bütçe LED göstergesi («X»/«X»mn))
+    Mevcut : KULLANILABİLİR
+    Yeni   : 
+
+[14] İpucu   (bütçe çubuğu ipucu)
+    Mevcut : Harcanan «X»mn / tavan «X»mn
+    Yeni   : 
+
+[15] Etiket   (direktif hücresi («X»mn/sezon))
+    Mevcut : MAAŞ TAVANI
+    Yeni   : 
+
+[16] İpucu   (maaş tavanı ipucu)
+    Mevcut : Tek transferde teklif edilebilecek en yüksek yıllık maaş
+    Yeni   : 
+
+[17] Etiket   (direktif hücresi («X»mn/sezon))
+    Mevcut : KADRO MAAŞ YÜKÜ
+    Yeni   : 
+
+[18] İpucu   (maaş yükü ipucu)
+    Mevcut : Mevcut kadronun toplam yıllık maaşı — bedel değil, maaş batırır kulübü
+    Yeni   : 
+
+[19] Etiket   (direktif hücresi — GM çizgisi)
+    Mevcut : ÇİZGİ
+    Yeni   : 
+
+[20] Değer havuzu   (ÇİZGİ hücresi değerleri)
+    Mevcut : Gençlere yatır / Hazır oyuncu / Yıldız istiyorum
+    Yeni   : 
+
+[21] Buton   (direktif paneli altı — dönemde 1 kez)
+    Mevcut : 🏛 Kurula bütçe artışı iste
+    Yeni   : 
+
+[22] İpucu   (kurul bütçe butonu ipucu)
+    Mevcut : Dönemde 1 kez: kurulun mali güveni ≥55 ise tavan +%15 (Mali −6); zayıfsa RET + Mali −3
+    Yeni   : 
+
+[23] Atmosfer   (pencere kapalı sahnesi açıklaması)
+    Mevcut : Pencere açılınca «X» onay dosyalarını inbox'a getirir. Sen transfer yapmazsın — ONAYLARSIN.
+    Yeni   : 
+
+[24] Panel başlığı   (aktif ilan paneli)
+    Mevcut : İlan Yayında
+    Yeni   : 
+
+[25] Rozet   (aktif ilan paneli)
+    Mevcut : «X» cevap hakkı
+    Yeni   : 
+
+[26] Özet   (aktif ilan özeti)
+    Mevcut : yaş ≤«X» · tavan «X»mn
+    Yeni   : 
+
+[27] Not   (aktif ilan altı)
+    Mevcut : AI kulüpler dosya gönderiyor — cevaplar deadline'a doğru yoğunlaşır.
+    Yeni   : 
+
+[28] Panel başlığı   (ilan verme paneli)
+    Mevcut : İhtiyaç İlanı Ver
+    Yeni   : 
+
+[29] Panel ipucu   (ilan paneli sağ ipucu)
+    Mevcut : mevki + arketip
+    Yeni   : 
+
+[30] Alt başlık   (ilan paneli bölüm başlığı)
+    Mevcut : MEVKİYE GÖRE
+    Yeni   : 
+
+[31] Değer havuzu   (mevki adları — ilan/filtre/çip)
+    Mevcut : Kaleci / Stoper / Orta saha / Forvet
+    Yeni   : 
+
+[32] Rozet   (en zayıf hattın ilan butonunda)
+    Mevcut : ZAYIF
+    Yeni   : 
+
+[33] Buton alt satırı   (mevki ilan butonu detay)
+    Mevcut : «X» kişi · ort «X» · ≤«X»y · «X»mn
+    Yeni   : 
+
+[34] Değer havuzu   (ilan ipucunda aranan profil)
+    Mevcut : gelişim odaklı genç / kanıtlanmış hazır isim / yıldız kalibresi / dengeli profil
+    Yeni   : 
+
+[35] Alt başlık   (ilan paneli bölüm başlığı)
+    Mevcut : ÖZEL ARAYIŞ
+    Yeni   : 
+
+[36] Buton   (özel arayış kartı)
+    Mevcut : ⭐ Yıldız Avı
+    Yeni   : 
+
+[37] İpucu   (Yıldız Avı ipucu)
+    Mevcut : «X» · tribün coşar, kasa zorlanır
+    Yeni   : 
+
+[38] Buton   (özel arayış kartı)
+    Mevcut : 🌱 Genç Yetenek
+    Yeni   : 
+
+[39] İpucu   (Genç Yetenek ipucu)
+    Mevcut : «X» (yaşlanan hat) · gelecek yatırımı
+    Yeni   : 
+
+[40] Buton   (özel arayış kartı)
+    Mevcut : 💰 Kelepir Fırsatı
+    Yeni   : 
+
+[41] İpucu   (Kelepir ipucu)
+    Mevcut : «X» · bütçe yormaz, sürpriz çıkabilir
+    Yeni   : 
+
+[42] Uyarı   (ilan paneli altı)
+    Mevcut : ⚠ İlan sızar: sosyal akış yazar, o mevkideki oyuncuların morali kırılır ('yerime mi?').
+    Yeni   : 
+
+[43] Panel başlığı   (piyasa paneli)
+    Mevcut : Scout Raporu · Piyasadaki İsimler
+    Yeni   : 
+
+[44] Panel ipucu   (piyasa paneli sağ ipucu)
+    Mevcut : sis ±«X» · sorgu «X» hak
+    Yeni   : 
+
+[45] İpucu   (sis/sorgu ipucu)
+    Mevcut : Gözlemci ağın güçlendikçe sis daralır ve haftalık sorgu hakkın artar
+    Yeni   : 
+
+[46] Filtre   (filtre çubuğu)
+    Mevcut : Bütçeme uyanlar («X»)
+    Yeni   : 
+
+[47] Filtre   (filtre çubuğu — zayıf mevki)
+    Mevcut : İhtiyacım: «X» («X»)
+    Yeni   : 
+
+[48] Filtre   (filtre çubuğu)
+    Mevcut : Hepsi («X»)
+    Yeni   : 
+
+[49] İpucu   (güç plakası ipucu — derin rapor alınmış)
+    Mevcut : DERİN RAPOR: kesin güç
+    Yeni   : 
+
+[50] İpucu   (güç plakası ipucu — sorgulanmış)
+    Mevcut : Sorgulandı: güç ±«X»
+    Yeni   : 
+
+[51] İpucu   (güç plakası ipucu — sorgulanmamış)
+    Mevcut : Gözlem tahmini ±«X» — gerçek güç imzadan sonra sahada belli olur
+    Yeni   : 
+
+[52] Oyuncu satırı   (scout kartı orta bilgi)
+    Mevcut : «X» yaş · söz. «X»y
+    Yeni   : 
+
+[53] Rozet   (rakip ilgisi rozeti)
+    Mevcut : 🔥 «X»
+    Yeni   : 
+
+[54] İpucu   (ilgi rozeti ipucu)
+    Mevcut : Rakip ilgisi bedeli şişirir (+%12/kulüp)
+    Yeni   : 
+
+[55] Rozet   (kalan süre rozeti)
+    Mevcut : ⏳ «X»h
+    Yeni   : 
+
+[56] İpucu   (süre rozeti ipucu)
+    Mevcut : Dosya bu kadar hafta sonra kapanır — beklersen rakibe gider
+    Yeni   : 
+
+[57] Etiket   (scout kartı bedel bloğu — ~«X»mn («X»–«X»))
+    Mevcut : TAHMİNİ BEDEL
+    Yeni   : 
+
+[58] Değer havuzu   (bedel altı bütçe durumu)
+    Mevcut : ✔ bütçe içi / ⚠ sınırda / ✖ bütçe dışı
+    Yeni   : 
+
+[59] Buton   (sorgulanmış oyuncu kartı)
+    Mevcut : Teklif İste →
+    Yeni   : 
+
+[60] İpucu   (Teklif İste ipucu)
+    Mevcut : GM bu oyuncu için onay dosyası hazırlar (inbox)
+    Yeni   : 
+
+[61] Sorgu raporu   (sorgu sonucu satırı ('(kesin)' / '±«X»' ekiyle))
+    Mevcut : Güç «X» · maaş «X»mn · bonservis ~«X»mn · menajer: «X»
+    Yeni   : 
+
+[62] Derin rapor   (derin rapor satırı)
+    Mevcut : 🔬 Gelişim: «X» · İlgilenen: «X»
+    Yeni   : 
+
+[63] Buton   (sorgulanmış kartta derin rapor yoksa)
+    Mevcut : 🔬 Derin Rapor (0,8mn)
+    Yeni   : 
+
+[64] İpucu   (Derin Rapor ipucu)
+    Mevcut : Dış büro: KESİN güç + gelişim bandı + İSİMLİ rakip ilgisi
+    Yeni   : 
+
+[65] Sorgu raporu   (sorgu sonucu ikinci satır)
+    Mevcut : Karakter: «X» · sakatlık: «X» · ilgilenen kulüp: «X» · «X»
+    Yeni   : 
+
+[66] Buton   (bütçe dışı oyuncu kartı)
+    Mevcut : 💬 GM görüşü
+    Yeni   : 
+
+[67] İpucu   (GM görüşü ipucu)
+    Mevcut : Bütçe dışı — GM'in görüşünü al
+    Yeni   : 
+
+[68] Buton   (haftalık hak bitince — ücretli sorgu)
+    Mevcut : 🔍 Sorgula (0,2mn)
+    Yeni   : 
+
+[69] İpucu   (ücretli sorgu ipucu)
+    Mevcut : Haftalık hak doldu — dış büroya ücretli sorgu
+    Yeni   : 
+
+[70] Buton   (normal sorgu butonu)
+    Mevcut : 🔍 Sorgula («X» hak)
+    Yeni   : 
+
+[71] İpucu   (sorgu butonu ipucu)
+    Mevcut : Rapor: güç ±1, maaş, bonservis, karakter, sakatlık, menajer
+    Yeni   : 
+
+[72] Boş durum   (filtre sonucu boşsa)
+    Mevcut : Bu filtrede isim yok — filtreyi genişlet.
+    Yeni   : 
+
+[73] Sayfalayıcı   (piyasa listesi sayfalama)
+    Mevcut : Sayfa «X»/«X» · «X» isim
+    Yeni   : 
+
+[74] GM notu   (piyasa paneli altı)
+    Mevcut : «X» bu havuzdan direktifine uygun dosyaları masana getirecek — onay/red/pazarlık inbox'ta.
+    Yeni   : 
+
+[75] Panel başlığı   (alt panel)
+    Mevcut : Açık Dosyalar
+    Yeni   : 
+
+[76] Panel ipucu   (açık dosyalar ipucu)
+    Mevcut : «X» dosya · ilan yayında
+    Yeni   : 
+
+[77] Rozet   (açık dosya satırı — pazarlık turu)
+    Mevcut : KARŞI TEKLİF · TUR «X»
+    Yeni   : 
+
+[78] Rozet   (açık dosya satırı — ilk teklif)
+    Mevcut : TEKLİF MASADA
+    Yeni   : 
+
+[79] Rozet   (açık dosya / gelen teklif satırı)
+    Mevcut : SATIŞ TEKLİFİ
+    Yeni   : 
+
+[80] Rozet   (deadline'lı dosya satırı)
+    Mevcut : ⏳ bu hafta kapanır
+    Yeni   : 
+
+[81] Buton   (dosya satırından inbox'a git)
+    Mevcut : Karar ver →
+    Yeni   : 
+
+[82] Boş durum   (açık dosyalar boşsa)
+    Mevcut : Masada açık dosya yok — sorgula, teklif iste; süreçler burada akar.
+    Yeni   : 
+
+[83] Panel başlığı   (satış sekmesi)
+    Mevcut : Satış Listem
+    Yeni   : 
+
+[84] Panel ipucu   (satış paneli sağ ipucu)
+    Mevcut : vitrindekilere teklifler 2-4 haftada telefonla gelir
+    Yeni   : 
+
+[85] Oyuncu satırı   (satış listesi satır bilgisi)
+    Mevcut : «X» güç · «X»y · değer «X»mn
+    Yeni   : 
+
+[86] Buton   (vitrindeki oyuncuyu geri çek)
+    Mevcut : ↩ listeden çek
+    Yeni   : 
+
+[87] Boş durum   (vitrin boşsa)
+    Mevcut : Satış listesi boş — aşağıdan vitrine koy, bütçe rahatlasın.
+    Yeni   : 
+
+[88] Alt başlık   (satış paneli bölümü)
+    Mevcut : KİRALIK LİSTESİNDE
+    Yeni   : 
+
+[89] Buton   (kiralık listesinden çek)
+    Mevcut : ↩ çek
+    Yeni   : 
+
+[90] Alt başlık   (satış paneli bölümü)
+    Mevcut : GM ÖNERİSİ — EN DEĞERLİLER
+    Yeni   : 
+
+[91] Buton   (GM önerisi satırı)
+    Mevcut : 🏷 satışa çıkar
+    Yeni   : 
+
+[92] İpucu   (satışa çıkar ipucu)
+    Mevcut : Menajerlere sinyal gider — moral bedeli var
+    Yeni   : 
+
+[93] Not   (satış paneli altı)
+    Mevcut : Bütçe dışı bir yıldız mı istiyorsun? Önce birini sat — kurul ancak öyle ikna olur.
+    Yeni   : 
+
+[94] Panel başlığı   (teklif sekmesi)
+    Mevcut : Gelen Teklifler
+    Yeni   : 
+
+[95] Panel ipucu   (gelen teklifler ipucu)
+    Mevcut : satış dosyaları · dev kulüp panik telefonları ayrıca çalar
+    Yeni   : 
+
+[96] Rozet   (deadline'lı satış teklifi)
+    Mevcut : ⏳ bu hafta
+    Yeni   : 
+
+[97] Boş durum   (gelen teklif yoksa)
+    Mevcut : Masada satış teklifi yok. Oyuncuyu vitrine koy — kulüpler kapıyı çalar.
+    Yeni   : 
+
+
+######################################################################
+#  SAYFA 7 · TESISLER
+######################################################################
+
+[1] Overline   (ana ekran başlığı üstü)
+    Mevcut : Tesisler · Kulüp Kampüsü
+    Yeni   : 
+
+[2] Başlık   (ana ekran başlığı)
+    Mevcut : Altyapı Yatırımı
+    Yeni   : 
+
+[3] Etiket   (sağ üst kasa göstergesi («X»mn))
+    Mevcut : KASA
+    Yeni   : 
+
+[4] İpucu   (kasa göstergesi ipucu)
+    Mevcut : Yatırıma hazır nakit
+    Yeni   : 
+
+[5] Ad havuzu   (tesis adları — kart başlıkları)
+    Mevcut : Stadyum / Antrenman Tesisi / Tıbbi Merkez / Akademi / Gözlemci Ağı / Ticari Ofis
+    Yeni   : 
+
+[6] Etiket   (tesis kartı ad altı)
+    Mevcut : SEVİYE «X»/10
+    Yeni   : 
+
+[7] Tesis açıklaması   (Stadyum kartı etki metni)
+    Mevcut : Ev avantajı, kapasite ve isim hakkı geliri (sv≥7). Tribün büyüdükçe şehir arkanda.
+    Yeni   : 
+
+[8] Tesis açıklaması   (Antrenman Tesisi kartı etki metni)
+    Mevcut : Oyuncular hızlı gelişir, kondisyon çabuk toparlar. Formun mutfağı.
+    Yeni   : 
+
+[9] Tesis açıklaması   (Tıbbi Merkez kartı etki metni)
+    Mevcut : Sakatlıklar kısalır, riski düşer. Revir boş kalır, kadro sahada kalır.
+    Yeni   : 
+
+[10] Tesis açıklaması   (Akademi kartı etki metni)
+    Mevcut : Genç üretimi ve altyapı gücü. Vitrinin de vaatlerin de kaynağı.
+    Yeni   : 
+
+[11] Tesis açıklaması   (Gözlemci Ağı kartı etki metni)
+    Mevcut : Transfer isabeti ve hedef kalitesi artar; oyuncu güçleri netleşir (gözlem sisi daralır).
+    Yeni   : 
+
+[12] Tesis açıklaması   (Ticari Ofis kartı etki metni)
+    Mevcut : Sponsor ve forma geliri büyür. Kasanın sessiz ortağı.
+    Yeni   : 
+
+[13] Rozet   (indirim rozeti — indirimli maliyet)
+    Mevcut : −%«X» «X»mn
+    Yeni   : 
+
+[14] Buton   (tesis kartı yükseltme butonu)
+    Mevcut : İHALE AÇ · ~«X»mn
+    Yeni   : 
+
+[15] Buton   (tesis kartı — seviye 10'da)
+    Mevcut : TAMAMLANDI
+    Yeni   : 
+
+[16] İpucu   (yükseltme butonu ipucu — kasa yeterliyse)
+    Mevcut : İhale aç — 3 firma teklif getirir
+    Yeni   : 
+
+[17] İpucu   (yükseltme butonu ipucu — para yoksa)
+    Mevcut : Kasa yetersiz
+    Yeni   : 
+
+[18] İpucu   (yükseltme butonu ipucu — seviye 10)
+    Mevcut : Maksimum seviye
+    Yeni   : 
+
+[19] Şerit başlığı   (alt şerit — kadın takımı)
+    Mevcut : Kadın Futbol Şubesi
+    Yeni   : 
+
+[20] Etiket   (kadın şubesi durumu — kurulmuşsa)
+    Mevcut : KURULDU · Sezon «X»
+    Yeni   : 
+
+[21] Etiket   (kadın şubesi durumu — kurulmamışsa)
+    Mevcut : KURULMADI
+    Yeni   : 
+
+[22] Rozet   (kadın şubesi kurulmuşsa sağda)
+    Mevcut : aktif — camia gururlu
+    Yeni   : 
+
+[23] Buton   (kadın şubesi kuruluş butonu)
+    Mevcut : Kur · 8mn
+    Yeni   : 
+
+[24] İpucu   (kuruluş butonu ipucu)
+    Mevcut : Kuruluş 8mn + haftalık bakım. Taraftar +3, itibar +2; 'Kadın Takımını Kuracağım' sözünü tutar
+    Yeni   : 
+
+[25] Overline   (ihale sahnesi başlığı üstü — tesis adıyla)
+    Mevcut : Tesis İhalesi · «X»
+    Yeni   : 
+
+[26] Başlık   (ihale sahnesi ana başlığı)
+    Mevcut : Firma Teklifleri
+    Yeni   : 
+
+[27] Kart başlığı   (ihale kartı — tip + firma adı)
+    Mevcut : Teklif «X» · «X»
+    Yeni   : 
+
+[28] Buton   (ihale kartı — kasa yeterliyse)
+    Mevcut : Bu firmayı seç
+    Yeni   : 
+
+[29] Buton   (ihale kartı — kasa yetersizse (devre dışı))
+    Mevcut : Kasa yetmiyor
+    Yeni   : 
+
+[30] Buton   (ihale sahnesi altı)
+    Mevcut : İhaleden vazgeç
+    Yeni   : 
+
+
+######################################################################
+#  SAYFA 8 · FINANS
+######################################################################
+
+[1] Overline   (sayfa başlığı üstü)
+    Mevcut : Finans · Mali Merkez
+    Yeni   : 
+
+[2] Başlık   (ana başlık)
+    Mevcut : Kulübün Kasası
+    Yeni   : 
+
+[3] Plaka   (üst sağ mali plakalar)
+    Mevcut : KASA / BORÇ / FAİZ
+    Yeni   : 
+
+[4] Panel başlığı   (sol kolon panel)
+    Mevcut : Bilet Fiyatı
+    Yeni   : 
+
+[5] Panel ipucu   (bilet paneli sağ ipucu)
+    Mevcut : çarpan
+    Yeni   : 
+
+[6] Not   (bilet paneli alt not)
+    Mevcut : Ucuz = dolu tribün, az gelir · Pahalı = boş koltuk, çok gelir. Taraftar algısı sosyal nabza yansır.
+    Yeni   : 
+
+[7] Panel başlığı   (orta kolon panel)
+    Mevcut : Haftalık Nakit Akışı
+    Yeni   : 
+
+[8] Panel ipucu   (akış paneli sağ ipucu)
+    Mevcut : CFO projeksiyonu
+    Yeni   : 
+
+[9] Grup başlığı   (akış grafiği bölüm başlıkları)
+    Mevcut : GELİR · «X»mn / GİDER · «X»mn
+    Yeni   : 
+
+[10] Gelir kalemleri   (akış grafiği gelir satırları)
+    Mevcut : Bilet / Yayın / Sponsor / Forma + Üyelik
+    Yeni   : 
+
+[11] Gider kalemleri   (akış grafiği gider satırları)
+    Mevcut : Maaş / Faiz / Bakım + İdari + Teknik
+    Yeni   : 
+
+[12] Etiket   (akış grafiği alt LED satırı)
+    Mevcut : NET / HAFTA
+    Yeni   : 
+
+[13] Uyarı   (akış notu, CFO atanmamışsa)
+    Mevcut : CFO yok — projeksiyon GÜVENİLMEZ (±%15'e kadar)
+    Yeni   : 
+
+[14] Not   (akış notu, CFO yetkin (skill ≥72))
+    Mevcut : «X»: projeksiyon sağlam
+    Yeni   : 
+
+[15] Not   (akış notu, CFO zayıfsa)
+    Mevcut : «X»: projeksiyonda sapma payı var
+    Yeni   : 
+
+[16] Boş durum   (kayıt yokken 📊)
+    Mevcut : İlk maçtan sonra rakamlar burada barlarla akacak.
+    Yeni   : 
+
+[17] Panel başlığı   (sağ kolon panel)
+    Mevcut : Harcama Limiti · FFP
+    Yeni   : 
+
+[18] Rozet   (FFP panelinde kırmızı rozet, taahhüt varsa)
+    Mevcut : TAAHHÜTNAME
+    Yeni   : 
+
+[19] Hücre   (FFP paneli hücre etiketleri)
+    Mevcut : FEDERASYON TAVANI / HARCANAN
+    Yeni   : 
+
+[20] Not   (FFP paneli, kesinti aktifken)
+    Mevcut : Bu sezon gelirlerden taahhüt kesintisi düşülüyor (−%5).
+    Yeni   : 
+
+[21] Buton   (FFP paneli buton)
+    Mevcut : Federasyona lobi yap
+    Yeni   : 
+
+[22] İpucu   (lobi butonu ipucu)
+    Mevcut : İtibar>60 gerekir · %40 şans · başarıda tavan +%10
+    Yeni   : 
+
+[23] Panel başlığı   (sağ kolon panel)
+    Mevcut : Prim Defteri
+    Yeni   : 
+
+[24] Panel ipucu   (prim paneli sağ ipucu)
+    Mevcut : bu sezon
+    Yeni   : 
+
+[25] Hücre   (prim paneli hücre etiketleri)
+    Mevcut : MAÇ PRİMLERİ / SERİ PRİMLERİ / ÖZEL MAÇ / SEZON HEDEFİ
+    Yeni   : 
+
+[26] Buton   (toggle buton, duruma göre)
+    Mevcut : Seri Primi AÇIK / Seri Primi kapalı
+    Yeni   : 
+
+[27] Buton   (buton, ilan durumuna göre)
+    Mevcut : Sezon Hedefi ilan et (hafta 1-2) / Sezon Hedefi İLAN EDİLDİ
+    Yeni   : 
+
+[28] Not   (prim paneli alt not)
+    Mevcut : Seri: 3 galibiyet üstüne ekstra. Sezon hedefi: tüm sezona moral tabanı; tutmazsa küçük ceza.
+    Yeni   : 
+
+[29] Panel başlığı   (sol kolon panel)
+    Mevcut : Borç Masası
+    Yeni   : 
+
+[30] Panel ipucu   (borç paneli sağ ipucu)
+    Mevcut : faiz %«X»
+    Yeni   : 
+
+[31] Buton   (borç paneli ödeme butonları)
+    Mevcut : 25mn Öde / Tümünü Öde
+    Yeni   : 
+
+[32] Buton   (borç paneli buton, sezonda 1 kez)
+    Mevcut : Yapılandır / Yapılandırıldı ✓
+    Yeni   : 
+
+[33] İpucu   (yapılandır butonu ipucu)
+    Mevcut : Faiz −%4, anapara +%5 · sezonda 1 kez
+    Yeni   : 
+
+[34] Not   (borç paneli, aile modunda)
+    Mevcut : Aile Kulübü: kulüp borçlanamaz — kredi yok, açıklar servetten kapanır.
+    Yeni   : 
+
+[35] Buton   (borç paneli kredi butonları)
+    Mevcut : +20mn Kredi / +50mn Kredi
+    Yeni   : 
+
+[36] İpucu   (kredi butonu ipucu)
+    Mevcut : Kasaya +20mn, borç +20mn (mevcut faizle)
+    Yeni   : 
+
+[37] Not   (borç paneli alt not)
+    Mevcut : Ödeme kasadan düşer. Kredi kasaya nakit verir ama borç + haftalık faiz büyür. Yapılandırma faizi düşürür, anaparayı %5 artırır.
+    Yeni   : 
+
+[38] Panel başlığı   (alt geniş panel)
+    Mevcut : Sponsorluk Pazarı
+    Yeni   : 
+
+[39] Panel ipucu   (sponsor paneli sağ ipucu)
+    Mevcut : her kariyerde farklı markalar · peşinat kasaya · haftalık gelir
+    Yeni   : 
+
+[40] Slot adı   (sponsor slot başlıkları)
+    Mevcut : Forma Göğüs / Stadyum İsmi / Forma Kol
+    Yeni   : 
+
+[41] Anlaşma satırı   (dolu slotta anlaşma şartları)
+    Mevcut : Haftalık «X»mn · kalan «X» yıl
+    Yeni   : 
+
+[42] Etiket   (dolu slotta sektör yanında, riskli profilde)
+    Mevcut : · riskli
+    Yeni   : 
+
+[43] Buton   (dolu slot buton)
+    Mevcut : Fesih (−«X»mn)
+    Yeni   : 
+
+[44] İpucu   (fesih butonu ipucu)
+    Mevcut : Erken fesih AĞIR bedellidir: ceza kasadan düşer + itibar −3
+    Yeni   : 
+
+[45] Kilit   (stadyum ismi slotu, stadyum küçükken)
+    Mevcut : 🔒 Stadyum sv≥7 gerekir — önce stadı büyüt.
+    Yeni   : 
+
+[46] İpucu   (teklif kalan hafta rozeti ipucu)
+    Mevcut : Teklif masada bu kadar hafta daha bekler — sonra çekilir
+    Yeni   : 
+
+[47] Teklif şartları   (teklif kartı şart satırı)
+    Mevcut : peşinat «X»mn · haftalık «X»mn · «X» yıl
+    Yeni   : 
+
+[48] Etiket   (teklif kartı, dezavantaj yoksa)
+    Mevcut : ✓ temiz anlaşma
+    Yeni   : 
+
+[49] Etiket   (teklif kartı, dezavantaj metni öneki)
+    Mevcut : ⚠ «X»
+    Yeni   : 
+
+[50] Buton   (teklif kartı butonları)
+    Mevcut : İmzala / Reddet
+    Yeni   : 
+
+[51] İpucu   (reddet butonu ipucu)
+    Mevcut : Kapıyı göster — yeni markalar sonraki haftalarda gelir
+    Yeni   : 
+
+[52] Boş durum   (boş slotta teklif yokken)
+    Mevcut : Masada teklif yok — menajerler piyasada; yeni markalar kapıyı çalacak.
+    Yeni   : 
+
+[53] Not   (sponsor paneli alt not)
+    Mevcut : Teklifler bekletilirse çekilir; reddedersen piyasaya haber gider, yeni markalar sonraki haftalarda kapıyı çalar. Bahis/kripto çok getirir ama taraftar/itibar riski + kısa süre. Süre dolunca cezasız biter; erken fesih AĞIR bedellidir.
+    Yeni   : 
+
+[54] Rozet   (sponsor paneli alt satır, ofis açıksa)
+    Mevcut : 🌍 Yurt dışı ofisi AÇIK — sponsor geliri +%6
+    Yeni   : 
+
+[55] Buton   (sponsor paneli alt satır buton)
+    Mevcut : 🌍 Yurt Dışı Ofisi Aç · 25mn
+    Yeni   : 
+
+[56] İpucu   (yurt dışı butonu ipucu)
+    Mevcut : 25mn · itibar ≥60 ister. Sponsor geliri kalıcı +%6; 'Adımızı Sınırın Ötesine Taşıyacağım' sözünü tutar
+    Yeni   : 
+
+
+######################################################################
+#  SAYFA 9 · MEDYA
+######################################################################
+
+[1] Overline   (sayfa başlığı üstü)
+    Mevcut : Medya Merkezi
+    Yeni   : 
+
+[2] Başlık   (ana başlık)
+    Mevcut : Basın Toplantısı
+    Yeni   : 
+
+[3] Kademe havuzu   (basın havası 5 kademe şeridi)
+    Mevcut : Düşman / Soğuk / Nötr / Ilık / Dost
+    Yeni   : 
+
+[4] İpucu   (hava şeridi ipucu)
+    Mevcut : Basın havası manşet tonunu, kriz haberi sıklığını ve federasyon hattını etkiler — sakin cevaplar ısıtır, ateşli çıkışlar soğutur
+    Yeni   : 
+
+[5] Rozet   (basın odası sahnesi köşesi)
+    Mevcut : ● CANLI YAYIN
+    Yeni   : 
+
+[6] Ton havuzu   (demeç cevap butonlarının ton adları)
+    Mevcut : İddialı / Sakin / Savunmacı / Ateşli
+    Yeni   : 
+
+[7] Ton etkisi   (iddialı cevap butonu alt satırı)
+    Mevcut : + Taraftar coşar · − kurul güveni kırpılır
+    Yeni   : 
+
+[8] Ton etkisi   (sakin cevap butonu alt satırı)
+    Mevcut : + Medya yumuşar, federasyon hattı düzelir · − tribünü coşturmaz
+    Yeni   : 
+
+[9] Ton etkisi   (savunmacı cevap butonu alt satırı)
+    Mevcut : + Kurul güveni artar · − tribün soğur
+    Yeni   : 
+
+[10] Ton etkisi   (ateşli cevap butonu alt satırı)
+    Mevcut : + Taraftar coşar, kimya yükselir · − itibar düşer, medya sertleşir, PFDK riski
+    Yeni   : 
+
+[11] Uyarı   (iddialı butona eklenir, sözün hesabı sorusunda)
+    Mevcut : · ⚠ tutmazsan kongrede karşına çıkar
+    Yeni   : 
+
+[12] Kategori   (muhabir satırında soru kategorisi)
+    Mevcut : SÖZÜN HESABI
+    Yeni   : 
+
+[13] Soru kalıbı   (muhabir sorusu, aktif vaat varken)
+    Mevcut : '«X»' sözü verdiniz. Durum: «X». Kamuoyu takipte — ne diyorsunuz?
+    Yeni   : 
+
+[14] Cevap repliği   (sözün hesabı — iddialı)
+    Mevcut : Söz namustur — takvimin önündeyiz, göreceksiniz.
+    Yeni   : 
+
+[15] Cevap repliği   (sözün hesabı — sakin)
+    Mevcut : Adım adım ilerliyoruz; işi lafla değil icraatla anlatacağız.
+    Yeni   : 
+
+[16] Cevap repliği   (sözün hesabı — savunmacı)
+    Mevcut : Şartlar herkes için aynı değil; süreç işliyor.
+    Yeni   : 
+
+[17] Davet   (soru altında, demeç kullanılmamışsa)
+    Mevcut : 🎤 Kürsü senin, Başkanım — nasıl cevaplarsın?
+    Yeni   : 
+
+[18] Not   (salon paneli alt not, cevap öncesi)
+    Mevcut : Bu haftanın toplantısı: KULLANILMADI — haftada TEK hak; cevabın tonu manşeti, taraftarı ve federasyon hattını oynatır.
+    Yeni   : 
+
+[19] Kapanış satırı   (cevap sonrası kapanış sahnesi)
+    Mevcut : 🎙 Kürsüde «X» tonda konuştun — işte yarının gazetesi:
+    Yeni   : 
+
+[20] Kupür üst yazısı   (yarının manşeti kupürünün üst şeridi)
+    Mevcut : SPOR SAYFASI
+    Yeni   : 
+
+[21] Kupür alt satırı   (kupürde muhabir adı, kimliği, tarih)
+    Mevcut : «X» · «X» · Sezon «X», Hafta «X»
+    Yeni   : 
+
+[22] Boş durum   (cevap etkisi çok küçükse)
+    Mevcut : Ölçülebilir bir dalga yaratmadı — sakin geçti.
+    Yeni   : 
+
+[23] Etki satırları   (sayısal etki paneli satır adları)
+    Mevcut : Taraftar / Kurul güveni / İtibar / Takım kimyası / Basın havası
+    Yeni   : 
+
+[24] Etki satırı   (etki paneli, iddialı çıkış hedefi yükseltirse)
+    Mevcut : «X». → «X». sıra ⚠ ÇITA YÜKSELDİ
+    Yeni   : 
+
+[25] İpucu   (kurul hedefi satırı ipucu)
+    Mevcut : İddia beklenti doğurur — kongrede sportif ölçüm bu hedefe göre
+    Yeni   : 
+
+[26] Etki satırı   (etki paneli, ceza kesilirse)
+    Mevcut : PFDK cezası −«X»mn kasadan
+    Yeni   : 
+
+[27] Not   (salon paneli alt not, cevap sonrası)
+    Mevcut : Bu haftanın toplantısı: KULLANILDI · yenisi: Hafta «X». Kupür arşive işlendi.
+    Yeni   : 
+
+[28] Panel başlığı   (sağ kolon panel (viral varsa 🔥))
+    Mevcut : Sosyal Akış
+    Yeni   : 
+
+[29] Fallback havuzu   (sosyal akış boşken dönen nötr gönderiler)
+    Mevcut : 🐦 Yeni başkan bugün basın karşısına çıkıyor. Hayırlısı. — YıldızlıYıllar34 / 🐦 Kombine yenileme kuyruğu vardı bugün, fena değil. — TribünSesi / 🐦 Rakip forum bizi konuşuyor yine 👀 — GüneyYakası / 🐦 Hocanın hafta içi idman fotoğrafları düşmüş, yüzler gülüyor. — KapalıTribün
+    Yeni   : 
+
+[30] Panel başlığı   (sağ kolon panel, açık vaat varsa)
+    Mevcut : Mühürlü Sözler
+    Yeni   : 
+
+[31] Panel ipucu   (mühürlü sözler paneli sağ ipucu)
+    Mevcut : basın bunların hesabını sorar
+    Yeni   : 
+
+[32] Panel başlığı   (sağ kolon panel)
+    Mevcut : Manşet Arşivi
+    Yeni   : 
+
+[33] Panel ipucu   (arşiv paneli sağ ipucu)
+    Mevcut : «X» kupür
+    Yeni   : 
+
+[34] Boş durum   (arşiv paneli, hiç kupür yokken)
+    Mevcut : İlk toplantının kupürü buraya düşecek.
+    Yeni   : 
+
+
+######################################################################
+#  SAYFA 10 · KONGRE
+######################################################################
+
+[1] Overline   (sayfa üstü)
+    Mevcut : Kongre & Seçim
+    Yeni   : 
+
+[2] Başlık (boş)   (projeksiyon verisi yokken)
+    Mevcut : Bugün seçim olsa: —
+    Yeni   : 
+
+[3] Boş durum   (🗳 ikonlu boş-durum kartı, ilk haftalar)
+    Mevcut : Sezon başladı, karne birikmedi — ilk maçlardan sonra projeksiyon burada canlanır.
+    Yeni   : 
+
+[4] Başlık   (projeksiyon varken (yeşil/kırmızı yüzde))
+    Mevcut : Bugün seçim olsa: %«X»
+    Yeni   : 
+
+[5] Gauge etiketi   (oy göstergesi altı sol etiket)
+    Mevcut : bugünkü oy %«X»
+    Yeni   : 
+
+[6] Gauge etiketi   (oy göstergesi altı sağ etiket)
+    Mevcut : kazanma eşiği %«X»
+    Yeni   : 
+
+[7] Panel başlığı   (trend çizgisi kartı)
+    Mevcut : Oy Projeksiyonu · Trend
+    Yeni   : 
+
+[8] Not   (trend çizgisi altı küçük not)
+    Mevcut : kesikli çizgi: kazanma eşiği %«X»
+    Yeni   : 
+
+[9] Panel başlığı   (oy bileşenleri kartı)
+    Mevcut : Bileşenler (geçen haftaya göre)
+    Yeni   : 
+
+[10] Bileşen adları   (bileşen satırı etiketleri)
+    Mevcut : Sportif / Taraftar / Mali / İtibar / Söz Tutma
+    Yeni   : 
+
+[11] Neden cümlesi   (Sportif satırı altı, iyi giderken)
+    Mevcut : hedefin («X».) üstünde seyir
+    Yeni   : 
+
+[12] Neden cümlesi   (Sportif satırı altı, kötü giderken)
+    Mevcut : hedefin («X».) altında kalınıyor
+    Yeni   : 
+
+[13] Neden havuzu   (Taraftar satırı altı nedenler)
+    Mevcut : beklenti üstü sıra / beklenti altı sonuçlar / makul kombine / pahalı bilet tepkisi
+    Yeni   : 
+
+[14] Neden havuzu   (Mali satırı altı nedenler)
+    Mevcut : borç eritiliyor / borç büyüyor / borç yatay, kasa dengede
+    Yeni   : 
+
+[15] Neden cümlesi   (İtibar satırı altı)
+    Mevcut : basın havası «X»
+    Yeni   : 
+
+[16] Neden eki   (itibar cümlesine eklenir, hedef üstündeyken)
+    Mevcut : , beklenti üstü duruş
+    Yeni   : 
+
+[17] Neden cümlesi   (Söz Tutma satırı altı, vaat yokken)
+    Mevcut : söz verilmedi (nötr)
+    Yeni   : 
+
+[18] Neden cümlesi   (Söz Tutma satırı altı, vaat varken)
+    Mevcut : «X»/«X» vaat yolunda
+    Yeni   : 
+
+[19] Satır   (bileşenler kartı son satırı (kırmızı))
+    Mevcut : Rakip çekiciliği (oyu düşürür)
+    Yeni   : 
+
+[20] Panel başlığı   (vaat ilerleme kartı)
+    Mevcut : Vaat İlerlemesi
+    Yeni   : 
+
+[21] Boş durum   (vaat kartı, söz verilmediyse)
+    Mevcut : Bu dönem vaat verilmedi — 'laf değil, iş'.
+    Yeni   : 
+
+[22] Panel başlığı   (sezon ortası söz kartı)
+    Mevcut : Kürsüye Çık · Yeni Söz
+    Yeni   : 
+
+[23] Açıklama   (söz kartı üst notu)
+    Mevcut : Sezon ortasında söz vermek tribünü coşturur, sandıktaki elini güçlendirir. Ama tutmazsan dönem sonu yaptırım.
+    Yeni   : 
+
+[24] Kilit   (sisli kutu, 2 ara söz verildiyse)
+    Mevcut : Bu dönem söz hakkın doldu (2/2) — önce verdiğin sözleri tut.
+    Yeni   : 
+
+[25] Kilit   (seçenek havuzu boşsa)
+    Mevcut : Verilebilecek uygun söz kalmadı.
+    Yeni   : 
+
+[26] Buton   (sosyal proje butonu)
+    Mevcut : 🏘 Sosyal Proje Başlat (2mn) · «X»/3
+    Yeni   : 
+
+[27] Buton eki   (o hafta proje yapıldıysa eklenir)
+    Mevcut : · bu hafta yapıldı
+    Yeni   : 
+
+[28] Buton   (3 proje bitince (devre dışı))
+    Mevcut : 🏘 Sosyal Program TAMAM ✓ 3/3
+    Yeni   : 
+
+[29] İpucu   (sosyal proje butonu ipucu)
+    Mevcut : 2mn: semt sahaları/okul ziyaretleri — taraftar +1; 3 proje sözü tutar (haftada 1)
+    Yeni   : 
+
+[30] İpucu   (sosyal proje ipucu, 3/3 iken)
+    Mevcut : Dönem programı tamam (3/3)
+    Yeni   : 
+
+[31] İpucu   (sosyal proje ipucu, o hafta yapılmışsa)
+    Mevcut : Haftada 1 proje — ekip zaten sahada
+    Yeni   : 
+
+[32] Panel başlığı   (4 boyut kartı)
+    Mevcut : Taraftar Duyarlılığı — 4 Boyut
+    Yeni   : 
+
+[33] Uyarı   (4 boyut kartı üstü, TİS koltuğu boşken)
+    Mevcut : 🌫 Sisli okuma — Taraftar İlişkileri koltuğu boş. Doldurunca net rakam gelir.
+    Yeni   : 
+
+[34] Boyut adları   (4 boyut satır etiketleri)
+    Mevcut : Sonuçlar / Transferler / Oyun Stili / Kimlik
+    Yeni   : 
+
+[35] Sisli değerler   (TİS boşken rakam yerine tahminler)
+    Mevcut : düşük? / iyi? / ~orta
+    Yeni   : 
+
+[36] Buton   (boyut satırı yanı mini buton)
+    Mevcut : buluşma
+    Yeni   : 
+
+[37] Not   (4 boyut kartı alt notu)
+    Mevcut : Buluşma hakkı: «X»/2 (seçilen boyutu onarır, küçük masraf)
+    Yeni   : 
+
+
+######################################################################
+#  SAYFA 11 · KULÜP
+######################################################################
+
+[1] Overline   (sayfa başlığı üstü, kulüp adı yanında)
+    Mevcut : Kulüp Kimliği
+    Yeni   : 
+
+[2] Rozet havuzu   (başlık sağı dönem etiketi (duruma göre biri))
+    Mevcut : 🏆 ŞAMPİYONLUK YARIŞI / 🔥 KRİZ KULÜBÜ / 💸 BORÇ BATAĞI / 🌅 YENİDEN DOĞUŞ / 🌱 ALTYAPI DEVRİMİ / 🗳 SEÇİM SATHI / SAKİN SULAR
+    Yeni   : 
+
+[3] İpucu   (dönem rozeti ipucu)
+    Mevcut : Kulübün anlatı iklimi: güven + kurul + taraftar + borç durumundan türeyen dönem etiketi
+    Yeni   : 
+
+[4] Panel başlığı   (sol sütun künye kartı)
+    Mevcut : Künye
+    Yeni   : 
+
+[5] Künye etiketleri   (künye satır etiketleri)
+    Mevcut : Kuruluş / Şehir / Stadyum / Ezeli rakip / Statü / Taraftar / Kadro değeri / Dönem / Sezon
+    Yeni   : 
+
+[6] Değer   (künye Statü satırı (Küçük/Orta/Büyük))
+    Mevcut : «X» kulüp
+    Yeni   : 
+
+[7] Panel başlığı   (tier merdiveni kartı)
+    Mevcut : Tier Yolculuğu
+    Yeni   : 
+
+[8] Düğüm adları   (tier merdiveni düğüm etiketleri)
+    Mevcut : Küçük / Orta / Büyük
+    Yeni   : 
+
+[9] Satır   (son 2 tier değişimi satırı)
+    Mevcut : ▲/▼ «X». dönem: «X» → «X»
+    Yeni   : 
+
+[10] Not   (tier kartı alt notu, geçiş aktifken)
+    Mevcut : Geçiş sürüyor — yeni seviye 1 sezonda oturur.
+    Yeni   : 
+
+[11] Panel başlığı   (müze kartı)
+    Mevcut : Müze / Rekorlar
+    Yeni   : 
+
+[12] Rozet   (müze başlığı yanı, P19 vaadi aktifken)
+    Mevcut : Kulüp Mirası vaadi aktif · ×1.5
+    Yeni   : 
+
+[13] Sayaç   (müze kartı sağ üst sayaç)
+    Mevcut : «X»/48 yuva
+    Yeni   : 
+
+[14] İpucu   (boş kupa yuvası ipucu (silik 🏆))
+    Mevcut : Boş yuva — tarih yazılmayı bekliyor
+    Yeni   : 
+
+[15] Panel başlığı   (orta sütun sözler kartı)
+    Mevcut : Mühürlü Sözler
+    Yeni   : 
+
+[16] Sayaç   (sözler kartı sağ üst geri sayım)
+    Mevcut : Kongre: «X» sezon
+    Yeni   : 
+
+[17] Boş durum   (sözler kartı, vaat yokken)
+    Mevcut : Bu dönem söz verilmedi — 'Laf değil, iş.'
+    Yeni   : 
+
+[18] Panel başlığı   (yönetim kartı)
+    Mevcut : Yönetim Kadrosu
+    Yeni   : 
+
+[19] Sayaç   (yönetim kartı sağ üst not)
+    Mevcut : 6 koltuk
+    Yeni   : 
+
+[20] Rol adı   (ilk personel satırı, her zaman dolu)
+    Mevcut : Genel Menajer
+    Yeni   : 
+
+[21] Rozet   (GM satırı yanı etiket)
+    Mevcut : sabit
+    Yeni   : 
+
+[22] İpucu   (GM satırı ipucu)
+    Mevcut : Transfer dosyalarını yürütür — dosyayı o getirir, imza sende.
+    Yeni   : 
+
+[23] İpucu   (CFO satırı ipucu)
+    Mevcut : Faiz pazarlığı güçlenir · nakit projeksiyonu netleşir
+    Yeni   : 
+
+[24] İpucu   (Akademi satırı ipucu)
+    Mevcut : Gençler daha hızlı gelişir
+    Yeni   : 
+
+[25] İpucu   (Basın satırı ipucu)
+    Mevcut : Manşet söndürme hakkı açılır
+    Yeni   : 
+
+[26] İpucu   (Stat satırı ipucu)
+    Mevcut : Maç günü deneyimi/geliri ↑
+    Yeni   : 
+
+[27] İpucu   (TİS satırı ipucu)
+    Mevcut : Taraftar 4 boyutu NETLEŞİR + buluşma hakkı
+    Yeni   : 
+
+[28] Etiket   (boş personel satırı metni)
+    Mevcut : koltuk boş
+    Yeni   : 
+
+[29] İpucu   (⊕ butonu ipucu (rol faydasıyla))
+    Mevcut : Aday dosyası iste — «X»
+    Yeni   : 
+
+[30] İpucu   (dolu koltuk ipucu: fayda · tanım · maaş)
+    Mevcut : «X» · «X» · «X»mn/sezon
+    Yeni   : 
+
+[31] Panel başlığı   (sağ sütun başarım özeti)
+    Mevcut : Başarımlar
+    Yeni   : 
+
+[32] Sayaç   (başarım kartı sağ üst sayaç)
+    Mevcut : «X»/«X» açık
+    Yeni   : 
+
+[33] Kategori adları   (6 kategori çubuğu etiketleri)
+    Mevcut : Koltuk / Saha / Kasa / Ocak / Kimlik / Acı
+    Yeni   : 
+
+[34] Mikro başlık   (kilitli ilk 3 başarım listesi üstü)
+    Mevcut : En yakın hedefler
+    Yeni   : 
+
+[35] Buton   (başarım modalını açan buton)
+    Mevcut : Tümünü Gör → («X» başarım)
+    Yeni   : 
+
+[36] Panel başlığı   (kongre paneli)
+    Mevcut : Kongre & Güven
+    Yeni   : 
+
+[37] Bar etiketi   (ilk güven çubuğu)
+    Mevcut : ÜYE GÜVENİ
+    Yeni   : 
+
+[38] İpucu   (ÜYE GÜVENİ ipucu)
+    Mevcut : Kongre üyelerinin sana güveni — seçimin bel kemiği
+    Yeni   : 
+
+[39] Bar etiketi   (ikinci güven çubuğu (kurul varsa))
+    Mevcut : KURUL
+    Yeni   : 
+
+[40] İpucu   (KURUL ipucu)
+    Mevcut : Yönetim kurulu sadakati (ortalama)
+    Yeni   : 
+
+[41] Not   (kurul çubuğu yerine, aile modunda)
+    Mevcut : Kurul yok — Aile Kulübü.
+    Yeni   : 
+
+[42] Bar etiketi   (üçüncü güven çubuğu)
+    Mevcut : TARAFTAR
+    Yeni   : 
+
+[43] İpucu   (TARAFTAR ipucu)
+    Mevcut : Tribünün nabzı
+    Yeni   : 
+
+[44] Satır   (kongre paneli alt bilgi satırı)
+    Mevcut : Kongre: «X» sezon sonra · Kurul beklentisi: «X». sıra
+    Yeni   : 
+
+[45] Satır   (kongre paneli altı, rakip kulis aktifken)
+    Mevcut : Rakip aday kulisten '«X»' sözü hazırlıyor.
+    Yeni   : 
+
+[46] Panel başlığı   (defter kartı)
+    Mevcut : Başkanın Defteri
+    Yeni   : 
+
+[47] Sayaç   (defter kartı sağ üst sayaç)
+    Mevcut : «X» an
+    Yeni   : 
+
+[48] Etiket   (boş zaman çizelgesi düğümü)
+    Mevcut : karar bekleniyor
+    Yeni   : 
+
+[49] İpucu   (boş düğüm ipucu)
+    Mevcut : Büyük kararlar kendini buraya yazar
+    Yeni   : 
+
+[50] Modal başlığı   (başarım modalı)
+    Mevcut : Başarım Duvarı
+    Yeni   : 
+
+[51] İpucu   (madalyon ipucu, açılmamış başarım)
+    Mevcut : «X» · kilitli
+    Yeni   : 
