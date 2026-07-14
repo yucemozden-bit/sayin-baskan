@@ -394,7 +394,7 @@ check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D 
 // küme artık otomatik ölüm spirali değil, uzun-vade hayatta kalma ~+2 arttı → tavan 12→16.
 // GİZLİ REYTİNG (2026-07): dosyalar artık gözlem hatalı "görünen" gücü yazıyor → botun
 // range-orta-nokta kararı bazen yanılıyor (tasarım gereği). Dengeli dönem-3 %8→%7; taban 8→6.
-const bands2 = [[1, 25, 45], [2, 6, 20], [3, 3, 16]]; // [idx, lo, hi] — dönem 2/3/4
+const bands2 = [[1, 25, 45], [2, 6, 26], [3, 3, 18]]; // [idx, lo, hi] — dönem 2/3/4 (başarı/büyüme desteği artınca hayatta kalma hafif yükseldi: dönem-3 tavan 20→26, dönem-4 16→18)
 for (const [i, lo, hi] of bands2) {
   check(`çok dönem: dönem-${i + 1} hayatta kalma %${lo}-${hi} (her iki bot)`,
     [survival['Cimri'][i], survival['Dengeli'][i]].every((v) => v >= lo && v <= hi),

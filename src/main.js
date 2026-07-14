@@ -172,7 +172,7 @@ function render() {
       html = '<div style="padding:40px" class="muted">Yükleniyor…</div>';
   }
   // OYUNCU KARTI overlay'i — kadrodaki oyuncuya tıklayınca açılır (satılan/giden oyuncuda kendini kapatır)
-  if (G._pcard && (!G.squad || !G.squad.some((p) => String(p.id) === String(G._pcard)))) G._pcard = null;
+  if (G._pcard && !playerCard.findAnyPlayer(G, G._pcard)) G._pcard = null; // kadro + teklif + piyasa oyuncusu kartı açık kalsın
   if (G._pcard) html += playerCard.render(G);
   if (G._achModal) html += clubView.renderAchModal(G); // başarım duvarı (kulüp ekranından "Tümünü Gör")
   app.innerHTML = html;
@@ -478,6 +478,7 @@ function dispatch(act, arg) {
     case 'tenderCancel': A.cancelTender(G); break;
     case 'event': { const [id, i] = arg.split('|'); A.resolveEvent(G, id, i); break; }      // D3 olay kartı
     case 'captain': { const [id, c] = arg.split('|'); A.resolveCaptain(G, id, c); break; }  // K2 kaptan onay/veto
+    case 'seasonBudget': { const [id, c] = arg.split('|'); A.resolveSeasonBudget(G, id, c); break; } // yeni sezon transfer kesesi onayı
     case 'adayOl': A.startComeback(G); break;                                               // M1 dönüş kampanyası
     case 'vision': A.chooseVision(G, arg); break;                                           // M6 dönem vizyonu
     case 'retire': { if (G.retireArm) A.retire(G); else { G.retireArm = true; } break; }    // M4 emeklilik (iki tık)
@@ -759,5 +760,8 @@ eventBus.on('TICK_END', () => {}); // ui eventBus dinler (ileride canlı widget'
 globalThis.SBhover = () => {};
 
 window.addEventListener('resize', () => fitVaat()); // pencere boyu değişse de vaat sahnesi sığar
+// Fontlar geç gelirse ilk render fitVaat'ı yanlış (küçük) ölçüyle çalıştırır → sahne az ölçeklenip
+// alttan taşabilir. Web fontları yerleşince bir kez daha sığdır (sonraki her render zaten çağırır).
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitVaat());
 
 boot();

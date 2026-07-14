@@ -1,0 +1,15 @@
+# Bağımlılıklar / build
+node_modules/
+dist/
+
+# OS / editör
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+
+# Geçici / log
+*.log
+tmp/
+scratchpad/
+_ovl*.html

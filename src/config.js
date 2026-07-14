@@ -23,7 +23,7 @@ export const TUNING = {
   // — Oyuncu —
   INJURY_BASE: 0.03, FIT_DROP: 12, FIT_REST: 20,
   FORM_D: { W: 8, D: 2, L: -8 }, MORALE_D: { W: 4, D: 0, L: -5 }, RED_CARD_P: 0.08,
-  DEV_U24_MAX: 0.8 /*×antrenman sv [buff: yatırım meyve versin]*/, AGE_DECAY_START: 31, DEV_DECAY_RATE: 0.6,
+  DEV_U24_MAX: 1.15 /*×antrenman sv — gençler DAHA HIZLI gelişsin (kullanıcı isteği: 0.8→1.15)*/, AGE_DECAY_START: 31, DEV_DECAY_RATE: 0.6,
   // — Ekonomi —
   WAGE_RATIO_HEALTHY: 0.55, TIER_SCALE: { kucuk: 2, orta: 6, buyuk: 14 },
   TV_BASE: { kucuk: 20, orta: 50, buyuk: 261 }, TICKET_K: 0.0001, // [kalibre: gelir ölçeği]
@@ -138,7 +138,7 @@ export const TUNING = {
   // — Ekonomi (Bible-8) — sponsor pazarlığı & FFP MVP dışı; gelir kalemi olarak var —
   ECONOMY: {
     WEEKS_PER_YEAR: 52,
-    SPONSOR_BASE: { kucuk: 4, orta: 15, buyuk: 45 }, // göğüs baz (sezonluk mn) [kalibre]
+    SPONSOR_BASE: { kucuk: 6, orta: 22, buyuk: 45 }, // göğüs baz (sezonluk mn) — küçük/orta ×1.5 (daha ağır); büyük zaten devasa, net bandında kalsın
     SPONSOR_ITIBAR_BASE: 0.5, SPONSOR_ITIBAR_DIV: 100, // itibarFactor = 0.5 + itibar/100
     SPONSOR_KOL: 0.4, SPONSOR_NAMING: 0.6, NAMING_MIN_STAD: 7,
     SPONSOR_REP_DIV: 150,      // sponsor geliri ×(1 + itibar/150)
@@ -152,12 +152,16 @@ export const TUNING = {
 
   // — Gauge hedef sürücüleri (Bible-12) —
   GAUGE: {
-    W_TARAFTAR: { beklenti: 0.5, bilet: 0.2, yildiz: 0.15, vaat: 0.15 },
-    W_GUVEN: { sportif: 0.4, mali: 0.3, taraftar: 0.2, vaat: 0.1 },
+    W_TARAFTAR: { beklenti: 0.6, bilet: 0.16, yildiz: 0.13, vaat: 0.11 }, // başarı DAHA ÖNEMLİ (0.5→0.6)
+    W_GUVEN: { sportif: 0.5, mali: 0.25, taraftar: 0.17, vaat: 0.08 },    // sportif başarı DAHA ÖNEMLİ (0.4→0.5)
     PRICE_SATISF_SLOPE: 40,    // biletFiyatMemnuniyeti eğimi (fiyat 1.0 → 50)
     STAR_PRESENCE_K: 20,       // yıldız başına varlık puanı
     NEUTRAL: 50,               // ikincil sürücüler için nötr taban (MVP)
     ITIBAR_OVERPERF_K: 0.4,    // itibar hedefi += K×max(0, beklentiyeGoreSonuc−50) (beklenti üstü sıra)
+    // BEKLENTİ-ÜSTÜ ÖDÜLÜ: takım beklenenden iyi giderse taraftar/kurul DAHA ÇOK destekler (ölçülü — cezaları boğmasın)
+    TARAFTAR_OVERPERF_K: 0.16, GUVEN_OVERPERF_K: 0.16,
+    // BÜYÜME ÖDÜLÜ: kadro değeri + güç artıyorsa taraftar/kurul destek artar (0-1 büyüme → +puan)
+    BUYUME_TARAFTAR_K: 5, BUYUME_GUVEN_K: 6,
     ITIBAR_ANCHOR_ADD: 3,      // itibar çapası = reputation + 3 (autoplay ort. 48-55 hedefi)
   },
 
@@ -395,7 +399,7 @@ export const TUNING = {
   TELKIN: {
     TAMKADRO: { power: 1.04, fitCost: 6, injChance: 0.08, injWeeks: [1, 2] },
     ROTASYON: { power: 0.90, recoverWeeks: 2, recoverAmt: 8 },
-    GENCLER: { power: 0.92, devChance: 0.6, devCount: 2, ageMax: 22 },
+    GENCLER: { power: 0.92, devChance: 0.85, devCount: 3, ageMax: 22 }, // gençler daha hızlı gelişsin: şans 0.6→0.85, sayı 2→3
     KALE: { power: 1.0, goalsMult: 0.7 },
     REJECT_OTORITE: 70, REJECT_CHANCE: 0.5, REJECT_REL: -2,     // TD reddi
     SPAM_WINDOW: 4, SPAM_COUNT: 3, SPAM_UYUM: 1, SPAM_LEAK_P: 0.20, // ayda 3+ → uyum↓ + sızıntı

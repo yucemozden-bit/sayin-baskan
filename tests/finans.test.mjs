@@ -67,7 +67,7 @@ console.log('\n── Sponsor Pazarı (prosedürel + canlı piyasa) ──');
 {
   const G = fresh('orta');
   const gg = A.sponsorOffers(G, 'gogus');
-  check('pazar kurulur: göğüs 3 · kol 2 · naming 2 teklif', gg.length === 3 && A.sponsorOffers(G, 'kol').length === 2 && A.sponsorOffers(G, 'naming').length === 2, gg.map((o) => o.name).join(' · '));
+  check('pazar kurulur: göğüs 4 · kol 3 · naming 3 teklif', gg.length === 4 && A.sponsorOffers(G, 'kol').length === 3 && A.sponsorOffers(G, 'naming').length === 3, gg.map((o) => o.name).join(' · '));
   check('teklifler AÇIK ŞARTLI + fesih > peşinat + süre + kalan hafta', gg.every((o) => o.pesinat > 0 && o.weekly >= 0.1 && o.years >= 1 && o.fesihCeza > o.pesinat && o.kalanHafta >= 1));
   check('göğüste en az bir RİSKLİ (bahis/kripto) teklif garantili', gg.some((o) => o.type === 'bahis' || o.type === 'kripto'));
 }
@@ -96,7 +96,7 @@ console.log('\n── Sponsor Pazarı (prosedürel + canlı piyasa) ──');
   const ilk = A.sponsorOffers(G, 'gogus')[0];
   check('reddet: teklif masadan kalkar + inbox notu', A.rejectSponsorOffer(G, 'gogus', ilk.id) === true && !A.sponsorOffers(G, 'gogus').some((o) => o.id === ilk.id) && G.inbox.some((m) => m.t.startsWith('Teklif reddedildi')));
   let geldi = false;
-  for (let i = 0; i < 8; i++) { G.meta.week++; A.sponsorMarketTick(G); if (A.sponsorOffers(G, 'gogus').length >= 3) { geldi = true; break; } }
+  for (let i = 0; i < 8; i++) { G.meta.week++; A.sponsorMarketTick(G); if (A.sponsorOffers(G, 'gogus').length >= 4) { geldi = true; break; } }
   check('sonraki haftalarda YENİ sponsor teklifi kapıyı çalar', geldi && G.inbox.some((m) => m.t.startsWith('Yeni sponsor teklifi')), A.sponsorOffers(G, 'gogus').map((o) => o.name).join(' · '));
 }
 {

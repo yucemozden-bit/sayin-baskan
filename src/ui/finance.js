@@ -108,32 +108,56 @@ export function render(G) {
   const deals = G.sponsorDeals || {};
   const SLT = { gogus: 'Forma Göğüs', naming: 'Stadyum İsmi', kol: 'Forma Kol' };
   const namingLocked = (G.facilities.stadyum || 0) < 7;
+  // Tip → marka logo aksan rengi (kurumsal altın, fintech mavi, bahis kırmızı, kripto turuncu, yerel yeşil)
+  const SPO_ACCENT = { standart: 'var(--club)', fintech: 'var(--info)', bahis: 'var(--neg)', kripto: 'var(--warn)', yerel: 'var(--pos)', naming: 'var(--club-2)' };
+  const sezonluk = (o) => Math.round((o.annual ?? o.weekly * 52) * 10) / 10;
   const slotCell = (slot) => {
     const signed = deals[slot];
     if (signed) {
+      const sv = Math.round((signed.weekly * 52) * 10) / 10;
       return `<div class="spo-slot filled">
-        <div class="spo-slot-h">${SLT[slot]}</div>
-        <div class="spo-brand">${esc(signed.name)}</div>
-        <div class="spo-terms">Haftalık <b>${fmt(signed.weekly)}mn</b> · kalan <b>${signed.remainingSeasons ?? signed.years} yıl</b></div>
-        <div class="muted" style="font-size:10.5px">${esc(signed.sector)}${signed.riskProfile ? ' · riskli' : ''}</div>
-        <button class="cx-btn spo-fesih" data-act="cancelSponsor" data-arg="${slot}" data-tip="Erken fesih AĞIR bedellidir: ceza kasadan düşer + itibar −3">Fesih (−${fmt(signed.fesihCeza)}mn)</button>
+        <div class="spo-slot-h">${SLT[slot]}<span class="spo-slot-tag on">✓ İmzalı</span></div>
+        <div class="spo-card signed" style="--sc:${SPO_ACCENT[signed.type] || 'var(--club)'}">
+          <div class="spo-c-top">
+            <div class="spo-logo">${signed.ik || '🤝'}</div>
+            <div class="spo-c-id"><div class="spo-c-nm">${esc(signed.name)}</div><div class="spo-c-sec">${esc(signed.sector)}${signed.riskProfile ? ' · riskli' : ''}</div></div>
+            <div class="spo-c-val"><b>${fmt(sv)}</b><span>mn/sezon</span></div>
+          </div>
+          <div class="spo-c-terms">
+            <span><i>Haftalık</i><b>${fmt(signed.weekly)}mn</b></span>
+            <span><i>Kalan</i><b>${signed.remainingSeasons ?? signed.years} yıl</b></span>
+            <span><i>Durum</i><b class="pos">Aktif</b></span>
+          </div>
+          <button class="spo-fesih" data-act="cancelSponsor" data-arg="${slot}" data-tip="Erken fesih AĞIR bedellidir: ceza kasadan düşer + itibar −3">Sözleşmeyi Feshet (−${fmt(signed.fesihCeza)}mn)</button>
+        </div>
       </div>`;
     }
     if (slot === 'naming' && namingLocked) {
-      return `<div class="spo-slot"><div class="spo-slot-h">${SLT[slot]}</div>
-        <div class="muted" style="font-size:11px;margin-top:6px">🔒 Stadyum sv≥7 gerekir — önce stadı büyüt.</div></div>`;
+      return `<div class="spo-slot locked"><div class="spo-slot-h">${SLT[slot]}<span class="spo-slot-tag">🔒 Kilitli</span></div>
+        <div class="spo-locked-box">🔒 Stadyum sv≥7 gerekir<span>Önce stadı büyüt — naming hakkı açılır.</span></div></div>`;
     }
     const offers = sponsorOffers(G, slot);
-    return `<div class="spo-slot"><div class="spo-slot-h">${SLT[slot]}</div>
-      ${offers.map((o) => `<div class="spo-offer" data-tip="${o.note ? esc(o.note) + ' · ' : ''}Erken fesih cezası ${fmt(o.fesihCeza)}mn">
-        <div class="spo-o-head"><span class="spo-offer-nm">${o.ik || '🤝'} ${esc(o.name)}${o.riskProfile ? ' <span class="spo-warn">⚠</span>' : ''}</span><span class="spo-kalan" data-tip="Teklif masada bu kadar hafta daha bekler — sonra çekilir">${o.kalanHafta}h</span></div>
-        <span class="spo-offer-terms">peşinat <b>${fmt(o.pesinat)}mn</b> · haftalık <b>${fmt(o.weekly)}mn</b> · <b>${o.years} yıl</b></span>
-        ${o.dezavantaj ? `<span class="spo-offer-dez">⚠ ${esc(o.dezavantaj)}</span>` : '<span class="spo-offer-dez temiz">✓ temiz anlaşma</span>'}
-        <div class="spo-o-act">
-          <button class="cx-btn spo-al" data-act="signSponsor" data-arg="${slot}|${o.id}">İmzala</button>
-          <button class="cx-btn spo-ret" data-act="rejectSponsor" data-arg="${slot}|${o.id}" data-tip="Kapıyı göster — yeni markalar sonraki haftalarda gelir">Reddet</button>
+    return `<div class="spo-slot"><div class="spo-slot-h">${SLT[slot]}<span class="spo-slot-tag">${offers.length} teklif</span></div>
+      ${offers.map((o) => `<div class="spo-card ${o.riskProfile ? 'risky' : ''}" style="--sc:${SPO_ACCENT[o.type] || 'var(--club)'}" data-tip="${o.note ? esc(o.note) + ' · ' : ''}Erken fesih cezası ${fmt(o.fesihCeza)}mn">
+        <div class="spo-c-top">
+          <div class="spo-logo">${o.ik || '🤝'}</div>
+          <div class="spo-c-id"><div class="spo-c-nm">${esc(o.name)}${o.riskProfile ? ' <span class="spo-warn">⚠</span>' : ''}</div><div class="spo-c-sec">${esc(o.sektor || o.sector || '')}</div></div>
+          <div class="spo-c-val"><b>${fmt(sezonluk(o))}</b><span>mn/sezon</span></div>
         </div>
-      </div>`).join('') || '<div class="muted" style="font-size:11px;margin-top:6px">Masada teklif yok — menajerler piyasada; yeni markalar kapıyı çalacak.</div>'}
+        <div class="spo-c-terms">
+          <span><i>Peşinat</i><b>${fmt(o.pesinat)}mn</b></span>
+          <span><i>Haftalık</i><b>${fmt(o.weekly)}mn</b></span>
+          <span><i>Süre</i><b>${o.years} yıl</b></span>
+        </div>
+        <div class="spo-c-foot">
+          <span class="spo-badge ${o.dezavantaj ? 'risk' : 'clean'}">${o.dezavantaj ? '⚠ ' + esc(o.dezavantaj) : '✓ temiz anlaşma'}</span>
+          <span class="spo-wait" data-tip="Teklif masada bu kadar hafta daha bekler — sonra çekilir">🕒 ${o.kalanHafta}h</span>
+        </div>
+        <div class="spo-c-act">
+          <button class="spo-al" data-act="signSponsor" data-arg="${slot}|${o.id}">İmzala</button>
+          <button class="spo-ret" data-act="rejectSponsor" data-arg="${slot}|${o.id}" data-tip="Kapıyı göster — yeni markalar sonraki haftalarda gelir">Reddet</button>
+        </div>
+      </div>`).join('') || '<div class="spo-empty">Masada teklif yok<span>Menajerler piyasada — yeni markalar önümüzdeki haftalarda kapıyı çalacak.</span></div>'}
     </div>`;
   };
   const sponsorPanel = `<div class="tr-panel fin-sponsor">

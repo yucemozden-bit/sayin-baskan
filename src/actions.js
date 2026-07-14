@@ -221,7 +221,7 @@ export function startTerm(G, promiseIds, directive = null) {
     G.mediaTone = (G.mediaTone || 0) - 0.15;
     pushInbox(G, { cat: 'medya', t: '"Başkan konuşmadı"', b: 'Sezon açılışında basına tek cümle yok. Köşe yazarları bunu not etti — sorular sahada cevap bekleyecek.', noQueue: true });
   }
-  initSeason(G);
+  initSeason(G, { termStart: true }); // dönem başı: kese Makam Odası'nda kuruldu, sorma
   G.phase = 'SEASON_LOOP'; G.nav = 'cockpit';
   // B4c-VİTRİN: kurul zorunlu hedef dayatır (kulüp durumundan seçilir)
   if (G.mode === 'vitrin') {
@@ -291,7 +291,7 @@ export function startTerm(G, promiseIds, directive = null) {
   G._ilkKokpit = G.meta.term === 1 && G.worldSeason === 1; // AÇILIŞ 5a: nabız devralma animasyonu
 }
 
-function initSeason(G) {
+function initSeason(G, opts = {}) {
   // 2. LİG geçişi: küme/terfi ertesi sezon başında yürürlüğe girer → merdiven yeniden kurulur
   if (G._ligChange && G._ligChange !== (G.lig || 1)) {
     const yeni = G._ligChange;
@@ -395,6 +395,8 @@ function initSeason(G) {
   G.fedYaziCount = 0; G.fedJestDone = false; // B1c sezon sayaçları
   G.tisBulusmaCount = 0; G.koreoCount = 0; G.kapakDone = false; G.kapakLanet = null; // B2 sezon sayaçları
   G.sezonSatis = 0; G.sezonAlim = 0; G.ilan = null; // B3/B4 sezon sayaçları
+  G.termSpent = 0; G.termSale = 0; // TRANSFER KESESİ her sezon sıfırlanır (harcama + satış geliri)
+  G.club.kadroDegerBaz = G.club.kadroDeger; G.temelGucBaz = G.temelGuc; // BÜYÜME tabanı: sezon boyu değer/güç artışı taraftar/kurul desteğini artırır
   G.windowStats = { dosya: 0, onay: 0, red: 0, pazarlik: 0 };
   // v4.1 sezon sayaçları: telkin geçmişi, prim durumları
   G.telkinWeeks = []; G.telkinSeasonCount = 0; G.kuklaWarned = false;
@@ -406,6 +408,8 @@ function initSeason(G) {
   G.telkinLog = [];
   G.kaptanAradiHafta = null;
   proposeCaptain(G);
+  // Dönem-İÇİ sezonlarda (2./3. sezon) GM güncel kasaya göre yeni transfer kesesi önerir → başkan onaylar/kısar/açar
+  if (!opts.termStart) proposeSeasonBudget(G);
 }
 
 // ── Haftalık tick ──
@@ -507,8 +511,28 @@ export function scoutTick(G) {
   G.market.sort((a, b) => b.overall - a.overall);
 }
 
+// GÜVENLİK AĞI — kadro bütünlüğü. Nadir yollardan (piyasa id tekrarı hafta 17, kiralık dönüşü…)
+// oluşabilecek ÇİFT ID'yi tekilleştirir (oyuncu KAYBOLMAZ, id düzelir) + patolojik tavan aşımını kırpar.
+// beginWeek'te her hafta çağrılır → "kadro id çakışması" ve "kadro boyu" invaryantları asla tripleyemez.
+const SQUAD_HARD_MAX = 40; // hedef 22-28, sezon sonu 30'a iner; 40 yalnız patolojik durumda tetiklenir
+function normalizeSquad(G) {
+  if (!Array.isArray(G.squad) || !G.squad.length) return;
+  const seen = new Set();
+  for (const p of G.squad) {
+    if (seen.has(p.id)) p.id = 'sq' + (G._pid = (G._pid || 1000) + 1); // çift id → yeni kimlik
+    seen.add(p.id);
+  }
+  if (G.squad.length > SQUAD_HARD_MAX) {
+    G.squad.sort((a, b) => b.overall - a.overall);
+    const atilan = G.squad.slice(SQUAD_HARD_MAX);
+    G.squad.length = SQUAD_HARD_MAX;
+    pushInbox(G, { cat: 'transfer', t: 'Kadro taştı — liste boşaltıldı', b: `Kadro tavanı aşılmıştı; en zayıf ${atilan.length} isim serbest bırakıldı.`, noQueue: true });
+  }
+}
+
 export function beginWeek(G) {
   G.hazirlik = 0; // maç haftası başladıysa hazırlık dönemi bitmiştir (gerçek oyunda zaten 0)
+  normalizeSquad(G); // güvenlik ağı: çift id / tavan aşımı öz-onarımı (invaryant garantisi)
   const wk = G.meta.week;
   G.transferWindow = windowOpen(wk);
   if (wk === 17) G.market = makeMarket(G);
@@ -1306,7 +1330,7 @@ export function takeLoan(G, amount, { faizIndirim = 0, kaynak = '' } = {}) {
 // süresi dolan teklif çekilir, yeni markalar haftalarca kapıyı çalar (sponsorMarketTick).
 // Fesih AĞIR: ceza peşinatı aşar → imzala-boz para hilesi imkânsız.
 const SPONSOR_SLOT_TR = { gogus: 'Forma Göğüs', naming: 'Stadyum İsmi', kol: 'Forma Kol' };
-const SPONSOR_CAP = { gogus: 3, naming: 2, kol: 2 };
+const SPONSOR_CAP = { gogus: 4, naming: 3, kol: 3 };
 
 function spUret(G, slot, forceType = null) {
   G._spSeq = (G._spSeq || 0) + 1;
@@ -1323,9 +1347,10 @@ export function initSponsorMarket(G) {
   G.sponsorPazari = { gogus: [], naming: [], kol: [] };
   G._spSeq = 0; G._spAdlar = []; G._spSonGelis = 0;
   const riskli = ((G.club?.name || '').length % 2) ? 'kripto' : 'bahis';
-  G.sponsorPazari.gogus = [spUret(G, 'gogus', 'standart'), spUret(G, 'gogus', 'fintech'), spUret(G, 'gogus', riskli)];
-  G.sponsorPazari.kol = [spUret(G, 'kol', 'yerel'), spUret(G, 'kol', 'standart')];
-  G.sponsorPazari.naming = [spUret(G, 'naming', 'naming'), spUret(G, 'naming', 'naming')];
+  // Zengin masa: 4 göğüs (2 kurumsal + fintech + riskli), 3 kol (yerel + 2 kurumsal), 3 naming
+  G.sponsorPazari.gogus = [spUret(G, 'gogus', 'standart'), spUret(G, 'gogus', 'standart'), spUret(G, 'gogus', 'fintech'), spUret(G, 'gogus', riskli)];
+  G.sponsorPazari.kol = [spUret(G, 'kol', 'yerel'), spUret(G, 'kol', 'standart'), spUret(G, 'kol', 'standart')];
+  G.sponsorPazari.naming = [spUret(G, 'naming', 'naming'), spUret(G, 'naming', 'naming'), spUret(G, 'naming', 'naming')];
 }
 export function sponsorOffers(G, slot) {
   if (!G.sponsorPazari) initSponsorMarket(G);
@@ -1526,6 +1551,7 @@ export function sellPlayer(G, id) {
   const offer = saleOffer(p);
   G.squad = G.squad.filter((x) => x !== p);
   G.economy.kasa += offer;
+  G.termSale = (G.termSale || 0) + offer; // satış geliri bu sezonun transfer kesesine eklenir
   if (p.isStar) G.gauges.taraftar = clamp(G.gauges.taraftar - 4, 0, 100); // yıldız satışı taraftar−
   G.club.kadroDeger = squadMarketValue(G.squad);
   G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G);
@@ -1547,7 +1573,7 @@ function gmTick(G, wk) {
   const hasActive = G.inbox.some((m) => (m.action === 'tfile' || m.action === 'sfile') && !m.resolved);
   if (hasActive) return; // GM aynı anda tek dosya yürütür
   const AP = TUNING.APPROVAL;
-  const budgetLeft = (G.directive?.budget ?? 0) * boardBudgetMult(G) * (G.mandat?.esnek ?? 1) - (G.termSpent || 0); // B1a kurul ±%15 · mandat ±%6
+  const budgetLeft = (G.directive?.budget ?? 0) * boardBudgetMult(G) * (G.mandat?.esnek ?? 1) + (G.termSale || 0) - (G.termSpent || 0); // B1a kurul ±%15 · mandat ±%6 · satışlar keseyi büyütür
   // Satış aynası: gelen teklif dosyası
   if (rand(0, 1) < AP.SALE_CHANCE) {
     const cands = G.squad.filter((p) => p.overall >= 55).sort((a, b) => b.marketValue - a.marketValue).slice(0, 8);
@@ -1772,6 +1798,7 @@ export function resolveSaleFile(G, msgId, choice) {
     G.squad = G.squad.filter((x) => x !== p);
     G.economy.kasa += m.file.offer;
     G.sezonSatis = (G.sezonSatis || 0) + m.file.offer; if (p.ocak) G.ocakSatisGelir = (G.ocakSatisGelir || 0) + m.file.offer; // B4d
+    G.termSale = (G.termSale || 0) + m.file.offer; // satış → transfer kesesi büyür
     if (p.overall >= TUNING.STAR_THRESHOLD) { // yıldız satış dramı korunur
       G.gauges.taraftar = clamp(G.gauges.taraftar - 4, 0, 100);
       for (const q of G.squad) q.morale = clamp(q.morale - 2, 0, 100);
@@ -2262,6 +2289,7 @@ export function endSeason(G) {
   for (const p of G.loanedOut || []) {
     const dev = Math.round(rand(0, G.facilities.antrenman * TUNING.DEV_U24_MAX * TUNING.LOAN.DEV_MULT));
     p.overall = Math.min(p.potential, p.overall + dev); p.age += 1; p.refreshValue?.();
+    if (G.squad.some((x) => x.id === p.id)) p.id = 'sq' + (G._pid = (G._pid || 1000) + 1); // dönen oyuncunun id'si kadroyla çakışırsa yeni kimlik (buy akışıyla aynı koruma)
     G.squad.push(p);
     pushInbox(G, { cat: 'transfer', t: `${p.name} kiralıktan döndü`, b: `Her hafta oynadı, gözle görülür gelişti. GM: "Yatırım karşılığını verdi."` });
   }
@@ -2735,6 +2763,7 @@ function applyPhoneChoice(G, ph, opt) {
         G.squad = G.squad.filter((x) => x !== p);
         G.economy.kasa += ph.offer;
         G.sezonSatis = (G.sezonSatis || 0) + ph.offer; if (p.ocak) G.ocakSatisGelir = (G.ocakSatisGelir || 0) + ph.offer; // B4d
+        G.termSale = (G.termSale || 0) + ph.offer; // satış → transfer kesesi büyür
         if (p.overall >= TUNING.STAR_THRESHOLD) { G.gauges.taraftar = clamp(G.gauges.taraftar - 4, 0, 100); for (const q of G.squad) q.morale = clamp(q.morale - 2, 0, 100); }
         G.club.kadroDeger = squadMarketValue(G.squad);
         G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G);
@@ -3724,6 +3753,39 @@ export function resolveCaptain(G, msgId, choice) {
   }
   registerDecision(G, 'captain:' + choice);
   G.captainCands = null;
+  return { ok: true };
+}
+
+// ── YENİ SEZON TRANSFER KESESİ (dönem-içi sezon başı) ──
+// Kese her sezon sıfırlanır; GM güncel kasaya + başkanın cömertlik çizgisine (budgetKey) göre
+// bir tavan önerir ve İLK olarak onu uygular (provizyon). Başkan inbox'tan onaylar/kısar/açar.
+// Bayat karta yer yok: yeni öneri gelince önceki çözülmemiş kese kartı sessizce kapanır.
+export function proposeSeasonBudget(G) {
+  if (!G.directive) return;
+  for (const x of G.inbox) if (x.action === 'seasonBudget' && !x.resolved) x.resolved = true; // önceki sezonun kartı bayatladı
+  // budgetKey = başkanın cömertlik çizgisi (Makam'da seçilir). Varsa yeni kese güncel kasadan türer;
+  // yoksa (programatik direktif) mevcut taban KORUNUR — yalnız harcama sıfırlanmış olur.
+  const bk = G.directive.budgetKey;
+  const oneri = bk
+    ? Math.max(0, Math.round(G.economy.kasa * (TUNING.APPROVAL.BUDGET_PRESET[bk] ?? 0.5)))
+    : (G.directive.budget || 0);
+  G.directive.budget = oneri; // SIFIRLA: yeni sezon kesesi (provizyon) — başkan onaylayınca netleşir
+  pushInbox(G, {
+    cat: 'karar', t: `${G.gm?.name || 'GM'}: yeni sezon kesesi`,
+    b: `Yeni sezon Başkanım — kese sıfırlandı. Kasada ${fmt1(G.economy.kasa)}mn var; ben ${fmt1(oneri)}mn'lik transfer tavanı öneriyorum. Onaylıyor musunuz, yoksa kısıp mı açayım?`,
+    action: 'seasonBudget', oneri,
+  });
+}
+export function resolveSeasonBudget(G, msgId, choice) {
+  const m = G.inbox.find((x) => x.id === msgId && x.action === 'seasonBudget');
+  if (!m || m.resolved) return { ok: false };
+  m.resolved = true;
+  const oneri = m.oneri ?? (G.directive?.budget || 0);
+  let yeni = oneri, etiket = 'onaylandı';
+  if (choice === 'kis') { yeni = Math.max(0, Math.round(oneri * 0.75)); etiket = 'kısıldı'; }
+  else if (choice === 'artir') { yeni = Math.round(oneri * 1.25); etiket = 'açıldı'; }
+  if (G.directive) G.directive.budget = yeni;
+  pushInbox(G, { cat: 'transfer', t: `Sezon kesesi ${etiket}: ${fmt1(yeni)}mn`, b: `Transfer tavanı bu sezon ${fmt1(yeni)}mn. Pencere açılınca dosyalar bu çerçeveden gelir.`, noQueue: true });
   return { ok: true };
 }
 // Kaptan kadrodan ayrıldıysa: kimya −8 + soyunma odası şoku (beginWeek'te tek noktadan denetlenir)

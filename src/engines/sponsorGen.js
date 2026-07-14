@@ -73,7 +73,7 @@ export function generateSponsorOffer(ctx, slot, forceType = null) {
   const incomeMult = Math.round(rr(prof.mult[0], prof.mult[1]) * 100) / 100;
   const weekly = Math.max(0.1, Math.round((ctx.weeklyBase || 0.3) * incomeMult * rr(0.92, 1.12) * 100) / 100);
   const annual = Math.round(weekly * 52 * 10) / 10;
-  const pesinat = Math.max(1, Math.round(annual * rr(0.12, 0.2)));
+  const pesinat = Math.max(2, Math.round(annual * rr(0.18, 0.32))); // daha ağır peşinat — masaya ciddi para koysunlar
   const fesihCeza = Math.round(pesinat + annual * 0.25); // fesih HER ZAMAN peşinatı aşar → imzala-boz hilesi imkânsız
   const years = ri(prof.yil[0], prof.yil[1]);
   // Risk/dezavantaj — tipe göre, hafif sayısal varyans

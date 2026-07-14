@@ -555,6 +555,9 @@ body.kriz::after {
 .grid > .card:nth-child(5) { animation: tickerIn .25s var(--ease) 240ms both; }
 /* 2d: hafif tooltip sistemi (native title değil) */
 [data-tip] { position: relative; }
+/* hover'da elemanı yükselt: transform:scale() sahnelerde ::after tooltip sonra-boyanan kardeş
+   içeriğin ARKASINDA kalıyordu (stacking context tuzağı). Hover'da z-index → tooltip hep üstte. */
+[data-tip]:hover { z-index: 90; }
 [data-tip]:hover::after {
   content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 6px);
   transform: translateX(-50%); white-space: normal; width: max-content; max-width: 260px; text-align: left; z-index: 60;
@@ -663,14 +666,20 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--club-g
 /* ═══ MAKAM ODASI — redesign (3 sütun + canlı sonuç + GM portre/yetenek) ═══ */
 .direktif-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .makam-baslik { font-family: var(--font-display); font-size: 21px; margin: 6px 0 10px; letter-spacing: .3px; }
-.makam-grid { display: grid; grid-template-columns: 210px 1fr 264px; gap: 14px; align-items: start; flex: 1; min-height: 0; }
+/* flex: none — grid İÇERİĞİNE göre boyutlanır (flex:1 ona içerikten KISA bir yükseklik
+   verip .masa'yı taşırıyor, alttaki tutanağın üstüne bindiriyordu; taşma scrollHeight'e
+   yansımadığı için fitVaat de göremiyordu). Şimdi direktif-wrap büyür → fitVaat ölçekler. */
+.makam-grid { display: grid; grid-template-columns: 210px 1fr 264px; gap: 14px; align-items: start; flex: none; min-height: 0; }
 .gm-portre { display: block; margin-bottom: 6px; }
 .gm-portre svg { border-radius: 50%; box-shadow: 0 0 0 2px var(--club-glow), 0 6px 14px -6px rgba(0, 0, 0, .6); }
 .gm-barlar { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
 .gm-bar { display: grid; grid-template-columns: 56px 1fr; gap: 8px; align-items: center; font-size: 11px; color: var(--ink-2); }
 .gm-bar .track { height: 6px; border-radius: 3px; background: var(--bg-3); overflow: hidden; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .5); }
 .gm-bar .fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--club), var(--club-2)); }
-.karar-uc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
+/* minmax(0,1fr): 1fr=minmax(auto,1fr) buton min-content'i masa sütununu şişirip TÜM masa
+   çocuklarını (açılış balonu dahil) sağ panele taşırıyordu. 0-min + buton min-width:0 = içerik sarar. */
+.karar-uc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+.karar-uc > .btn { min-width: 0; }
 .dir-fx { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; font-size: 10px; }
 .dir-fx .p { color: var(--pos); } .dir-fx .m { color: var(--neg); } .dir-fx .n { color: var(--ink-3); }
 .btn.replik.on .dir-fx .p, .btn.replik.on .dir-fx .m, .btn.replik.on .dir-fx .n { color: #3a2a08; }
@@ -1052,6 +1061,9 @@ body { overflow: hidden; }
    "Tüm arşiv →" hep en altta kalsın. */
 .cx-desk-wrap .inbox-rail { position: static; max-height: none; height: 100%; overflow: hidden; }
 .cx-desk-wrap .inbox-rail .rail-body {
+  /* flex:1 + min-height:0 — akış rayı, baş ile "Tüm arşiv →" arasını TAM doldurur ve taşmayı
+     kırpar; yoksa akış doğal yüksekliğinde kalıp margin-top:auto'lu butonun üstüne biniyordu. */
+  flex: 1; min-height: 0;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(180deg, #000 86%, transparent);
   mask-image: linear-gradient(180deg, #000 86%, transparent);
@@ -1830,29 +1842,48 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
 .fin-wrap { height: auto; }
 .fin-wrap .fin-grid { flex: none; }
 .fin-sponsor { margin-top: 12px; flex: none; }
-.spo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 6px; }
-.spo-slot { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: rgba(255, 255, 255, .02); display: flex; flex-direction: column; gap: 3px; }
-.spo-slot.filled { border-color: var(--club-glow); background: rgba(var(--club-rgb), .06); }
-.spo-slot-h { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-3); }
-.spo-brand { font-weight: 700; color: var(--club-2); font-size: 14px; margin-top: 2px; }
-.spo-offer { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; margin-top: 5px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(180deg, var(--bg-3), var(--bg-2)); color: var(--ink-1); font: inherit; text-align: left; transition: border-color .15s, box-shadow .15s; box-shadow: 0 3px 10px -6px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .05); }
-.spo-offer:hover { border-color: var(--club-glow); box-shadow: 0 6px 16px -8px rgba(var(--club-rgb), .4), inset 0 1px 0 rgba(255, 255, 255, .06); }
-.spo-o-head { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 6px; }
-.spo-kalan { flex: none; font-size: 9px; font-weight: 800; color: var(--ink-3); border: 1px solid var(--line); border-radius: 8px; padding: 0 5px; font-variant-numeric: tabular-nums; }
-.spo-o-act { display: flex; gap: 5px; margin-top: 4px; }
-.spo-al { border-color: rgba(63, 191, 127, .5) !important; color: var(--pos); padding: 2px 10px; font-size: 10.5px; }
-.spo-al:hover { background: rgba(63, 191, 127, .12); }
-.spo-ret { border-color: rgba(224, 82, 82, .4) !important; color: #ff9a9a; padding: 2px 8px; font-size: 10.5px; }
-.spo-ret:hover { background: rgba(224, 82, 82, .1); }
-.spo-offer-nm { font-size: 12px; font-weight: 700; }
+.spo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 8px; align-items: start; }
+.spo-slot { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.spo-slot-h { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ink-2); padding-bottom: 5px; border-bottom: 1px solid var(--line); }
+.spo-slot-tag { font-size: 9.5px; font-weight: 700; letter-spacing: .5px; color: var(--ink-3); background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: 20px; padding: 1px 8px; text-transform: none; }
+.spo-slot-tag.on { color: #10131c; background: var(--club-2); border-color: var(--club-2); }
+/* ── PREMIUM ANLAŞMA KARTI ── */
+.spo-card { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 11px 12px 11px 14px; border: 1px solid var(--line); border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .028), rgba(255, 255, 255, .006)), var(--bg-2);
+  box-shadow: 0 10px 24px -16px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .04); transition: transform .14s var(--ease), border-color .14s, box-shadow .14s; overflow: hidden; }
+.spo-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--sc, var(--club)); opacity: .85; }
+.spo-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--sc, var(--club)) 55%, var(--line)); box-shadow: 0 16px 30px -16px rgba(0, 0, 0, .85), 0 0 0 1px color-mix(in srgb, var(--sc) 30%, transparent) inset; }
+.spo-card.signed { background: linear-gradient(180deg, rgba(var(--club-rgb), .10), rgba(var(--club-rgb), .02)), var(--bg-2); border-color: var(--club-glow); }
+.spo-c-top { display: flex; align-items: center; gap: 10px; }
+.spo-logo { flex: none; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 19px;
+  background: radial-gradient(120% 120% at 30% 20%, color-mix(in srgb, var(--sc) 34%, var(--bg-3)), var(--bg-3)); border: 1px solid color-mix(in srgb, var(--sc) 40%, var(--line)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08); }
+.spo-c-id { min-width: 0; flex: 1; }
+.spo-c-nm { font-size: 14px; font-weight: 800; color: var(--ink-1); line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spo-c-sec { font-size: 10.5px; color: var(--ink-3); text-transform: capitalize; margin-top: 1px; }
+.spo-c-val { flex: none; text-align: right; line-height: 1; }
+.spo-c-val b { display: block; font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--club-2); font-variant-numeric: tabular-nums; letter-spacing: .3px; }
+.spo-c-val span { font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--ink-3); }
+.spo-c-terms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.spo-c-terms span { display: flex; flex-direction: column; gap: 1px; padding: 5px 7px; background: rgba(10, 15, 26, .5); }
+.spo-c-terms i { font-size: 8.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink-3); font-style: normal; }
+.spo-c-terms b { font-size: 12.5px; color: var(--ink-1); font-variant-numeric: tabular-nums; }
+.spo-c-terms b.pos { color: var(--pos); }
+.spo-c-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.spo-badge { flex: 1; min-width: 0; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 3px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spo-badge.clean { color: #9be8bf; background: rgba(63, 191, 127, .1); border: 1px solid rgba(63, 191, 127, .28); }
+.spo-badge.risk { color: #ffcf8f; background: rgba(224, 158, 82, .1); border: 1px solid rgba(224, 158, 82, .3); }
+.spo-wait { flex: none; font-size: 9.5px; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .spo-warn { color: var(--warn); }
-.spo-offer-terms { font-size: 10.5px; color: var(--ink-2); }
-.spo-offer-terms b { color: var(--club-2); font-variant-numeric: tabular-nums; }
-.spo-offer-dez { font-size: 10.5px; color: var(--warn); }
-.spo-offer-dez.temiz { color: var(--pos); }
-.spo-terms { font-size: 11.5px; color: var(--ink-2); margin-top: 1px; }
-.spo-terms b { color: var(--club-2); font-variant-numeric: tabular-nums; }
-.spo-fesih { border-color: rgba(224, 82, 82, .4) !important; color: #ff9a9a; }
+.spo-c-act { display: grid; grid-template-columns: 1.5fr 1fr; gap: 6px; }
+.spo-al, .spo-ret, .spo-fesih { border: 1px solid; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: background .14s, transform .1s; font-family: inherit; }
+.spo-al { color: #10131c; background: linear-gradient(180deg, var(--club-2), var(--club)); border-color: var(--club); box-shadow: 0 4px 12px -6px rgba(var(--club-rgb), .6); }
+.spo-al:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.spo-ret { color: var(--ink-2); background: transparent; border-color: var(--line); }
+.spo-ret:hover { color: #ff9a9a; border-color: rgba(224, 82, 82, .45); background: rgba(224, 82, 82, .07); }
+.spo-fesih { width: 100%; color: #ff9a9a; background: transparent; border-color: rgba(224, 82, 82, .4); }
+.spo-fesih:hover { background: rgba(224, 82, 82, .1); }
+.spo-locked-box, .spo-empty { display: flex; flex-direction: column; gap: 3px; padding: 16px 12px; border: 1px dashed var(--line); border-radius: 12px; font-size: 12px; font-weight: 700; color: var(--ink-2); text-align: center; }
+.spo-locked-box span, .spo-empty span { font-size: 10.5px; font-weight: 400; color: var(--ink-3); }
 @media (max-width: 1100px) { .spo-grid { grid-template-columns: 1fr; } }
 .fin-akis { display: flex; flex-direction: column; min-height: 0; }
 .fin-grup { font-size: 9.5px; font-weight: 800; letter-spacing: 1.4px; margin: 8px 0 4px; }
@@ -2425,7 +2456,11 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 /* 2) BÜYÜYEN İÇERİK fitVaat'a GÖRÜNSÜN — kökler sabit 100% olunca taşma ölçülemiyor,
    içerik (sorgu detayı, GM itirazı) alttaki panelin/tutanağın ÜSTÜNE biniyordu. */
 .tr-wrap { height: auto; min-height: 100%; }
-.direktif-wrap { height: auto; min-height: 100%; }
+/* flex-shrink:0 — stage (flex column) wrap'ı SIKIŞTIRIP tek küçülebilir çocuğu (tutanak)
+   ezerek MÜHÜRLE'yi overflow:hidden ile kırpıyordu; scrollHeight sıkışmış değeri raporlayınca
+   fitVaat ölçekleyemiyordu. Sıkışmayı kapat → scrollHeight gerçek yüksekliği verir → fitVaat sığdırır. */
+.direktif-wrap { height: auto; min-height: 100%; flex-shrink: 0; }
+.tr-wrap { flex-shrink: 0; }
 
 /* 3) MAKAM/VAAT sağ rayı: scroll yokken sticky işlevsiz — koparsa üstteki balonun
    üstüne biner. Statik + OPAK zemin (altına giren metin hayaleti biter). */

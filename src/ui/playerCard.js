@@ -69,9 +69,23 @@ export function playerAvatar(p, size = 92) {
 const renk = (v) => (v >= 62 ? 'var(--pos)' : v >= 45 ? 'var(--warn)' : 'var(--neg)');
 const bar = (lbl, v, col, tip) => `<div class="pc-bar" data-tip="${esc(tip || '')}"><i>${lbl}</i><span class="tr"><b style="width:${clamp(Math.round(v), 3, 100)}%;background:${col || renk(v)}"></b></span><em class="tnum">${Math.round(v)}</em></div>`;
 
+// Oyuncuyu HER YERDE bul: kadro + gelen/giden teklif dosyaları (inbox tfile/sfile) + gecikmeli dosya + piyasa.
+// Böylece BENİM OLMAYAN oyuncuların da (teklifteki, scout'taki) kartı açılabilir.
+export function findAnyPlayer(G, id) {
+  if (id == null) return null;
+  const sid = String(id);
+  let p = (G.squad || []).find((x) => String(x.id) === sid);
+  if (p) return p;
+  for (const m of G.inbox || []) if (m.file && m.file.player && String(m.file.player.id) === sid) return m.file.player;
+  if (G.delayedFile && G.delayedFile.player && String(G.delayedFile.player.id) === sid) return G.delayedFile.player;
+  p = (G.market || []).find((x) => String(x.id) === sid);
+  return p || null;
+}
+
 export function render(G) {
-  const p = (G.squad || []).find((x) => String(x.id) === String(G._pcard));
+  const p = findAnyPlayer(G, G._pcard);
   if (!p) return '';
+  const yabanci = !(G.squad || []).some((x) => x === p); // kadromda değil (teklif/piyasa oyuncusu)
   const tier = p.overall >= 75 ? 't1' : p.overall >= 60 ? 't2' : p.overall >= 45 ? 't3' : 't4';
   const uyum = tdUyum(p, G.coach);
   const aid = aidiyet(p, G);
@@ -118,9 +132,11 @@ export function render(G) {
         ${bar('BAŞKANA GÜVEN', guven, 'var(--pos)', 'Sana güveni — verdiğin kararlar iz bırakır')}
       </div>
       <div class="pc-actions">
-        ${p.loanIn
-      ? '<span class="muted" style="font-size:11px">🔒 Kiralık oyuncu — sezon sonu asıl kulübüne döner; satılamaz, listelenemez.</span>'
-      : `<button class="cx-btn ${p.vitrin ? 'on' : ''}" data-act="vitrin" data-arg="${p.id}" data-tip="${p.vitrin ? 'Satış listesinden geri çek' : 'Menajerlere sinyal gider; teklifler 2-4 haftada gelir'}">${p.vitrin ? '🏷 Satıştan çek' : 'Satış listesine koy'}</button>
+        ${yabanci
+      ? '<span class="muted" style="font-size:11px">👁 Kadronda değil — teklif/piyasa oyuncusu; mevkisi ve gücü inceleniyor. Transfer masası GM dosyasından yürür.</span>'
+      : p.loanIn
+        ? '<span class="muted" style="font-size:11px">🔒 Kiralık oyuncu — sezon sonu asıl kulübüne döner; satılamaz, listelenemez.</span>'
+        : `<button class="cx-btn ${p.vitrin ? 'on' : ''}" data-act="vitrin" data-arg="${p.id}" data-tip="${p.vitrin ? 'Satış listesinden geri çek' : 'Menajerlere sinyal gider; teklifler 2-4 haftada gelir'}">${p.vitrin ? '🏷 Satıştan çek' : 'Satış listesine koy'}</button>
          <button class="cx-btn ${p.kiralikListe ? 'on' : ''}" data-act="kiralikListe" data-arg="${p.id}" data-tip="${p.kiralikListe ? 'Kiralık listesinden çek' : 'Pencere açıkken alt sıralardan kiralık dosyası gelebilir'}">${p.kiralikListe ? '↩ Kiralıktan çek' : 'Kiralık listesine koy'}</button>`}
         <button class="cx-btn pc-kapat" data-act="pcardClose">Kapat</button>
       </div>

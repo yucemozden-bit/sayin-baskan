@@ -37,11 +37,13 @@ function renderMsg(G, m) {
         <button data-act="tfile" data-arg="${m.id}|onay" style="border-color:var(--pos)">ONAYLA</button>
         <button data-act="tfile" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET</button>
         ${(m.file && (m.file.round || 0) >= 2) ? '' : `<button data-act="tfile" data-arg="${m.id}|sart">${m.file && m.file.round === 1 ? 'ŞARTLI · TUR 2 — "üsteleyelim, %10 daha" (riskli)' : 'ŞARTLI — "pahalı, %20 in"'}</button>`}
+        ${m.file && m.file.player ? `<button data-act="pcard" data-arg="${m.file.player.id}" data-tip="Oyuncunun kartını aç — mevki, güç, potansiyel">🔍 Kartı aç</button>` : ''}
       </div>`;
     } else if (active && m.action === 'sfile') {
       opts = `<div class="opts">
         <button data-act="sfile" data-arg="${m.id}|sat" style="border-color:var(--pos)">SAT</button>
         <button data-act="sfile" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET</button>
+        ${m.file && m.file.player ? `<button data-act="pcard" data-arg="${m.file.player.id}" data-tip="Oyuncunun kartını aç">🔍 Kartı aç</button>` : ''}
       </div>`;
     } else if (active && m.action === 'cfile') {
       opts = `<div class="opts">${(G.coachFiles || []).map((c, i) =>
@@ -64,6 +66,12 @@ function renderMsg(G, m) {
       opts = `<div class="opts">
         <button data-act="captain" data-arg="${m.id}|onay" style="border-color:var(--pos)">ONAYLA (C)</button>
         <button data-act="captain" data-arg="${m.id}|veto" style="border-color:var(--neg)">VETO — alternatife ver</button>
+      </div>`;
+    } else if (active && m.action === 'seasonBudget') { // yeni sezon transfer kesesi — onayla/kıs/aç
+      opts = `<div class="opts">
+        <button data-act="seasonBudget" data-arg="${m.id}|onay" style="border-color:var(--pos)">ONAYLA (${m.oneri}mn)</button>
+        <button data-act="seasonBudget" data-arg="${m.id}|kis">KIS (−%25)</button>
+        <button data-act="seasonBudget" data-arg="${m.id}|artir">AÇ (+%25)</button>
       </div>`;
     } else if (active && m.action === 'douse') { // A1: basın sözcüsü manşet söndürme
       opts = `<div class="opts"><button data-act="douse" data-arg="${m.id}">🧯 Manşeti söndür (sözcü devrede)</button></div>`;

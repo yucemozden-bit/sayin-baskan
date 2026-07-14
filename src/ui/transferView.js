@@ -13,16 +13,19 @@ const POS_COL = { GK: 'var(--club)', DEF: 'var(--info)', MID: 'var(--pos)', FWD:
 export function render(G) {
   const dir = G.directive || {};
   const spent = G.termSpent || 0;
-  const kalan = Math.max(0, (dir.budget || 0) - spent);
-  const pct = dir.budget ? Math.min(100, Math.round((spent / dir.budget) * 100)) : 0;
+  const sale = G.termSale || 0;                          // bu sezon satış geliri → keseyi büyütür
+  const effBudget = (dir.budget || 0) + sale;            // kullanılabilir kese = taban + satışlar
+  const kalan = Math.max(0, effBudget - spent);
+  const pct = effBudget ? Math.min(100, Math.round((spent / effBudget) * 100)) : 0;
   const barCol = pct > 85 ? 'var(--neg)' : pct > 60 ? 'var(--warn)' : 'var(--club)';
   const maasYuk = Math.round((G.squad || []).reduce((a, p) => a + (p.wage || 0), 0) * 10) / 10; // kadro maaş yükü (mn/sezon)
 
   // ── Direktif paneli: TEK çubuk (tavan+harcanan+kalan tekrarı bitti) + maaş yükü ──
   const dirPanel = `<div class="tr-panel tr-direktif">
     <div class="cx-panel-head"><span class="overline">Dönem Direktifi</span><span class="cx-hint">GM'in çerçevesi</span></div>
-    <div class="tr-kalan"><i>KULLANILABİLİR</i><b class="led">${fmt(kalan)}<span>/ ${fmt(dir.budget || 0)}mn</span></b></div>
-    <div class="tr-butce-bar" data-tip="Harcanan ${fmt(spent)}mn / tavan ${fmt(dir.budget || 0)}mn">
+    <div class="tr-kalan"><i>KULLANILABİLİR</i><b class="led">${fmt(kalan)}<span>/ ${fmt(effBudget)}mn</span></b></div>
+    ${sale ? `<div class="muted" style="font-size:10px;letter-spacing:.04em;margin:-3px 0 5px">taban ${fmt(dir.budget || 0)}mn + satış ${fmt(sale)}mn</div>` : ''}
+    <div class="tr-butce-bar" data-tip="Harcanan ${fmt(spent)}mn / kese ${fmt(effBudget)}mn${sale ? ` (taban ${fmt(dir.budget || 0)} + satış ${fmt(sale)})` : ''}">
       <div style="width:${pct}%;background:${barCol}"></div>
     </div>
     <div class="tr-cells">

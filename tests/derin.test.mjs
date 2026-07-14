@@ -147,7 +147,9 @@ function kaosWeek(G, seedTag) {
   if (zar(wk + '|sos', 4) === 0) { if (A.sosyalProje(G) === false) COV.sosyalBlok++; else COV.sosyal++; }
   if (!G.womensTeam && G.economy.kasa > 25 && zar(wk + '|kt', 10) === 0) { if (A.kadinTakimiKur(G)) COV.kadinTakim++; }
   if (!G.expansion && G.gauges.itibar >= 60 && G.economy.kasa > 45 && zar(wk + '|yo', 8) === 0) { if (A.yurtdisiOfisAc(G)) COV.yurtOfis++; }
-  if (G.mode !== 'aile' && zar(wk + '|kb', 20) === 0) { if (A.kurulButceArtisi(G)) COV.kurulButce++; }
+  // KAPSAMA: kurulButce yalnız pencere+mali≥55 iken başarır ve dönem tek-atışlıdır (mali<55 denemesi hakkı yakar).
+  // Bu yüzden kör örneklemek yerine koşul GERÇEKTEN uygunken deneriz — sistem tetiklenebiliyorsa tetiklensin.
+  if (G.mode !== 'aile' && G.transferWindow && (G.gauges.mali ?? 50) >= 55) { if (A.kurulButceArtisi(G)) COV.kurulButce++; }
   const mids = A.midPromiseOptions(G);
   if (mids && mids.length && A.midPromiseCount(G) === 0 && zar(wk + '|mp', 12) === 0) { if (A.makeMidPromise(G, mids[0].id)) COV.midPromise++; }
 
