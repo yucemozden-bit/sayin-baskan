@@ -4,17 +4,21 @@
 import { TUNING } from '../config.js';
 import { esc } from './frame.js';
 import { promiseStatus, toneWord, midPromiseOptions, midPromiseCount } from '../actions.js';
+import { sbShell } from './cockpit.js';
 
 const NAMES = { sportif: 'Sportif', taraftar: 'Taraftar', mali: 'Mali', itibar: 'İtibar', soz: 'Söz Tutma' };
 
 export function render(G) {
+  const secimSezon = TUNING.SEASONS_PER_TERM - (((G.meta?.season || 1) - 1) % TUNING.SEASONS_PER_TERM);
+  const sandik = secimSezon <= 1 ? 'SANDIK BU SEZON' : `SANDIK ${secimSezon} SEZON`;
   const proj = G.lastProj;
   if (!proj) {
-    return `<div class="panel-sayfa kongre">
-      <div class="overline">Kongre & Seçim</div>
-      <h2 style="margin:4px 0 12px">Bugün seçim olsa: <span class="muted">—</span></h2>
-      <div class="card"><div class="bos-durum"><div class="iko">🗳</div><div class="cml">Sezon başladı, karne birikmedi — ilk maçlardan sonra projeksiyon burada canlanır.</div></div></div>
+    const bosBody = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
+      <div class="panel-sayfa kongre" style="flex:1;min-height:0">
+        <div class="card"><div class="bos-durum"><div class="iko">🗳</div><div class="cml">Sezon başladı, karne birikmedi — ilk maçlardan sonra projeksiyon burada canlanır.</div></div></div>
+      </div>
     </div>`;
+    return sbShell(G, { crumb: `KONGRE · KARNE BİRİKMEDİ · ${sandik}`, title: 'Kongre Salonu', body: bosBody });
   }
   const b = proj.breakdown, prev = G.prevBreakdown;
   const pct = Math.round(proj.oyOrani * 100);
@@ -52,9 +56,8 @@ export function render(G) {
       <div style="width:${v.pct}%;height:100%;background:${v.pct >= 55 ? 'var(--pos)' : 'var(--warn)'}"></div></div>
   </div>`).join('');
 
-  return `<div class="panel-sayfa kongre">
-    <div class="overline">Kongre & Seçim</div>
-    <h2 style="margin:4px 0 10px">Bugün seçim olsa: <span style="color:${proj.kazandi ? 'var(--pos)' : 'var(--neg)'}">%${pct}</span></h2>
+  const body = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
+    <div class="panel-sayfa kongre" style="flex:1;min-height:0">
     <div class="kongre-gauge">
       <div class="kongre-gauge-track"><div class="kongre-gauge-fill ${proj.kazandi ? 'win' : 'lose'}" style="width:${Math.min(pct, 100)}%"></div></div>
       <span class="kongre-gauge-line" style="left:${Math.round(TUNING.WIN_LINE * 100)}%"></span>
@@ -71,7 +74,10 @@ export function render(G) {
     </div>
     ${yeniSozCard(G)}
     ${boyutCard(G)}
+    </div>
   </div>`;
+  const crumb = `KONGRE · SEÇİM OLSA %${pct} · ${proj.kazandi ? 'KAZANIR' : 'KAYBEDER'} · ${sandik}`;
+  return sbShell(G, { crumb, title: 'Kongre Salonu', body });
 }
 
 // B2a+B2b: 4 boyutlu taraftar dökümü — TİS doluysa NET + buluşma butonları; boşsa SİSLİ

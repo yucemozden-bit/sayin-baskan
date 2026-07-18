@@ -107,11 +107,11 @@ console.log('\n── 4) Dönem başı iki adım ──');
   A.selectClub(G, 'orta');
   G._sel = ['P15'];
   const s1 = promiseSelect.render(G);
-  check('Adım 1/2: SADECE vaatler (direktif yok)', s1.includes('1/2 · Sandık Sözü') && s1.includes('Sözünü ver') && !s1.includes('Bütçe tavanı'));
+  check('Adım 1/2: SADECE vaatler (direktif yok)', s1.includes('1/2 · SANDIK SÖZÜ') && s1.includes('Sözünü Ver') && !s1.includes('Bütçe tavanı'));
   G._setupStep = 2;
   const s2 = promiseSelect.render(G);
   // AÇILIŞ makam odası kurgusu: "Bütçe tavanı" etiketi GM sorusuna dönüştü ("Ne kadar harcayayım?")
-  check('Adım 2/2: SADECE direktif + seçilen vaat özeti + geri', s2.includes('2/2 · Makam Odası') && s2.includes('Kese ne kadar açılsın') && !s2.includes('class="vows"') && s2.includes('setupBack'));
+  check('Adım 2/2: SADECE direktif + seçilen vaat özeti + geri', s2.includes('2/2 · MAKAM ODASI') && s2.includes('KESE NE KADAR AÇILSIN') && !s2.includes('class="sb-prom"') && s2.includes('setupBack'));
 }
 
 // ══ 5) KİLİTLİ VAAT KARTI ══
@@ -120,7 +120,7 @@ console.log('\n── 5) Kilitli vaat kartı ──');
   const G = A.newGame(data, 'normal');
   A.selectClub(G, 'orta'); // hedef 8 → P23 kilitli
   const html = promiseSelect.render(G);
-  check('kilitli kart: başlık korunur + 🔒 + neden altında', html.includes('Bu Takımı Küme Hattına Düşürmeyeceğim') && html.includes('🔒') && html.includes('Bu camia küme derdinde değil'));
+  check('kilitli kart: başlık korunur + SÖZ GEREKMEZ + neden altında', html.includes('Bu Takımı Küme Hattına Düşürmeyeceğim') && html.includes('SÖZ GEREKMEZ') && html.includes('Bu camia küme derdinde değil'));
 }
 
 // ══ 6) HIZLI TARAMA ══
@@ -131,7 +131,7 @@ console.log('\n── 6) Hızlı tarama (taşma/çelişki) ──');
   check('dar pencere kuralları (720px) genişletildi', css.includes('.stage { padding: 12px; }'));
   const sq = readFileSync(new URL('../src/ui/squadView.js', import.meta.url), 'utf8');
   const tv = readFileSync(new URL('../src/ui/transferView.js', import.meta.url), 'utf8');
-  check('kadro + pazar tabloları sarmalı', sq.includes('kad-tile') && tv.includes('tr-tile'));
+  check('kadro + pazar sb- görsel katmana göç etti (sbShell kabuğu)', sq.includes('sb-kad-grid') && tv.includes('sbShell'));
 }
 
 console.log(`\n${'─'.repeat(48)}\nSONUÇ: ${pass} geçti, ${fail} kaldı\n`);

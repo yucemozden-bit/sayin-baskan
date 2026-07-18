@@ -89,6 +89,15 @@ const COND = {
   'yildiz-kis-huzursuz': (G) => !!G.transferWindow && G.meta.week >= 15,
   'aile-mirasi': (G) => G.mode === 'aile',
   'aile-sirket-krizi': (G) => G.mode === 'aile',
+  // Transfer/scout/insider olay dalgası — "gizli cevher" ruhunda, gerçek etkili (kumar çözülür)
+  'balkan-agi': (G) => G.facilities.scout >= 4,
+  'menajer-yemegi': () => true,
+  'serbest-yildiz': (G) => !!G.transferWindow,
+  'kis-kiraligi': (G) => !!G.transferWindow && G.meta.week >= 15,
+  'yangindan-mal': (G) => !!G.transferWindow,
+  'casus-raporu': (G) => G.facilities.scout >= 5,
+  'veri-modeli': (G) => G.facilities.scout >= 3 || !!(G.staff && G.staff.stat),
+  'akademi-firari': (G) => G.facilities.akademi >= 3 && G.squad.some((p) => p.age <= 19),
 };
 
 // Anlatı etiketi olay ağırlığı: kriz etiketi kriz olaylarını öne çeker (v3-D1).
@@ -164,8 +173,9 @@ export function applyEventEffects(G, effects = {}) {
   };
   doApply(effects);
   if (typeof effects.chance === 'number') {
-    if (rand(0, 1) < effects.chance) { doApply(effects.onHit); notes.push('şans tuttu'); }
-    else if (effects.onMiss) { doApply(effects.onMiss); notes.push('ters tepti'); }
+    // GERÇEKLEŞEN sonuç: onHit/onMiss'in kendi notu öncelikli (sonuç kartında oyuncuya gösterilir).
+    if (rand(0, 1) < effects.chance) { doApply(effects.onHit); notes.push((effects.onHit && effects.onHit.note) || 'şans tuttu'); }
+    else if (effects.onMiss) { doApply(effects.onMiss); notes.push((effects.onMiss && effects.onMiss.note) || 'ters tepti'); }
   }
   return notes;
 }

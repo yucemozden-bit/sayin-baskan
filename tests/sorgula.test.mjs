@@ -28,7 +28,7 @@ console.log('\n── Sorgula + Teklif İste ──');
   const ok = A.sorgulaPlayer(G, p.id);
   check('sorgula: şartlar açığa çıkar — GÜÇ ±1 (gerçek DEĞİL, gizli reyting)', ok === true && p._sorgu && Math.abs(p._sorgu.guc - p.overall) <= 1 && p._sorgu.h === 1 && p._sorgu.bonservis > 0 && ['Zor', 'Makul', 'İstekli'].includes(p._sorgu.tavir), `gerçek ${p.overall} → rapor ${p._sorgu.guc} ±1`);
   check('sorgu inbox notu düşer', G.inbox.length > inbox0 && G.inbox.some((m) => m.t.startsWith('Sorgu raporu:')));
-  check('render sorgulanan tile\'ı gösterir (şart satırı + teklif butonu)', tv.render(G).includes('tr-sorgu') && tv.render(G).includes('reqOffer'));
+  check('render sorgulanan satırı gösterir (menajer tavrı + teklif butonu)', tv.render(G).includes('menajer:') && tv.render(G).includes('reqOffer'));
   // ikinci sorgu idempotent
   const before = JSON.stringify(p._sorgu);
   A.sorgulaPlayer(G, p.id);
@@ -59,11 +59,11 @@ console.log('\n── Transfer v3: bütçe bağı + sorgu hakkı + ilgi/süre + 
 {
   const G = fresh();
   const html = tv.render(G);
-  check('bütçe-piyasa bağı: ✔/⚠/✖ işaretleri + filtre barı', html.includes('bütçe içi') || html.includes('bütçe dışı'), '');
-  check('filtre butonları (Bütçeme uyanlar / İhtiyaç / Hepsi)', html.includes('Bütçeme uyanlar') && html.includes('İhtiyacım:') && html.includes('trFiltre'));
-  check('bedel ARALIK gösterir (sis bedelde de)', html.includes('tr-aralik'));
-  check('Açık Dosyalar paneli alt yarıda', html.includes('Açık Dosyalar'));
-  check('sorgu hakkı görünür (X hak)', /Sorgula \(\d+ hak\)/.test(html));
+  check('bütçe bağı: BÜTÇE paneli kalan kese + tahmini bedel', html.includes('Kalan bütçe') && html.includes('~bedel'));
+  check('mevki filtre butonları (Tümü + mevkiler)', html.includes('trFiltre') && html.includes('Tümü') && html.includes('Stoper'));
+  check('tahmini bedel gösterir (sis bedelde de)', html.includes('~bedel'));
+  check('AKTİF PAZARLIK paneli (açık dosyalar / gelen teklifler)', html.includes('AKTİF PAZARLIK'));
+  check('sorgu hakkı görünür (X hak)', /sorgu \d+ hak/.test(html));
 }
 {
   // SORGU HAKKI: haftalık limit — hak bitince sorgu reddedilir
@@ -95,15 +95,11 @@ console.log('\n── Transfer A8: 80+ havuz + sekmeler + sayfalama + kurul büt
   const G = fresh();
   check('havuz 80+ oyuncu (çekirdek + deterministik uzatma)', (G.market || []).length >= 70, `${G.market.length} isim`);
   const html = tv.render(G);
-  check('sekmeler: PİYASA / SATIŞ LİSTEM / GELEN TEKLİFLER', html.includes('SATIŞ LİSTEM') && html.includes('GELEN TEKLİFLER') && html.includes('trTab'));
+  check('arketip arama: Yıldız Avı / Genç Yetenek / Kelepir (ilan)', html.includes('Yıldız Avı') && html.includes('Genç Yetenek') && html.includes('data-act="ilan"'));
   check('sayfalama görünür (Sayfa 1/N)', html.includes('Sayfa 1/') && html.includes('trSayfa'));
   check('kurula bütçe artışı butonu', html.includes('kurulButce'));
-  G._trTab = 'satis';
-  const hs = tv.render(G);
-  check('SATIŞ sekmesi: GM önerisi + satışa çıkar', hs.includes('GM ÖNERİSİ') && hs.includes('satışa çıkar'));
-  G._trTab = 'teklif';
-  check('TEKLİFLER sekmesi boş durumu anlamlı', tv.render(G).includes('vitrine koy'));
-  G._trTab = 'piyasa';
+  // satış artık oyuncu kartından (Kadro → kart → Satış listesi); transfer ekranı gelen teklifleri AKTİF PAZARLIK'ta gösterir
+  check('satış yönlendirmesi (oyuncu kartı → Satış listesi)', html.includes('Satış listesi'));
 }
 {
   // KURUL BÜTÇE ARTIŞI: mali güçlüyse +%15, dönemde 1 kez; zayıfsa ret + bedel

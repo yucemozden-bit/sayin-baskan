@@ -5,6 +5,9 @@
 import { TUNING } from '../config.js';
 import { isSelectable } from '../engines/promises.js';
 import { esc, stars, fmt } from './frame.js';
+import { sbTopbar } from './cockpit.js';
+
+const kisaAd = (n) => String(n || '').split(' ').slice(0, 2).join(' '); // sözleşme slotu için kısa ad
 
 // S2b: bedel/getiri fısıltısı — kartta TEK satır (tek ekran disiplini), tam metin hover tooltip'te
 function bedelSatiri(diff) {
@@ -86,32 +89,33 @@ export function render(G) {
       const on = sel.includes(p.id) && !locked;
       const conflict = !on && conflictSet.has(p.id);
       const synergy = !on && !conflict && synergySet.has(p.id);
-      const dim = locked || conflict || (full && !on);
+      const dim = !locked && !conflict && full && !on;
       const disabled = locked || conflict;
       const oy = oyDegeri(p.difficulty);
-      const dots = '●'.repeat(p.difficulty) + '○'.repeat(5 - p.difficulty);
-      const altSatir = locked ? lockReason(p.id) : conflict ? 'Çelişki: seçili bir sözle çakışıyor' : hedefMetni(G, p);
-      const boyCls = p.difficulty >= 4 ? 'vow--buyuk' : p.difficulty <= 2 ? 'vow--kompakt' : '';
-      return `<button class="vow ${boyCls} ${on ? 'on' : ''} ${dim ? 'dim' : ''} ${conflict ? 'celisen' : ''} ${synergy ? 'sinerji' : ''}" data-act="togglePromise" data-arg="${p.id}" ${disabled ? 'disabled' : ''} data-tip="${esc(bedelSatiri(p.difficulty))}">
-        ${p.difficulty >= 4 ? '<span class="rozet-buyuk">Büyük Kumar</span>' : ''}
-        <div class="nm">${esc(p.name)}${locked ? ' 🔒' : ''}</div>
-        <div class="vow-hedef">${esc(altSatir)}</div>
-        <div class="vow-risk-row"><span class="vow-dots" data-tip="Risk (zorluk)">${dots}</span><span class="vow-oy"><b class="oy-arti">⚑+${oy.k}</b><b class="oy-eksi">⚠−${oy.c}</b></span></div>
-        ${on && rivalPid === p.id ? '<span class="vow-caldi">Sözünü elinden aldın</span>' : ''}
-        ${on ? '<span class="muhur-damga">MÜHÜRLENDİ</span>' : ''}
+      const dots = Array.from({ length: 5 }, (_, i) => `<span class="sb-dot ${i < p.difficulty ? 'is-on' : ''}"></span>`).join('');
+      const hedef = conflict ? 'Çelişki: seçili bir sözle çakışıyor' : locked ? lockReason(p.id) : hedefMetni(G, p);
+      const cls = ['sb-prom', on ? 'is-active' : '', locked ? 'is-locked' : '', conflict ? 'is-conflict' : '', (synergy && !dim) ? 'is-synergy' : '', dim ? 'is-dim' : ''].filter(Boolean).join(' ');
+      return `<button class="${cls}" data-act="togglePromise" data-arg="${p.id}" ${disabled ? 'disabled' : ''} data-tip="${esc(bedelSatiri(p.difficulty))}">
+        ${p.difficulty >= 4 ? '<span class="sb-gamble">BÜYÜK KUMAR</span>' : ''}
+        ${on ? '<span class="sb-check"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></span>' : ''}
+        <div class="sb-prom-t">${esc(p.name)}</div>
+        <div class="sb-prom-c">${esc(hedef)}</div>
+        <div class="sb-prom-f"><div class="sb-dots">${dots}</div><div class="sb-prom-tags"><span class="sb-tag-pos">+${oy.k}</span><span class="sb-tag-neg">△${oy.c}</span></div></div>
+        ${on && rivalPid === p.id ? '<span class="sb-caldi">Sözünü elinden aldın</span>' : ''}
+        ${locked ? '<div class="sb-lock">SÖZ GEREKMEZ</div>' : ''}
       </button>`;
     };
     const sections = CAT_ORDER.map((cat) => {
       const ps = G.data.promises.filter((p) => (PROMISE_CAT[p.id] || 'camia') === cat);
       if (!ps.length) return '';
-      return `<div class="vow-kat"><div class="vow-kat-h">${CAT_TR[cat]} <span class="muted">· ${ps.length} söz</span></div><div class="vows">${ps.map(card).join('')}</div></div>`;
+      return `<div class="sb-cat"><div class="sb-cat-h"><span class="sb-tick"></span><span class="sb-cat-t">${esc(CAT_TR[cat].toLocaleUpperCase('tr-TR'))}</span><span class="sb-cat-n">· ${ps.length} söz</span><span class="sb-cat-line"></span></div><div class="sb-cat-grid">${ps.map(card).join('')}</div></div>`;
     }).join('');
-    // Sağ sözleşme paneli: slotlar + tribün nabzı + kulis + GM tavsiyesi + çelişki
+    // Sağ sözleşme paneli: slotlar + tribün umudu + kulis + GM + çelişki
     const slotlar = Array.from({ length: TUNING.MAX_PROMISES }, (_, i) => {
       const id = sel[i]; const p = id && G.data.promises.find((x) => x.id === id);
       return p
-        ? `<span class="chip muhur" style="border-color:var(--club);color:var(--club-2)">📜 ${esc(p.name)}</span>`
-        : '<span class="chip slot-bos">◌ mühür yeri</span>';
+        ? `<div class="sb-slot is-filled"><span class="sb-slot-n">${i + 1}</span><span>${esc(kisaAd(p.name))}</span></div>`
+        : `<div class="sb-slot"><span class="sb-slot-n">${i + 1}</span><span>Mühür yeri boş</span></div>`;
     }).join('');
     let celiski = null;
     for (const id of sel) {
@@ -121,27 +125,45 @@ export function render(G) {
     }
     const hopeSum = sel.reduce((a, id) => { const p = G.data.promises.find((x) => x.id === id); return a + (p ? p.difficulty : 0); }, 0);
     const hopePct = Math.min(100, Math.round((hopeSum / 12) * 100)); // ~3 zor söz = dolu
-    const gmTavsiye = gmOneri(G);
-    return `<div class="vaat-sahne">
-      <div class="vaat-topbar">
-        <button class="btn" data-act="setupToClub" style="padding:4px 12px;font-size:12px">← Kulüp seçimine dön</button>
-        <span class="vaat-ufuk">🗳 Kongre: 3 sezon sonra</span>
+    const hopeNote = hopePct < 34 ? 'Risk almadın — coşku zayıf' : hopePct < 70 ? 'Dengeli — tribün izliyor' : 'Tribün ayakta';
+    const rivalWhisper = rivalPid && sel.includes(rivalPid) ? ' <b class="sb-pos-ink">Sözünü elinden aldın!</b>' : rivalPid ? ' <span class="sb-muted">Aynı sözü sen verirsen kozu zayıflar.</span>' : '';
+    const gmName = G.gm?.name || 'Ferda Koyuncu';
+    return `<div class="sb-root sb-cinematic">
+      <div class="sb-atmo"></div><div class="sb-vignette"></div>
+      ${sbTopbar(G, { back: { label: '‹ Kulüp seçimi', act: 'setupToClub' } })}
+      <div class="sb-body sb-body-col">
+        <div class="sb-page-head">
+          <div>
+            <div class="sb-crumb">DÖNEM BAŞI · 1/2 · SANDIK SÖZÜ</div>
+            <div class="sb-h1row"><h1 class="sb-h1">Sözünü Ver</h1><span class="sb-quote-i" data-tip="Söz verdiğin yolda atılan her adım tribünde karşılık bulur; adım atılmayan söz sezon sonunda kuliste kaynar.">En fazla ${TUNING.MAX_PROMISES} söz. Tutarsan alkış, tutmazsan sandıkta koz.</span></div>
+          </div>
+          <div class="sb-count"><span>SEÇİLEN</span><b>${sel.length}</b><span class="sb-muted">/ ${TUNING.MAX_PROMISES}</span></div>
+        </div>
+        <div class="sb-two">
+          <div class="sb-board">${sections}</div>
+          <aside class="sb-side">
+            <div class="sb-panel">
+              <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">SÖZLEŞME</span></div>
+              <div class="sb-slots">${slotlar}</div>
+              <div class="sb-meter">
+                <div class="sb-meter-h"><span>TRİBÜN UMUDU</span><b class="sb-club-ink">%${hopePct}</b></div>
+                <div class="sb-bar"><span class="sb-bar-fill" style="width:${hopePct}%"></span></div>
+                <div class="sb-meter-note">${esc(hopeNote)}</div>
+              </div>
+            </div>
+            <div class="sb-panel sb-panel-grow">
+              <div class="sb-gm"><span class="sb-gm-av">${esc(gmName[0])}</span><div><div class="sb-gm-name">${esc(gmName)}</div><div class="sb-gm-role">Genel Menajer (GM)</div></div></div>
+              <p class="sb-quote">${esc(gmOneri(G))}</p>
+              ${G.rakipKulis ? `<div class="sb-whisper"><span class="sb-whisper-t">Kuliste fısıltı:</span> Rakip aday "<b>${esc(G.rakipKulis)}</b>" diyecek.${rivalWhisper}</div>` : ''}
+              ${celiski ? `<div class="sb-conflict-note">⚠ ${esc(celiski)}</div>` : ''}
+            </div>
+          </aside>
+        </div>
       </div>
-      <div class="vaat-baslik"><div>
-        <div class="overline">Dönem Başı · 1/2 · Sandık Sözü</div>
-        <h2 style="margin:2px 0 0">Sözünü ver <span class="muted" style="font-size:13px;font-family:var(--font-body);font-weight:400;letter-spacing:0" data-tip="Söz verdiğin yolda atılan her adım tribünde karşılık bulur. Adım atılmayan sezonun sonunda ise kulis kaynar. Tutulan söz güven, taraftar ve oy getirir.">— En fazla ${TUNING.MAX_PROMISES} söz. Tutarsan alkış, tutmazsan sandıkta koz. <span class="micro">ⓘ</span></span></h2>
-      </div></div>
-      <div class="vaat-grid">
-        <div class="vaat-sol">${sections}</div>
-        <aside class="vaat-sag">
-          <div class="overline">Sözleşme</div>
-          <div class="sozlesme-slots">${slotlar}</div>
-          <div class="tribun-nabiz"><span class="micro">Tribün umudu</span><div class="track"><div class="fill" style="width:${hopePct}%"></div></div><span class="micro" style="opacity:.7">${hopePct < 34 ? 'risk almadın — coşku zayıf' : hopePct < 70 ? 'dengeli' : 'tribün ayakta'}</span></div>
-          ${G.rakipKulis ? `<div class="kulis-golge"><span class="micro" style="color:var(--neg)">Kuliste Fısıltı</span><br>Rakip aday "<b>${esc(G.rakipKulis)}</b>" diyecek.${rivalPid && sel.includes(rivalPid) ? ' <b class="pos">Sözünü elinden aldın!</b>' : rivalPid ? ' <span class="muted">Aynı sözü sen verirsen kozu zayıflar.</span>' : ''}</div>` : ''}
-          ${gmTavsiye ? `<div class="gm-tavsiye">💬 <b>${esc(G.gm?.name || 'GM')}:</b> ${esc(gmTavsiye)}</div>` : ''}
-          ${celiski ? `<div class="celiski-uyari">⚠ ${esc(celiski)}</div>` : ''}
-        </aside>
-      </div>
+      <footer class="sb-bottombar">
+        <div class="sb-bb-l"><span class="sb-bb-k">SANDIK SÖZÜ</span><span class="sb-bb-note">${sel.length} söz seçildi · tribün umudu %${hopePct}.</span></div>
+        <button class="sb-btn sb-btn-primary" data-act="devam">Sözleri Mühürle (${sel.length}/${TUNING.MAX_PROMISES}) → Direktif ▸</button>
+      </footer>
     </div>`;
   }
   // ── S3: Adım 2/2 — MAKAM ODASI: seçimin ertesi sabahı GM ile İLK TOPLANTI (diyalog) ──
@@ -209,61 +231,86 @@ export function render(G) {
   // Mühürlü sözler — madde madde (tek paragraf değil)
   const sozMad = sel.length ? sel.map((id) => `<div class="tut-soz">▸ ${esc((G.data.promises.find((x) => x.id === id) || {}).name || id)}</div>`).join('') : '<div class="muted" style="font-size:11px">Söz yok — "Laf değil, iş" düşülecek.</div>';
   const lineTr = { genc: 'gençlik yatırımı', hazir: 'pişmiş adam', yildiz: 'yıldız avı' }[dir.line] || dir.line;
-  return `<div class="direktif-wrap">
-    <div class="vaat-topbar">
-      <button class="btn" data-act="setupBack" style="padding:4px 12px;font-size:12px">← Sözleri bir daha göreyim</button>
-      <span class="vaat-ufuk">Dönem Başı · 2/2 · Makam Odası</span>
-    </div>
-    <h2 class="makam-baslik">${esc(gmAd)} kapıyı çaldı. Koltuğun altında bir dosya var.</h2>
-    <div class="makam-grid">
-      <div class="card gm-kart">
-        ${personAvatar(gmAd, 'gm')}
-        <b>${esc(gmAd)}</b>
-        <div class="micro" style="margin-top:2px">Sportif Direktör</div>
-        <div class="muted" style="font-size:11.5px;margin-top:8px">${gmKarakter}</div>
-        <div class="gm-barlar">${barHtml}</div>
-        <div class="muted" style="font-size:11px;margin-top:8px;border-top:1px solid var(--line);padding-top:8px">Dosyayı o getirir, kalemi sen tutarsın. Transferi sen yapmazsın — ONAYLARSIN.</div>
+  // Etki metinleri (yapısal — pos/neg/neu) — Design sb-eff satırlarına dökülür
+  const EFF = {
+    budget: { dusuk: { pos: 'Kurul rahatlar', neg: 'Tribün somurtur' }, orta: { neu: 'Yan etki yok' }, yuksek: { pos: 'Tribün coşar', neg: 'Kurul huzursuz' } },
+    line: { genc: { pos: 'Kadro değeri uzun vadede ↑', neg: 'Bu sezon güç kazancı düşük' }, hazir: { neu: 'Bugünü alırsın, yarını değil' }, yildiz: { pos: 'Tribün coşar, marka ↑', neg: 'Maaş yükü ağır, tek atış' } },
+    press: { alcak: { pos: 'Kurul rahat (hedef sıra ↓)', neg: 'Tribün heyecansız' }, iddiali: { pos: 'Tribün coşar', neg: 'Kurul hedefi YÜKSELTİR' }, sessiz: { neu: 'Etki yok · basın sıkıştırır' } },
+  };
+  const effHtml = (e) => `${e.pos ? `<div class="sb-eff-pos">＋ ${esc(e.pos)}</div>` : ''}${e.neg ? `<div class="sb-eff-neg">－ ${esc(e.neg)}</div>` : ''}${e.neu ? `<div class="sb-eff-neu">± ${esc(e.neu)}</div>` : ''}`;
+  // replik alanı HER KARTTA yer tutar (seçili değilken boş) → seçince kart yüksekliği DEĞİŞMEZ (kayma/kesilme yok)
+  const sbOpt = (act, grp, k, on, label, detail, replik) => `<button class="sb-opt ${on ? 'is-active' : ''}" data-act="${act}" data-arg="${k}">
+      <div class="sb-opt-t">${esc(label)}</div><div class="sb-opt-m">${esc(detail)}</div><div class="sb-opt-eff">${effHtml(EFF[grp][k])}</div><div class="sb-opt-q">${on ? '«' + esc(replik) + '»' : ''}</div></button>`;
+  const pDetail = { alcak: 'düşük profil', iddiali: 'yüksek beklenti', sessiz: 'konuşma yok' };
+  const kvDelta = (now, sonra) => { const d = Math.round(sonra - now); return d > 0 ? ` <span class="pos">(+${d})</span>` : d < 0 ? ` <span class="neg">(${d})</span>` : ''; };
+  const gmInitials = gmAd.split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toLocaleUpperCase('tr-TR');
+  const ferdaCls = gmUyariCls === 'itiraz' ? 'itiraz' : '';
+  return `<div class="sb-root sb-cinematic">
+    <div class="sb-atmo"></div><div class="sb-vignette"></div>
+    <div class="sb-body sb-body-col sb-pad">
+      <div class="sb-page-head sb-tight">
+        <button class="sb-back" data-act="setupBack">← Sözleri bir daha göreyim</button>
+        <span class="sb-crumb">DÖNEM BAŞI · 2/2 · MAKAM ODASI</span>
       </div>
-      <div class="masa">
-        <div class="gm-balon kuyruk">${esc(acilisSoz)}</div>
-        <div class="karar-blok"><div class="overline">“Kese ne kadar açılsın?”</div>
-          <div class="karar-uc">${bBtn('dusuk', 'Kemer Sıkı')}${bBtn('orta', 'Ölçülü')}${bBtn('yuksek', 'Kese Ağzı Açık')}</div></div>
-        <div class="karar-blok"><div class="overline">“Gözüm kimde olsun?”</div>
-          <div class="karar-uc">${lBtn('genc', 'Gençlere yatır')}${lBtn('hazir', 'Hazır adam')}${lBtn('yildiz', 'Bana yıldız bul')}</div></div>
-        <div class="karar-blok"><div class="overline">“Basına ne diyeyim?”</div>
-          <div class="karar-uc">${pBtn('alcak')}${pBtn('iddiali')}${pBtn('sessiz')}</div></div>
-        <div class="gm-balon tepki kuyruk">${esc(soz)}</div>
-        ${gmUyari ? `<div class="gm-uyari ${gmUyariCls}">${gmUyariCls === 'itiraz' ? '⚠' : '✓'} <b>${esc(gmAd)}:</b> ${esc(gmUyari)}</div>` : ''}
-      </div>
-      <aside class="makam-sag">
-        <div class="overline">Canlı Sonuç</div>
-        <div class="onizleme">
-          <div class="onizleme-satir ${kasaTehlike ? 'tehlike' : ''}" data-tip="Kese AYRILIR — para henüz harcanmadı; transferler bu tavandan onaylanır"><span>Kasa</span><b class="tnum">${Math.round(G.economy.kasa)} − ${fmt(budgetCap)} → ${kasaSonra}mn</b></div>
-          ${dRow('Borç', Math.round(G.economy.borc), Math.round(G.economy.borc), 'mn')}
-          ${dRow('Kurul', maliNow, maliSonra)}
-          ${dRow('Taraftar', tarNow, tarSonra)}
-          ${dRow('Hedef sıra', hedefNow, hedefSonra, '.', 'Basın hattı kurulun beklentisini oynatır — iddia edersen çıta yükselir')}
-          ${kasaTehlike ? '<div class="onizleme-uyari">⚠ Kasa kritik — Şubat’ta maaş sıkıntısı riski</div>' : ''}
+      <div class="sb-h1row"><span class="sb-h1-bar"></span><h1 class="sb-h1 sb-h1-lg">${esc(gmAd)} kapıyı çaldı. Koltuğun altında bir dosya var.</h1></div>
+      <div class="sb-three">
+        <aside class="sb-gm-card">
+          <span class="sb-gm-av sb-gm-av-lg">${esc(gmInitials)}</span>
+          <div class="sb-gm-name sb-fs-h1">${esc(gmAd)}</div>
+          <div class="sb-gm-role sb-club-ink">GENEL MENAJER (GM)</div>
+          <p class="sb-gm-desc">${esc(gmKarakter)}</p>
+          <div class="sb-gm-stats">${bars.map(([k, v, tip]) => `<div class="sb-gm-stat" data-tip="${esc(tip)}"><span>${esc(k)}</span><div class="sb-bar"><span class="sb-bar-fill" style="width:${v}%"></span></div></div>`).join('')}</div>
+          <p class="sb-gm-foot">Dosyayı o getirir, kalemi sen tutarsın. Transferi sen yapmazsan — <b class="sb-club-ink">ONAYLARSIN.</b></p>
+        </aside>
+        <div class="sb-dmid">
+          <div class="sb-brief">${esc(acilisSoz)}</div>
+          <div><div class="sb-dgroup-h">“KESE NE KADAR AÇILSIN?”</div><div class="sb-dgroup-grid">
+            ${sbOpt('dirBudget', 'budget', 'dusuk', dir.budgetKey === 'dusuk', `Kemer Sıkı ≈${fmt(rakam('dusuk'))}mn`, `${fmt(rakam('dusuk'))} milyon kese`, bReplik.dusuk)}
+            ${sbOpt('dirBudget', 'budget', 'orta', dir.budgetKey === 'orta', `Ölçülü ≈${fmt(rakam('orta'))}mn`, `${fmt(rakam('orta'))} milyon kese`, bReplik.orta)}
+            ${sbOpt('dirBudget', 'budget', 'yuksek', dir.budgetKey === 'yuksek', `Kese Ağzı Açık ≈${fmt(rakam('yuksek'))}mn`, `${fmt(rakam('yuksek'))} milyon kese`, bReplik.yuksek)}
+          </div></div>
+          <div><div class="sb-dgroup-h">“GÖZÜM KİMDE OLSUN?”</div><div class="sb-dgroup-grid">
+            ${sbOpt('dirLine', 'line', 'genc', dir.line === 'genc', 'Gençlere yatır', lDosya.genc, lReplik.genc)}
+            ${sbOpt('dirLine', 'line', 'hazir', dir.line === 'hazir', 'Hazır adam', lDosya.hazir, lReplik.hazir)}
+            ${sbOpt('dirLine', 'line', 'yildiz', dir.line === 'yildiz', 'Bana yıldız bul', lDosya.yildiz, lReplik.yildiz)}
+          </div></div>
+          <div><div class="sb-dgroup-h">“BASINA NE DİYEYİM?”</div><div class="sb-dgroup-grid">
+            ${sbOpt('dirPress', 'press', 'alcak', press === 'alcak', pAd.alcak, pDetail.alcak, pReplik.alcak)}
+            ${sbOpt('dirPress', 'press', 'iddiali', press === 'iddiali', pAd.iddiali, pDetail.iddiali, pReplik.iddiali)}
+            ${sbOpt('dirPress', 'press', 'sessiz', press === 'sessiz', pAd.sessiz, pDetail.sessiz, pReplik.sessiz)}
+          </div></div>
+          <div class="sb-ferda-line">${esc(soz)}</div>
+          ${gmUyari ? `<div class="sb-ferda-line ${ferdaCls}"><b>${esc(gmAd)}:</b> ${esc(gmUyari)}</div>` : ''}
         </div>
-        <div class="overline" style="margin-top:4px">Mühürlü Sözler</div>
-        <div class="tut-sozler">${sozMad}</div>
-      </aside>
-    </div>
-    <div class="tutanak-belge-tam">
-      <div class="belge-ust">DÖNEM SÖZLEŞMESİ · TUTANAK — ${esc(G.club.name).toUpperCase()} · SEZON ${G.meta.season}</div>
-      <div class="belge-govde">
-        <div class="belge-satirlar">
-          <div class="belge-satir"><span>Transfer kesesi</span><i class="belge-dots"></i><b>≈${fmt(budgetCap)}mn</b></div>
-          <div class="belge-satir"><span>Aranan profil</span><i class="belge-dots"></i><b>${lineTr}</b></div>
-          <div class="belge-satir"><span>Basın hattı</span><i class="belge-dots"></i><b>${pAd[press]}</b></div>
-          <div class="belge-satir"><span>Sportif Direktör</span><i class="belge-dots"></i><b>${esc(gmAd)}</b></div>
-          <div class="belge-satir"><span>Kongreye verilen söz</span><i class="belge-dots"></i><b>${sel.length ? sel.length + ' söz mühürlü' : '— yok —'}</b></div>
-        </div>
-        <div class="belge-alinti">${sel.length ? `“${esc((G.data.promises.find((x) => x.id === sel[0]) || {}).name || '')}”${sel.length > 1 ? ` +${sel.length - 1}` : ''}` : '“Laf değil, iş.”'}</div>
+        <aside class="sb-side sb-side-narrow">
+          <div class="sb-panel">
+            <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">CANLI SONUÇ</span></div>
+            <div class="sb-kv"${kasaTehlike ? ' style="color:var(--neg)"' : ''}><span>Kasa</span><b>${Math.round(G.economy.kasa)} − ${fmt(budgetCap)} → ${kasaSonra}mn</b></div>
+            <div class="sb-kv"><span>Borç</span><b>${Math.round(G.economy.borc)}mn → ${Math.round(G.economy.borc)}mn</b></div>
+            <div class="sb-kv"><span>Kurul</span><b>${maliNow} → ${maliSonra}${kvDelta(maliNow, maliSonra)}</b></div>
+            <div class="sb-kv"><span>Taraftar</span><b>${tarNow} → ${tarSonra}${kvDelta(tarNow, tarSonra)}</b></div>
+            <div class="sb-kv"><span>Hedef sıra</span><b>${hedefNow}. → ${hedefSonra}.</b></div>
+            <div class="sb-panel-h" style="margin-top:.9em"><span class="sb-tick"></span><span class="sb-panel-t">MÜHÜRLÜ SÖZLER</span></div>
+            <div class="sb-side-note">${sel.length ? `${sel.length} söz mühürlü — “${esc((G.data.promises.find((x) => x.id === sel[0]) || {}).name || '')}”${sel.length > 1 ? ` +${sel.length - 1}` : ''}` : 'Söz yok — “Laf değil, iş.” düşülecek.'}</div>
+            ${kasaTehlike ? '<div class="sb-conflict-note">⚠ Kasa kritik — Şubat’ta maaş sıkıntısı riski</div>' : ''}
+          </div>
+        </aside>
       </div>
-      <div class="belge-alt">
-        <div class="belge-imza"><span class="belge-cizgi"></span><span class="micro">${esc(G.baskan?.name || 'Başkan')} / imza</span></div>
-        <button class="muhurle-btn" data-act="muhurBas" data-tip="Tutanağı mühürle — dönem başlar (geri dönüşü yok)">● MÜHÜRLE</button>
+      <div class="sb-contract">
+        <div class="sb-contract-h">DÖNEM SÖZLEŞMESİ · TUTANAK — ${esc(G.club.name).toLocaleUpperCase('tr-TR')} · SEZON ${G.meta.season}</div>
+        <div class="sb-contract-body">
+          <div>
+            <div class="sb-crow"><span>Transfer kesesi</span><i></i><b>≈${fmt(budgetCap)}mn</b></div>
+            <div class="sb-crow"><span>Aranan profil</span><i></i><b>${esc(lineTr)}</b></div>
+            <div class="sb-crow"><span>Basın hattı</span><i></i><b>${esc(pAd[press])}</b></div>
+            <div class="sb-crow"><span>Genel Menajer</span><i></i><b>${esc(gmAd)}</b></div>
+            <div class="sb-crow"><span>Kongreye verilen söz</span><i></i><b>${sel.length ? sel.length + ' madde' : '— yok —'}</b></div>
+          </div>
+          <div class="sb-contract-sign">
+            <div class="sb-contract-q">${sel.length ? `“${esc((G.data.promises.find((x) => x.id === sel[0]) || {}).name || '')}”` : '“Laf değil, iş.”'}</div>
+            <div class="sb-sign-row"><div><div class="sb-sign-line"></div><span class="sb-sign-k">${esc(G.baskan?.name || 'Başkan')} / İMZA</span></div><button class="sb-btn sb-btn-primary" data-act="muhurBas" data-tip="Tutanağı mühürle — dönem başlar (geri dönüşü yok)">● MÜHÜRLE</button></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>`;

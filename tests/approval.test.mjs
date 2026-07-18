@@ -164,6 +164,7 @@ console.log('\n── §5 Telkin cilası ──');
 setSeed(71);
 {
   const G = fresh();
+  G.hazirlik = 0; // maç haftası kokpiti — Maç Öncesi (soyunma odası) team-talk şeridi görünsün
   const ck = cockpit.render(G);
   check('bağlam çipleri (Rakip/Revir/Bacaklar)', /Rakip <b>/.test(ck) && /revir <b>/.test(ck) && /bacaklar <b>/.test(ck));
   check('TD ilişki KELİMESİ (sayı yok)', /(Uyumlu|Mesafeli|Gergin)/.test(ck) && !ck.includes('tdRelation'));
@@ -194,15 +195,15 @@ console.log('\n── §6 Tam puan tablosu ──');
 setSeed(81);
 {
   const G = fresh();
-  const wk1 = cockpit.render(G); // hafta 1, maç yok
-  const rowCount = (wk1.match(/class="row/g) || []).length;
-  check('18 satır tam tablo', rowCount === 18, `${rowCount} satır`);
+  const wk1 = cockpit.render(G); // hafta 1, maç yok — PUAN DURUMU kokpitte HER ZAMAN açık (sb-)
+  const rowCount = (wk1.match(/sb-lig-row/g) || []).length;
+  check('18 satır tam tablo (sb-)', rowCount === 18, `${rowCount} satır`);
   // hafta-1: güç sırasına göre — en güçlü rakip (o0) 1. sırada olmalı
-  const firstRowName = (wk1.match(/class="row[^"]*"[^>]*>\s*<span class="r tnum">1<\/span><span>([^<]+)/) || [])[1];
+  const firstRowName = (wk1.match(/sb-lig-pos[^"]*">1<\/span><span class="sb-lig-name">([^<]+)/) || [])[1];
   check('hafta-1 sıralama güç sırasına göre (ezeli rakip zirvede)', firstRowName === G.opponents[0].name, firstRowName);
-  check('ayraçlar var (Avrupa/Küme hattı etiketleri — GÖRSEL 5b)', wk1.includes('Avrupa hattı') && wk1.includes('Küme hattı'));
+  check('ayraçlar var (Avrupa/Küme hattı renk sınıfları — sb-)', wk1.includes('sb-lig-pos avr') && wk1.includes('sb-lig-pos kume'));
   A.advanceWeek(G); G.pendingMatch = null;
-  check('maç sonrası kendi satır vurgulu', cockpit.render(G).includes('row me'));
+  check('maç sonrası kendi satır vurgulu (is-us)', cockpit.render(G).includes('sb-lig-row is-us'));
 }
 
 // ══ §7 KİMLİK KARTI ══

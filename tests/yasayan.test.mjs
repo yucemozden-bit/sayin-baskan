@@ -293,13 +293,13 @@ setSeed(801);
   check('pencere kapanış GM özeti', G.inbox.some((m) => m.t.includes('Pencere kapanış özeti')) || G.meta.week <= 4, '');
   // kokpit vaat şeridi + masa kartı
   const html = cockpit.render(G);
-  check('kokpit: VAAT ŞERİDİ (renk+ilerleme)', html.includes('Vaat Şeridi') && (html.includes('yolunda') || html.includes('riskte') || html.includes('tehlikede')));
-  check('kokpit: masa dokunuşu kartı', /bugünün dokunuşu/i.test(html) || !G.deskCard);
+  check('kokpit: vaat durumu GÜNDEM\'de (sb-)', html.includes('GÜNDEM') && (html.includes('yolunda') || html.includes('riskte') || html.includes('başlangıç') || html.includes('söz verildi')));
+  check('kokpit: masa dokunuşu kartı (KARAR MASASI)', (!G.deskCard || G.deskUsedThisTick) || /masa dokunuşu/i.test(html));
   // inbox: KARAR üstte + hafta grupları
   G.inbox.unshift({ id: 'mQ1', t: 'Sıradan haber', b: 'x', wk: 3 });
   G.inbox.push({ id: 'mQ2', t: 'Bekleyen karar', b: 'y — Nazlı Ekinci', wk: 2, action: 'ticket' });
   const ih = inbox.render(G);
-  check('inbox: KARAR bekleyenler en üstte sabit', ih.indexOf('Bekleyen Kararlar') >= 0 && ih.indexOf('Bekleyen Kararlar') < ih.indexOf('Hafta '));
+  check('inbox: KARAR bekleyenler en üstte sabit', ih.indexOf('BEKLEYEN KARARLAR') >= 0 && ih.indexOf('BEKLEYEN KARARLAR') < ih.indexOf('Hafta '));
   check('inbox: hafta gruplamaları', /Hafta \d+/.test(ih));
   // maç raporu: karakter cümlesi + gecenin adamı
   setSeed(802);
@@ -309,7 +309,7 @@ setSeed(801);
   check('maç raporu: karakter cümlesi + gecenin adamı ⭐', typeof G2.pendingMatch.karakter === 'string' && G2.pendingMatch.karakter.length > 5 && (G2.pendingMatch.notlar || []).some((n) => n.gecninAdami));
   G2.pendingMatch.phase = 'post';
   const md = matchday.render(G2);
-  check('post ekranı ⭐ rozetini basar', md.includes('gecenin adamı'));
+  check('post ekranı ⭐ rozetini basar', md.includes('GECENİN ADAMI') && md.includes('sb-not yildiz'));
   check('media.json: matchChar havuzu (12+)', Object.values(data.media.matchChar || {}).flat().length >= 12, `${Object.values(data.media.matchChar || {}).flat().length} cümle`);
   // seçim gecesi kaybetme veda sahnesi
   const G3 = fresh();

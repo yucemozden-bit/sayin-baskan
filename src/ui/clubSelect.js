@@ -1,134 +1,122 @@
-// src/ui/clubSelect.js — AÇILIŞ ZİNCİRİ Sahne 1: oyunun kapısı.
-// Topbar yok (1a) · saha silueti + projektör huzmeleri (1b) · LORE anlatan kartlar (1c) ·
-// mikro-SVG ikonlar (1d) · mod tooltip'leri (1e) · hover'da sahne kulüp rengine boyanır +
-// uğultu (1f) · SINIRSIZ yeniden çevirme (1g) · "İlk kez mi?" satırı (1h).
+// src/ui/clubSelect.js — AÇILIŞ / KULÜP SEÇİMİ ("SAYIN BAŞKAN") — sb- görsel katman (2026-07 Design uyarlaması).
+// Kariyerin kapısı: kayıtlı kariyer · mod seçimi · Kulüpler/Dosyalar sekmeleri · kulüp kartları (stat grid) ·
+// 2. lig dip başlangıcı · sınırsız yeniden çevirme. Topbar yok (kariyer henüz başlamadı).
 import { TIERS, TUNING } from '../config.js';
 import { fmt, esc } from './frame.js';
 import { MODES } from '../engines/meta.js';
 import { clubPalette } from './theme.js';
 
 const DEF_RENK = { kucuk: '#2E7D5B', orta: '#D4A62A', buyuk: '#7B1E3B' };
-// Varsayılan üçlünün lore'ları (teams.json havuz kulüpleri kendi lore'unu taşır)
 const DEF_LORE = {
-  kucuk: 'Göl kenarında iki kuşaktır sönmeyen bir ocak. Tribün elli kişi, borç birkaç kuruş, beklenti sıfır. Kimse senden bir şey ummuyor — istediğin hikâyeyi yazacak kadar boş bir sayfa.',
-  orta: 'Şehrin orta direği. Ne dev ne cüce; tribün kalabalık, kasa idare eder. Yıllardır aynı cümleyi duyuyor: "Bu takım daha iyisini hak ediyor." Ediyor mu, sen göstereceksin.',
-  buyuk: 'Vitrin kupa dolu, kasa bomboş. Kadro pahalı, borç dağ gibi, sabır ise çoktan tükendi. Burada üç maç kazanırsan efsanesin, üç maç kaybedersen "istifa" tezahüratı seninle.',
+  kucuk: 'Göl kenarında iki kuşaktır sönmeyen bir ocak. Tribün elli kişi, borç birkaç kuruş, beklenti sıfır — istediğin hikâyeyi yazacak boş bir sayfa.',
+  orta: 'Şehrin orta direği. Ne dev ne cüce; tribün kalabalık, kasa idare eder. "Bu takım daha iyisini hak ediyor" — sen göstereceksin.',
+  buyuk: 'Vitrin kupa dolu, kasa bomboş. Üç maç kazanırsan efsane, üç maç kaybedersen "istifa" tezahüratı seninle.',
 };
-
-// 1d: 1px stroke mikro-SVG ikon seti (güç/kasa/kadro/beklenti) — emoji yok
-const IKO = {
-  guc: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><path d="M7 1L3 7h3l-1 4 4-6H6l1-4z"/></svg>',
-  kasa: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><circle cx="6" cy="6" r="4.5"/><path d="M6 3.5v5M4.5 5h3M4.5 7h3"/></svg>',
-  kadro: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><circle cx="4" cy="4" r="1.8"/><circle cx="8.5" cy="4.5" r="1.4"/><path d="M1.5 10c0-2 1.2-3 2.5-3s2.5 1 2.5 3M7 9.5c.2-1.4 1-2.2 1.8-2.2S10.8 8.2 11 9.5"/></svg>',
-  beklenti: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><circle cx="6" cy="6" r="4.5"/><circle cx="6" cy="6" r="2"/><path d="M6 1v2M6 9v2M1 6h2M9 6h2"/></svg>',
-};
-const beklentiTr = { kumede_kal: 'Küme hattından uzak dur', ust_yari: 'Üst yarıya otur', sampiyonluk: 'Kupayı kaldır' };
-// Tier etiketleri: TAŞRA/ŞEHİR/DEV (orta kartta rozet gösterildiği için ŞEHİR yalnızca senaryo kartında görünür)
 const ETIKET = { kucuk: 'TAŞRA', orta: 'ŞEHİR', buyuk: 'DEV' };
+const TIP_TR = { kucuk: 'Taşra', orta: 'Şehir takımı', buyuk: 'Dev' };
+const ZORLUK_KULUP = { kucuk: 'Kolay', orta: 'Orta', buyuk: 'Zor', lig2: 'Çok Zor' };
+const beklentiTr = { kumede_kal: 'Küme hattından uzak dur', ust_yari: 'Üst yarıya otur', sampiyonluk: 'Kupayı kaldır' };
 const TAGS = {
   kucuk: 'Kasa dar, kadro zayıf — ama kimse sana hesap sormaz',
   orta: 'Ne dar ne bol — dengeli bir masa',
   buyuk: 'Borç ağır, sabır yok — ilk yenilgide manşetsin',
 };
+const fanFmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'mn' : n >= 1000 ? Math.round(n / 1000) + ' bin' : String(n));
+const stadFmt = (n) => Math.round(n).toLocaleString('tr-TR');
+
+function statGrid(rows) {
+  return `<div class="sb-cc-stats">${rows.map(([k, v, cls]) => `<div class="sb-cc-stat"><span>${k}</span><b class="${cls || ''}">${v}</b></div>`).join('')}</div>`;
+}
 
 export function render(G) {
   const tab = G._selTab || 'kulup';
   const mode = G._modeSel || 'klasik';
-  // 1e: mod butonlarında 2 cümlelik fark tooltip'i (Ironman uyarısı net)
-  const MOD_TIP = {
-    klasik: 'Oyunun tamamı. Hata yaparsan geri dönersin. İlk dönemin buradan geçsin.',
-    ironman: 'Tek dönem, tek şans. Kayıt yok, geri sarma yok. Ağır rozetler yalnız burada dağıtılır.',
-    vitrin: 'Kurul her dönem masaya bir hedef koyar. Tutturamazsan destek çekilir, koltuk sallanır.',
-    aile: 'Kurul yok, kredi yok. Her açığı cebinden kaparsın. Servet biterse kulüp de sen de bitersin.',
-  };
+  const ids = G._identities || {};
   const modBtns = Object.entries(MODES).map(([k, m]) =>
-    `<button class="btn ${mode === k ? 'on' : ''}" data-act="setMode" data-arg="${k}" data-tip="${esc(MOD_TIP[k] || m.tanitim)}">${m.ad}</button>`).join('');
-  const tabBtns = `<div class="btnrow" style="justify-content:center;margin:10px 0">
-    <button class="btn ${tab === 'kulup' ? 'on' : ''}" data-act="selTab" data-arg="kulup">Kulüpler</button>
-    <button class="btn ${tab === 'senaryo' ? 'on' : ''}" data-act="selTab" data-arg="senaryo">Dosyalar</button>
-  </div>`;
+    `<button class="sb-mode ${mode === k ? 'is-active' : ''}" data-act="setMode" data-arg="${k}" data-tip="${esc(m.tanitim)}">${esc(m.ad)}</button>`).join('');
+
+  // — Kulüp kartı —
+  const clubCard = (tier) => {
+    const T = TIERS[tier], id = ids[tier];
+    const isim = id ? id.name : { kucuk: 'Gölköy SK', orta: 'Yıldızspor', buyuk: 'Ezeli FK' }[tier];
+    const havuzLore = id && (G.data.teams || []).find((t) => t.name === id.name)?.lore;
+    const lore = havuzLore || DEF_LORE[tier];
+    const renk = clubPalette((id && id.renk) || DEF_RENK[tier]).club;
+    const tag = tier === 'orta' ? '<span class="sb-cc-yeni">yeni başkana göre</span>' : `<span class="sb-cc-etiket">${ETIKET[tier]}</span>`;
+    return `<button class="sb-club-card ${tier === 'orta' ? 'is-featured' : ''}" data-act="selectClub" data-arg="${tier}" style="--tc:${renk}">
+      <div class="sb-cc-strip"></div>
+      <div class="sb-cc-head">
+        <span class="sb-cc-badge">${esc((isim || 'K')[0])}</span>
+        <div class="sb-cc-title"><b>${esc(isim)}</b><i>1. Lig · ${TIP_TR[tier]}</i></div>
+        ${tag}
+      </div>
+      <p class="sb-cc-lore">${esc(lore)}</p>
+      ${statGrid([
+      ['GÜÇ', T.temelGuc], ['STADYUM', stadFmt(T.stad)],
+      ['BÜTÇE', `${fmt(T.kasa)}mn`], ['BORÇ', `${fmt(T.borc)}mn`, T.borc > 40 ? 'neg' : T.borc < 20 ? 'pos' : ''],
+      ['TARAFTAR', fanFmt(T.fan)], ['ZORLUK', ZORLUK_KULUP[tier]],
+    ])}
+      <div class="sb-cc-hedef">◎ Hedef: <b>${beklentiTr[T.beklenti]}</b></div>
+      <div class="sb-cc-note">✦ ${TAGS[tier]}</div>
+    </button>`;
+  };
 
   let body;
   if (tab === 'senaryo') {
     const scs = ((G.data.scenarios && G.data.scenarios.scenarios) || []);
-    body = `<div class="tiers">${scs.map((sc) => `<button class="tier tier--senaryo" data-act="selectScenario" data-arg="${sc.id}">
-      <div class="serit" style="--tc:var(--neg)"></div>
-      <div class="micro" style="color:var(--neg)">${(ETIKET[sc.tier] || sc.tier.toUpperCase())} · AĞIR DOSYA</div>
-      <h3 style="margin-top:6px">${esc(sc.ad)}</h3>
-      <p class="lore">${esc(sc.tanitim)}</p>
-      <span class="tag">🎯 ${esc(sc.hedef.metin)}</span>
+    body = `<div class="sb-club-grid">${scs.map((sc) => `<button class="sb-club-card sb-club-senaryo" data-act="selectScenario" data-arg="${sc.id}" style="--tc:var(--neg)">
+      <div class="sb-cc-strip"></div>
+      <div class="sb-cc-head"><span class="sb-cc-badge">${esc((sc.ad || 'D')[0])}</span><div class="sb-cc-title"><b>${esc(sc.ad)}</b><i>${ETIKET[sc.tier] || (sc.tier || '').toUpperCase()} · Ağır Dosya</i></div><span class="sb-cc-etiket" style="color:var(--neg)">DOSYA</span></div>
+      <p class="sb-cc-lore">${esc(sc.tanitim)}</p>
+      <div class="sb-cc-hedef">◎ Hedef: <b>${esc(sc.hedef.metin)}</b></div>
     </button>`).join('')}</div>`;
   } else {
-    const ids = G._identities || {};
-    const cards = ['kucuk', 'orta', 'buyuk'].map((tier) => {
-      const T = TIERS[tier], id = ids[tier];
-      const isim = id ? id.name : { kucuk: 'Gölköy SK', orta: 'Yıldızspor', buyuk: 'Ezeli FK' }[tier];
-      // 1c: LORE — havuz kulübü kendi hikâyesini, varsayılan kulüp tier hikâyesini anlatır
-      const havuzLore = id && (G.data.teams || []).find((t) => t.name === id.name)?.lore;
-      const lore = havuzLore || DEF_LORE[tier];
-      const renk = clubPalette((id && id.renk) || DEF_RENK[tier]).club;
-      return `<button class="tier" data-act="selectClub" data-arg="${tier}" style="--tc:${renk}"
-        onmouseenter="document.querySelector('.gate').style.setProperty('--gate-glow','${renk}');globalThis.SBhover&&globalThis.SBhover()">
-        <div class="serit"></div>
-        <span class="rozet">${tier === 'orta' ? '<span class="badge" style="background:var(--pos);color:#10131C">yeni başkana göre</span>' : `<span class="micro">${ETIKET[tier]}</span>`}</span>
-        <div class="arma">${esc((isim || 'K')[0])}</div>
-        <h3>${esc(isim)}</h3>
-        <p class="lore">${esc(lore)}</p>
-        ${tier === 'orta' ? `<div class="micro" style="letter-spacing:.5px;text-transform:none;margin-bottom:6px;color:var(--ink-2)">İlk dönemin mi? ${esc(isim)} ile başla.</div>` : ''}
-        <div class="stat-mini">
-          <span data-tip="Takımın sahadaki gücü">${IKO.guc} ${T.temelGuc}</span>
-          <span data-tip="Kasada ne var, sırtında ne var">${IKO.kasa} ${T.kasa}/${T.borc}mn</span>
-          <span data-tip="Kadronun piyasadaki değeri">${IKO.kadro} ${fmt(T.kadroDeger)}mn</span>
-          <span data-tip="Camia senden ne bekliyor">${IKO.beklenti} ${beklentiTr[T.beklenti]}</span>
-        </div>
-        ${id ? `<div class="stat-mini" style="margin-top:2px">
-          <span>🏟 ${esc(id.stadName)}</span><span>· ${id.founded}</span><span>· ${esc(id.fanChar.ad)}</span>
-        </div>` : ''}
-        <span class="tag">${TAGS[tier]}</span>
-      </button>`;
-    }).join('');
-    // 2. LİG BAŞLANGICI — en zor mod: küçük tier'dan BİR TIK DAHA düşük güç/kasa/kadro
+    // 2. Lig dip kartı (geniş)
     const T2 = TIERS.kucuk, D2 = TUNING.LEAGUE.LIG2_START, id2 = ids.lig2;
     const l2guc = T2.temelGuc - D2.gucDrop, l2kadro = Math.round(T2.kadroDeger * D2.kadroMult);
     const isim2 = id2 ? id2.name : 'Demiryolu SK';
     const renk2 = clubPalette((id2 && id2.renk) || '#C77B3B').club;
-    const lig2Card = `<button class="tier tier--lig2" data-act="selectClub" data-arg="lig2" style="--tc:${renk2}"
-      onmouseenter="document.querySelector('.gate').style.setProperty('--gate-glow','${renk2}');globalThis.SBhover&&globalThis.SBhover()">
-      <div class="serit"></div>
-      <div class="lig2-arma">${esc((isim2 || 'D')[0])}</div>
-      <div class="lig2-orta">
-        <div class="lig2-head"><span class="lig2-rozet">2. LİG · DİPTEN</span><h3>${esc(isim2)}</h3></div>
-        <p class="lore">Kupa günleri fotoğraflarda kaldı. Kulüp 2. lige demir attı, bütçe cılız, tribün sabırsız. Yayından üç kuruş, sponsordan hiç. Tek bir yol var: yukarı. <b>İlk üçe gireceksin</b> — ya da bu lig sana ev olacak.</p>
-        <div class="stat-mini">
-          <span data-tip="Takımın sahadaki gücü">${IKO.guc} ${l2guc}</span>
-          <span data-tip="Kasada ne var, sırtında ne var">${IKO.kasa} ${D2.kasa}/${D2.borc}mn</span>
-          <span data-tip="Kadronun piyasadaki değeri">${IKO.kadro} ${fmt(l2kadro)}mn</span>
-          <span data-tip="Hedef">${IKO.beklenti} Yukarı çık — ilk 3</span>
-          <span data-tip="Lig geliri">📉 Yayın cılız, sponsor uzak, gişe zayıf</span>
-        </div>
+    const lig2Card = `<button class="sb-club-card sb-club-lig2" data-act="selectClub" data-arg="lig2" style="--tc:${renk2}">
+      <div class="sb-cc-strip"></div>
+      <span class="sb-cc-badge sb-cc-badge-lg">${esc((isim2 || 'D')[0])}</span>
+      <div class="sb-lig2-mid">
+        <div class="sb-cc-head sb-lig2-head"><span class="sb-cc-etiket sb-lig2-rozet">2. LİG · DİPTEN</span><div class="sb-cc-title"><b>${esc(isim2)}</b></div></div>
+        <p class="sb-cc-lore">Kupa günleri fotoğraflarda kaldı. Tek yol yukarı: <b>ilk üçe gireceksin</b> — ya da bu lig sana ev olur. Yayın cılız, sponsor uzak, gişe zayıf.</p>
       </div>
+      ${statGrid([
+      ['GÜÇ', l2guc], ['STADYUM', stadFmt(Math.round(T2.stad * 0.4))],
+      ['BÜTÇE', `${fmt(D2.kasa)}mn`], ['BORÇ', `${fmt(D2.borc)}mn`, 'pos'],
+      ['TARAFTAR', fanFmt(Math.round(T2.fan * 0.3))], ['ZORLUK', ZORLUK_KULUP.lig2, 'neg'],
+    ])}
     </button>`;
-    body = `<div class="tiers">${cards}</div>
+    body = `<div class="sb-club-grid">${['kucuk', 'orta', 'buyuk'].map(clubCard).join('')}</div>
       ${lig2Card}
-      <div style="margin-top:14px">
-        <button class="btn" data-act="reroll">🎲 Masaya yeni dosyalar gelsin</button>
-        <div class="muted" style="font-size:11px;margin-top:4px">İstediğin kadar çevir. Her dosyada başka bir isim, başka bir hikâye, başka bir tribün çıkar.</div>
+      <div class="sb-gate-reroll">
+        <button class="sb-btn" data-act="reroll">🎲 Masaya yeni dosyalar gelsin</button>
+        <span class="sb-muted">İstediğin kadar çevir — her dosyada başka bir isim, başka bir hikâye.</span>
       </div>`;
   }
 
-  return `<div class="scene gate" style="max-width:1000px;text-align:center">
-    <div class="overline">Devir Teslim</div>
-    <h1 style="margin:6px 0 0;color:var(--club-2)">SAYIN BAŞKAN</h1>
-    <div class="cizgi"></div>
-    <p class="muted" style="margin:10px 0 0;font-style:italic">Kongre dağıldı. Mühür hâlâ masada.</p>
-    ${G._devamVar ? `<div class="devam-banner">
-      <span>💾 Kayıtlı kariyer: <b>${esc(G._devamVar.club)}</b> · Sezon ${G._devamVar.season}, Hafta ${G._devamVar.week}</span>
-      <button class="devam" data-act="contSave" style="padding:8px 20px;font-size:13px">Devam Et ►</button>
-      <button class="btn" data-act="contSil" data-tip="Kayıtlı kariyeri sil" style="padding:6px 10px;font-size:11px">🗑</button>
-    </div>` : ''}
-    <div class="btnrow" style="justify-content:center;margin-top:14px">${modBtns}</div>
-    <div class="muted" style="font-size:12px;margin-top:4px">${esc(MODES[mode].tanitim)}</div>
-    ${tabBtns}
-    ${body}
+  const savedBar = G._devamVar ? `<div class="sb-saved">
+      <span class="sb-saved-lbl">🖫 Kayıtlı kariyer: <b>${esc(G._devamVar.club)}</b> · Sezon ${G._devamVar.season}, Hafta ${G._devamVar.week}</span>
+      <button class="sb-btn sb-btn-primary sb-btn-sm" data-act="contSave">Devam Et ▾</button>
+      <button class="sb-mode sb-saved-sil" data-act="contSil" data-tip="Kayıtlı kariyeri sil">🗑</button>
+      <span class="sb-saved-div"></span>
+    </div>` : '';
+
+  return `<div class="sb-root sb-gate">
+    <div class="sb-atmo"></div><div class="sb-vignette"></div>
+    <div class="sb-gate-wrap">
+      <div class="sb-kicker">DEVİR TESLİM</div>
+      <h1 class="sb-hero">SAYIN <span class="sb-hero-accent">BAŞKAN</span></h1>
+      <p class="sb-hero-sub">Kongre dağıldı. Mühür hâlâ masada.</p>
+      <div class="sb-gate-bar">${savedBar}${modBtns}</div>
+      <div class="sb-gate-tabs">
+        <button class="sb-tab ${tab === 'kulup' ? 'is-active' : ''}" data-act="selTab" data-arg="kulup">Kulüpler</button>
+        <button class="sb-tab ${tab === 'senaryo' ? 'is-active' : ''}" data-act="selTab" data-arg="senaryo">Dosyalar</button>
+        <span class="sb-muted sb-gate-tabnote">${esc(MODES[mode].tanitim)}</span>
+      </div>
+      <div class="sb-gate-body">${body}</div>
+    </div>
   </div>`;
 }

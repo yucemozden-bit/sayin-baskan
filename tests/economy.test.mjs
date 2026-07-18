@@ -5,9 +5,11 @@ import { readFileSync } from 'node:fs';
 import { TIERS, TUNING } from '../src/config.js';
 import { generateSquad } from '../src/models/squadGen.js';
 import { createLeague, playWeek, standings } from '../src/engines/league.js';
-import { applyEconomy, bilet } from '../src/engines/economy.js';
+import { applyEconomy, bilet, maliHedef } from '../src/engines/economy.js';
 import { computeTargets, applyInertia, targetTaraftar } from '../src/engines/gauges.js';
 import { beklentiyeGoreSonuc } from '../src/engines/expectation.js';
+import { maliKarne } from '../src/engines/election.js';
+import { checkBorcsuz } from '../src/actions.js';
 
 let pass = 0, fail = 0;
 function check(name, ok, detail = '') {
@@ -103,6 +105,36 @@ const tk = targetTaraftar({ beklentiyeGoreSonuc: Bk });
 const tb = targetTaraftar({ beklentiyeGoreSonuc: Bb });
 check('küçük kulüp 12. → taraftar hedefi > 50', tk > 50, `${r1(tk)} (beklentiyeGöreSonuç ${r1(Bk)})`);
 check('büyük kulüp 4. → taraftar hedefi < 50', tb < 50, `${r1(tb)} (beklentiyeGöreSonuç ${r1(Bb)})`);
+
+// ══════════════ BORÇSUZ ÖDÜLÜ (mali disiplin uçar + geçiş dalgası) ══════════════
+console.log('\n── BORÇSUZ ÖDÜLÜ ──');
+{
+  // maliHedef: aynı kasa, borçsuz vs borçlu — borçsuz mali gauge hedefi belirgin yüksek
+  const sBorclu = makeOrtaState(); sBorclu.economy.kasa = 40; sBorclu.economy.borc = 40;
+  const sBorcsuz = makeOrtaState(); sBorcsuz.economy.kasa = 40; sBorcsuz.economy.borc = 0;
+  const mhBorclu = maliHedef(sBorclu, 5, 5), mhBorcsuz = maliHedef(sBorcsuz, 5, 5);
+  check('maliHedef: borçsuz kulüp mali tabloyu belirgin yükseltir', mhBorcsuz >= mhBorclu + TUNING.ECONOMY.BORCSUZ_MALI_BONUS - 1e-6, `borçlu ${r1(mhBorclu)} → borçsuz ${r1(mhBorcsuz)}`);
+
+  // maliKarne (seçim): borçsuz flat bonus sandığa yansır
+  const eBorclu = makeOrtaState(); eBorclu.economy.borc = 10; eBorclu.gauges.mali = 60;
+  const eBorcsuz = makeOrtaState(); eBorcsuz.economy.borc = 0; eBorcsuz.gauges.mali = 60;
+  const mkBorclu = maliKarne(eBorclu, 10), mkBorcsuz = maliKarne(eBorcsuz, 0);
+  check('maliKarne: borçsuz kulüp seçim mali karnesini yükseltir', mkBorcsuz > mkBorclu, `borçlu ${r1(mkBorclu)} → borçsuz ${r1(mkBorcsuz)}`);
+
+  // checkBorcsuz: borçsuza GEÇİŞ ANI — diğer disiplinlere bir defalık coşku dalgası + inbox
+  const G = { economy: { borc: 5 }, gauges: { taraftar: 50, itibar: 50, guven: 50 }, meta: { season: 1, week: 3 }, inbox: [] };
+  checkBorcsuz(G);
+  check('borçluyken tetiklenmez', G.gauges.taraftar === 50 && G.inbox.length === 0);
+  G.economy.borc = 0; checkBorcsuz(G);
+  check('borçsuza geçiş: taraftar+itibar+güven yükselir + kutlama mesajı',
+    G.gauges.taraftar > 50 && G.gauges.itibar > 50 && G.gauges.guven > 50 && G.inbox.some((m) => /borçsuz/i.test(m.t)),
+    `trf ${r1(G.gauges.taraftar)} itb ${r1(G.gauges.itibar)} güv ${r1(G.gauges.guven)}`);
+  const trf1 = G.gauges.taraftar;
+  G._borcsuzActive = false; checkBorcsuz(G); // aynı sezon yeniden geçiş → kutlanmaz (istismar koruması)
+  check('aynı sezon ikinci coşku tetiklenmez (kredi-öde istismar koruması)', G.gauges.taraftar === trf1);
+  G._borcsuzActive = false; G._borcsuzSeason = 1; G.meta.season = 2; const trf2 = G.gauges.taraftar; checkBorcsuz(G);
+  check('yeni sezonda borçsuzluk yeniden kutlanabilir', G.gauges.taraftar > trf2);
+}
 
 console.log(`\n${'─'.repeat(48)}\nSONUÇ: ${pass} geçti, ${fail} kaldı\n`);
 process.exit(fail ? 1 : 0);

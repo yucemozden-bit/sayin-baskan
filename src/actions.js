@@ -21,7 +21,7 @@ import { eleksiyon } from './engines/election.js';
 import { escalateHedef } from './engines/expectation.js';
 import { assignPersonalities, spreadMorale, hierarchy, katman } from './engines/dynamics.js';
 import { computeSentiment } from './engines/social.js';
-import { generateCoaches, hireCoach, generateStaff, describeStaff, staffQualityWord, cfoNoiseRange, ROLE_TR } from './models/staff.js';
+import { generateCoaches, hireCoach, generateStaff, describeStaff, staffQualityWord, cfoNoiseRange, ROLE_TR, STAFF_TRAITS } from './models/staff.js';
 import { generateMarket, transferFee, saleOffer, canBuy, windowOpen } from './engines/transfer.js';
 import { canUpgrade, effectiveUpgradeCost } from './engines/facilities.js';
 import { selectTag, makeHeadline, updateMediaTone, makeReport } from './engines/narrative.js';
@@ -106,6 +106,18 @@ export function applySetup(G, o = {}) {
   selectClub(G, lig2 ? 'kucuk' : (o.tier || 'orta'), identity, { lig2 });
   if (o.renk) G.club.renk = o.renk;       // özel renk — tema bunu her şeyin üstünde okur
   if (o.sehir && String(o.sehir).trim()) G.club.sehir = String(o.sehir).trim().slice(0, 24);
+  if (o.arma) G.club.arma = o.arma;       // arma stili (kalkan/daire/klasik) — krest her yerde bu şekilde çizilir
+  if (o.lakap && String(o.lakap).trim()) G.club.lakap = String(o.lakap).trim().slice(0, 20);
+  // BAŞKAN GEÇMİŞİ — pasif yetenek (kuruluşta bir defalık başlangıç etkisi; selectClub sonrası uygulanır)
+  G.baskanGecmisi = o.baskanGecmisi || 'isadami';
+  if (G.baskanGecmisi === 'isadami') {
+    G.economy.kasa = Math.round(G.economy.kasa * 1.2 * 10) / 10; // +%20 başlangıç sermayesi
+  } else if (G.baskanGecmisi === 'efsane') {
+    G.tdRelation = clamp((G.tdRelation ?? 70) + 15, 0, 100);      // soyunma odası uyumu
+    for (const p of G.squad) p.morale = clamp(p.morale + 6, 0, 100);
+  } else if (G.baskanGecmisi === 'halk') {
+    G.gauges.taraftar = clamp(G.gauges.taraftar + 8, 0, 100);     // taraftar sabrı (yüksek destekle başla)
+  }
   return G;
 }
 
@@ -846,6 +858,7 @@ function finishWeekTail(G, lateMove) {
   if (boardAvg != null) targets.guven = boardAvg;
   updateFanGroups(G);
   applyInertia(G.gauges, targets);
+  checkBorcsuz(G); // borçsuza geçiş anı: mali uçar + diğer disiplinlere coşku dalgası
   decayPromiseHope(G);
 
   // D4: milli aradan sakat dönme (%8, en iyi oyunculardan biri)
@@ -1001,7 +1014,7 @@ function finishWeekTail(G, lateMove) {
   // §4: Kongre trend verisi — haftalık oy projeksiyonu (mevcut sezon geçici karneyle)
   {
     const savedH = G.history;
-    G.history = { seasons: [...savedH.seasons, { pos: G.myPos, champion: false }] };
+    G.history = { seasons: [...savedH.seasons, { pos: G.myPos ?? G.club.hedefSira, champion: false }] }; // maç öncesi myPos yok → hedef sıra (nötr)
     const proj = eleksiyon(G, { baslangicBorc: G.termStartBorc, tutulmayanVaat: 0 });
     G.history = savedH;
     G.prevBreakdown = G.lastProj ? G.lastProj.breakdown : null;
@@ -1288,7 +1301,29 @@ export function setTicketPrice(G, price) {
   G.economy.ticketPrice = clamp(price, 0.5, 2.0);
   if (G.term) G.term.maxTicket = Math.max(G.term.maxTicket ?? 0, G.economy.ticketPrice); // P24 izi
 }
-export function payDebtAmount(G, amount) { const p = payDebt(G, amount); pushInbox(G, { cat: 'mali', t: 'Borç ödemesi', b: `${fmt1(p)}mn borç kapatıldı.` }); }
+export function payDebtAmount(G, amount) { const p = payDebt(G, amount); pushInbox(G, { cat: 'mali', t: 'Borç ödemesi', b: `${fmt1(p)}mn borç kapatıldı.` }); checkBorcsuz(G); }
+
+// BORÇSUZ MİLESTONE: kulüp borçsuz duruma GEÇTİĞİ AN mali disiplin uçar (maliHedef/maliKarne'de flat bonus),
+// ayrıca o an diğer disiplinlere — taraftar, itibar, kurul güveni — bir defalık coşku dalgası yayılır.
+// Sezonda 1 kez tetiklenir (kredi-al/öde döngüsüyle istismar edilemesin); RESET_ESIK üstünde yeniden
+// borçlanılırsa bayrak sıfırlanır ve gelecek gerçek kapanış yeniden kutlanabilir.
+export function checkBorcsuz(G) {
+  const borcsuz = G.economy.borc <= 0;
+  if (borcsuz && !G._borcsuzActive) {
+    G._borcsuzActive = true;
+    const sezon = G.meta?.season ?? 0;
+    if (G._borcsuzSeason !== sezon) {
+      G._borcsuzSeason = sezon;
+      const R = TUNING.ECONOMY.BORCSUZ;
+      G.gauges.taraftar = clamp(G.gauges.taraftar + R.RIPPLE_TARAFTAR, 0, 100);
+      G.gauges.itibar = clamp(G.gauges.itibar + R.RIPPLE_ITIBAR, 0, 100);
+      G.gauges.guven = clamp(G.gauges.guven + R.RIPPLE_GUVEN, 0, 100);
+      pushInbox(G, { cat: 'mali', t: '🎉 Kulüp borçsuz!', b: 'Son kuruş borç kapandı — kongre ayakta alkışlıyor. Mali tablo tertemiz; taraftar, itibar ve kurul güveni birden yükseldi. "Borçsuz kulüp" artık laf değil, tabela gerçeği.' });
+    }
+  } else if (!borcsuz && G._borcsuzActive && G.economy.borc > (TUNING.ECONOMY.BORCSUZ.RESET_ESIK ?? 1)) {
+    G._borcsuzActive = false; // yeniden borçlanıldı — gelecek kapanış tekrar kutlanabilir
+  }
+}
 export function restructureDebt(G) {
   if (G.economy.borc <= 0) return;
   // SPAM KORUMASI: bankalar aynı sezon İKİNCİ kez masaya oturmaz; faiz tabandaysa anlamı yok
@@ -1337,7 +1372,7 @@ function spUret(G, slot, forceType = null) {
   G._spAdlar = G._spAdlar || [];
   const o = generateSponsorOffer({
     clubName: G.club?.name || 'kulup', week: G.meta?.week || 0, seq: G._spSeq,
-    weeklyBase: sponsorSlotWeekly(G, slot), usedNames: G._spAdlar,
+    weeklyBase: sponsorSlotWeekly(G, slot), usedNames: G._spAdlar, salt: G._spSalt || 0,
   }, slot, forceType);
   G._spAdlar.push(o.name);
   return o;
@@ -1346,6 +1381,11 @@ function spUret(G, slot, forceType = null) {
 export function initSponsorMarket(G) {
   G.sponsorPazari = { gogus: [], naming: [], kol: [] };
   G._spSeq = 0; G._spAdlar = []; G._spSonGelis = 0;
+  // Kariyer-salt: kulüp KİMLİĞİNDEN deterministik (başkan adı/lakap/arma/kuruluş) → her kariyerde
+  // FARKLI firma isimleri (aynı kulüp bile), ama aynı kariyer içinde sabit (kayıt/test determinizmi korunur).
+  const idStr = `${G.club?.name || ''}|${G.baskan?.name || ''}|${G.club?.lakap || ''}|${G.club?.arma || ''}|${G.club?.founded || ''}`;
+  let hs = 0; for (let i = 0; i < idStr.length; i++) hs = (hs * 31 + idStr.charCodeAt(i)) >>> 0;
+  G._spSalt = hs;
   const riskli = ((G.club?.name || '').length % 2) ? 'kripto' : 'bahis';
   // Zengin masa: 4 göğüs (2 kurumsal + fintech + riskli), 3 kol (yerel + 2 kurumsal), 3 naming
   G.sponsorPazari.gogus = [spUret(G, 'gogus', 'standart'), spUret(G, 'gogus', 'standart'), spUret(G, 'gogus', 'fintech'), spUret(G, 'gogus', riskli)];
@@ -1921,26 +1961,57 @@ export function resolveLoanFile(G, msgId, choice) {
 export function requestStaffFile(G, role) {
   if (!TUNING.STAFF.ROLES.includes(role)) return { ok: false };
   if (G.staff[role]) return { ok: false, why: 'Koltuk dolu' };
-  if (G.inbox.some((m) => m.action === 'stfile' && !m.resolved)) return { ok: false, why: 'Aday süreci sürüyor' };
+  // Aynı KOLTUK için açık dosya varsa engelle (farklı koltuklar aynı anda açılabilir — enkaz sonrası
+  // birden çok boş koltuğu paralel doldurmak meşru). Adaylar artık MESAJDA taşınır → çoklu dosya güvenli.
+  if (G.inbox.some((m) => m.action === 'stfile' && !m.resolved && (m.stRole || null) === role)) return { ok: false, why: 'Bu koltuk için aday süreci sürüyor' };
   const cands = generateStaff(role, G.club.reputation, { names: G.data.names, count: randint(2, 3) });
-  G.staffCands = { role, cands };
+  G.staffCands = { role, cands }; // geriye dönük uyum (okuyucular önce mesajı kullanır)
   pushInbox(G, {
     cat: 'kongre', t: `${G.gm.name} (GM): ${ROLE_TR[role]} aday dosyası`,
     b: cands.map((c, i) => `${i + 1}) ${c.name} — ${describeStaff(c)} (${fmt1(c.wage)}mn/sezon)`).join(' · '),
-    action: 'stfile',
+    action: 'stfile', stRole: role, stCands: cands,
   });
   return { ok: true };
 }
 
 export function hireStaffFile(G, msgId, idx) {
   const m = G.inbox.find((x) => x.id === msgId && x.action === 'stfile');
-  if (!m || m.resolved || !G.staffCands) return { ok: false };
-  const c = G.staffCands.cands[Number(idx)];
-  if (!c) return { ok: false };
-  G.staff[G.staffCands.role] = c;
-  m.resolved = true; G.staffCands = null;
-  pushInbox(G, { cat: 'kongre', t: `İmza: ${c.name} (${ROLE_TR[c.role]})`, b: `${describeStaff(c)}. Maaşı gider kalemine işledi.` });
+  if (!m || m.resolved) return { ok: false };
+  // Adaylar ÖNCE mesajdan (m.stCands) — eski kayıtlarda global G.staffCands'e düşer.
+  const cands = (m.stCands && m.stCands.length ? m.stCands : (G.staffCands || {}).cands) || [];
+  const role = m.stRole || (G.staffCands || {}).role;
+  const c = cands[Number(idx)];
+  if (!c || !role) return { ok: false };
+  G.staff[role] = c;
+  m.resolved = true;
+  if ((G.staffCands || {}).role === role) G.staffCands = null;
+  pushInbox(G, { cat: 'kongre', t: `İmza: ${c.name} (${ROLE_TR[c.role] || ROLE_TR[role]})`, b: `${describeStaff(c)}. Maaşı gider kalemine işledi.` });
   return { ok: true };
+}
+
+// stfile onarımı: adayları mesaj gövdesinden RNG'siz geri kur (isimler korunur). wage = skill×WAGE_K
+// olduğundan skill birebir geri gelir; trait de "label" ile eşleşir. Eski çoklu-dosya kayıtlarını kurtarır.
+function roleFromStaffTitle(t) {
+  const s = String(t || '');
+  for (const [r, tr] of Object.entries(ROLE_TR)) if (s.includes(tr)) return r;
+  return null;
+}
+function parseStaffBody(role, body) {
+  const S = TUNING.STAFF;
+  return String(body || '').split(' · ').map((seg) => {
+    const nameM = seg.match(/^\s*\d+\)\s*(.+?)\s+—\s+/);
+    const wageM = seg.match(/\(([\d.]+)\s*mn\/sezon\)/);
+    if (!nameM || !wageM) return null;
+    const wage = parseFloat(wageM[1]);
+    // Maaş gövdede fmt1 ile tek ondalığa yuvarlı → skill kaba gelir. Kalite kelimesiyle BANDA kelepçele
+    // (staffQualityWord eşiği: <55 vasat · <72 ehli · else yıldız) → gösterilen kaliteyle birebir tutar.
+    const qual = (seg.match(/—\s*([^,]+?)\s*,/) || [])[1] || '';
+    const band = qual.includes('yıldız') ? [72, 95] : qual.includes('ehli') ? [55, 71] : [35, 54];
+    const skill = Math.max(band[0], Math.min(band[1], Math.round(wage / S.WAGE_K)));
+    const labelM = seg.match(/—\s*[^,]+,\s*(.+?)\s+—/); // "— kalite, LABEL —"
+    const trait = (labelM && STAFF_TRAITS.find((t) => t.label === labelM[1].trim())) || null;
+    return { role, name: nameM[1].trim(), skill, wage, trait: trait ? trait.key : 'caliskan' };
+  }).filter(Boolean);
 }
 
 // Basın Sözcüsü: negatif manşeti söndür (4 haftada 1 hak)
@@ -2430,8 +2501,12 @@ export function resolveEvent(G, msgId, optIdx) {
   const opt = (m.event.options || [])[Number(optIdx)];
   if (!opt) return { ok: false };
   m.resolved = true;
-  applyEventEffects(G, opt.effects || {});
-  pushInbox(G, { cat: 'olay', t: `${m.event.title} → ${opt.label}`, b: (opt.effects && opt.effects.note) || 'Kararın etkileri sahaya ve kasaya yansıdı.' });
+  const notes = applyEventEffects(G, opt.effects || {});
+  // Sonuç kartı: seçimin özeti + GERÇEKLEŞEN sonuç (kumar tuttu mu, ne oldu). "detaylı bilgi" bunu kapsar.
+  const base = (opt.effects && opt.effects.note) || '';
+  const gercek = notes.filter(Boolean).join(' · ');
+  const body = [...new Set([base, gercek].filter(Boolean))].join(' — ') || 'Kararın etkileri sahaya ve kasaya yansıdı.';
+  pushInbox(G, { cat: 'olay', t: `${m.event.title} → ${opt.label}`, b: body });
   return { ok: true };
 }
 
@@ -3033,19 +3108,25 @@ function matchCharSentence(G, { myRes, myGoals, oppGoals, isDerby, adam }) {
 }
 
 // ═══ Y6: MASA DOKUNUŞLARI ═══
-export function deskAction(G) {
+export function deskAction(G, karar = 'katil') {
   if (!G.deskCard || G.deskUsedThisTick) return { ok: false };
   const D = TUNING.YASAYAN.DESK;
   const key = G.deskCard;
   G.deskUsedThisTick = true;
   G.lastDesk = key;
+  // VETO / GEÇ — masaya oturmadın: etki uygulanmaz, küçük fırsat kaçar (kasa/gündem korunur)
+  if (karar === 'gec' || karar === 'veto') {
+    registerDecision(G, 'desk:gec');
+    pushInbox(G, { cat: 'kongre', t: 'Masaya oturmadın', b: `${DESK_CARDS[key].label} — bu haftalık geçildi. Küçük dokunuş kaçtı ama ne kasa ne gündem yıprandı; sıradaki fırsata bakarsın.`, noQueue: true });
+    return { ok: true, gec: true };
+  }
   G.deskCounts = G.deskCounts || {};
   G.deskCounts[key] = (G.deskCounts[key] || 0) + 1;
   registerDecision(G, 'desk:' + key);
   if (key === 'antrenman') { for (const p of G.squad) p.morale = clamp(p.morale + D.moralePlus, 0, 100); }
   else if (key === 'dernek') { G.gauges.taraftar = clamp(G.gauges.taraftar + D.taraftarPlus, 0, 100); }
   else if (key === 'sponsor') { G.club.reputation = clamp(G.club.reputation + D.sponsorRep, 0, 100); }
-  else if (key === 'genc') { G.fogNarrow = (G.fogNarrow || 0) + 0; } // sis mikro (görsel/scout hissi)
+  else if (key === 'genc') { G.fogNarrow = clamp((G.fogNarrow || 0) + D.fogNarrow, 0, 3); } // scout sisi kalıcı MİKRO daralır (piyasa ±aralığı, tavan 3)
   if (rand(0, 1) < D.CHAT_P) pushInbox(G, { cat: 'kongre', t: 'Kısa sohbet', b: deskChat(key) });
   else pushInbox(G, { cat: 'kongre', t: DESK_CARDS[key].label, b: DESK_CARDS[key].desc + ' Küçük ama görünür bir dokunuş.' });
   return { ok: true };
@@ -3153,10 +3234,18 @@ export function applyComebackWin(G) {
   const enkaz = [];
   // 3 muhalefet sezonu kadroya işler: yaşlanma + AI tipinin satışları
   for (let i = 0; i < TUNING.MIRAS.OPP_SEASONS; i++) developSquad(G.squad, G.facilities);
-  if (o.pres.type === 'AVCI' || o.pres.type === 'MUHASEBECI') {
+  if (o.pres.type === 'MUHASEBECI') {
+    // Bilançoyu düzeltmek için kadronun OMURGASI (en değerli 2) satıldı → ilk 11 çöker
     const satilan = G.squad.slice().sort((a, b) => b.marketValue - a.marketValue).slice(0, 2);
     G.squad = G.squad.filter((p) => !satilan.includes(p));
     enkaz.push(`Kadronun iki direği satılmış: ${satilan.map((p) => p.name).join(', ')}`);
+  } else if (o.pres.type === 'AVCI') {
+    // Kâr avcısı: en değerli GENÇ yetenekler flip edildi (omurga değil, GELECEK satıldı) —
+    // ilk 11'e etkisi daha az ama altyapı boşalır. Genç yoksa en değerliye düşer (güvence).
+    const genc = G.squad.filter((p) => p.age <= 23).sort((a, b) => b.marketValue - a.marketValue);
+    const satilan = (genc.length >= 1 ? genc : G.squad.slice().sort((a, b) => b.marketValue - a.marketValue)).slice(0, 2);
+    G.squad = G.squad.filter((p) => !satilan.includes(p));
+    enkaz.push(`En parlak genç${satilan.length > 1 ? 'ler' : ''} elden çıkarılmış: ${satilan.map((p) => p.name).join(', ')} — komisyon cebe, gelecek gitti`);
   }
   G.economy.borc = Math.max(0, Math.round(o.st.borc));
   if (G.economy.borc > D.borc + 5) enkaz.push(`Borç ${D.borc}mn'den ${G.economy.borc}mn'ye şişmiş`);
@@ -3173,9 +3262,18 @@ export function applyComebackWin(G) {
   G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G);
   G.enkazRaporu = { maddeler: enkaz.length ? enkaz : ['Devraldığın kulüp beklediğinden az yıpranmış — şanslısın.'], pres: o.pres };
   G.lossStreak = 0;
+  // DÖNÜŞ MANDASI: kongre seni bir OYLA geri çağırdı — kurul güveni & taraftar TAZE MANDAYA oturur,
+  // 3 sezon önce kaybettiğin andaki düşük değerde KALMAZ. Enkazın (borç/kadro) zorluğu ekonomiden gelir,
+  // kurul güveninden değil. Güç, dönüş oy oranıyla ölçeklenir (güçlü çağrı → güçlü başlangıç).
+  const M = TUNING.MIRAS.COMEBACK.MANDATE;
+  const oy = clamp(G.election?.oyOrani ?? 0.5, 0, 1);
+  const manda = Math.max(0, (oy - 0.5) * 100); // 0.5→0, 0.65→15, 0.8→30
+  G.gauges.guven = clamp(Math.round(M.GUVEN_BASE + manda * M.GUVEN_MANDA_K), M.GUVEN_FLOOR, 100);
+  G.gauges.taraftar = clamp(Math.max(Math.round(G.gauges.taraftar), M.TARAFTAR_BASE + Math.round(manda * 0.2)), 0, 100);
+  G.gauges.itibar = clamp(Math.max(Math.round(G.gauges.itibar), M.ITIBAR_MIN), 0, 100);
   G.comebackWon = true; // B4d başarım
   G.opposition = null;
-  anKarti(G, { t: 'Koltuğa dönüş', b: `${o.pres.name} yenildi; kongre eski başkanını geri çağırdı.`, etki: 10 });
+  anKarti(G, { t: 'Koltuğa dönüş', b: `${o.pres.name} yenildi; kongre eski başkanını geri çağırdı — kurul güveni tazelendi (%${Math.round(G.gauges.guven)}).`, etki: 10 });
   pushInbox(G, { cat: 'kongre', t: 'ENKAZ RAPORU masanda', b: G.enkazRaporu.maddeler.join(' · '), noQueue: true });
 }
 // ── M4 KARİYER KAPANIŞ ──
@@ -3389,6 +3487,16 @@ export function migrateLoaded(G) {
   (G.loanedOut || []).forEach(canlandir);
   for (const m of G.inbox || []) if (m.file && m.file.player) canlandir(m.file.player);
   if (G.delayedFile && G.delayedFile.player) canlandir(G.delayedFile.player);
+  // stfile ONARIMI: adaylar eskiden global G.staffCands'te (tek role) tutuluyordu → çoklu açık dosyada
+  // butonlar boş kalıp seçim yapılamıyordu. Her dosyanın adaylarını gövdeden geri kur (mesaja bağla).
+  for (const m of G.inbox || []) {
+    if (m.action !== 'stfile' || m.resolved || (m.stCands && m.stCands.length)) continue;
+    const role = m.stRole || roleFromStaffTitle(m.t);
+    if (!role) continue;
+    const glob = (G.staffCands && G.staffCands.role === role && G.staffCands.cands) || null;
+    const cands = (glob && glob.length) ? glob : parseStaffBody(role, m.b);
+    if (cands && cands.length) { m.stRole = role; m.stCands = cands; }
+  }
   return G;
 }
 
@@ -3549,6 +3657,25 @@ export function toggleKiralikListe(G, playerId) {
     pushInbox(G, { cat: 'transfer', t: `Listeden çekildi: ${p.name}`, b: 'GM oyuncuya "plan değişti, buradasın" dedi — moral kısmen döndü.', noQueue: true });
   }
   return { ok: true, listede: p.kiralikListe };
+}
+// Sözleşme yenile — oyuncuyu bağla: dönemde 1 kez, süre uzar, moral+başkana güven yükselir,
+// maaş biraz artar (gerçek bedel: gelecekteki maaş yükü). Kiralık gelen yenilenemez.
+export function renewContract(G, playerId) {
+  const p = G.squad.find((x) => String(x.id) === String(playerId));
+  if (!p) return { ok: false };
+  if (p.loanIn) { pushInbox(G, { cat: 'transfer', t: 'Olmaz Başkanım', b: `${p.name} kiralık geldi — sözleşmesi asıl kulübünde, yenilenemez.`, noQueue: true }); return { ok: false }; }
+  const term = G.meta?.term ?? 1;
+  if ((p.contractYears ?? 0) >= 5) { pushInbox(G, { cat: 'transfer', t: 'Sözleşme zaten uzun', b: `${p.name} zaten uzun sözleşmeli — daha fazla uzatmak menajerini bile şaşırtır.`, noQueue: true }); return { ok: false }; }
+  if (p._renewTerm === term) { pushInbox(G, { cat: 'transfer', t: 'Bu dönem yenilendi', b: `${p.name} ile bu dönem zaten masaya oturuldu. Bir dönem sonra tekrar konuşulur.`, noQueue: true }); return { ok: false }; }
+  p.contractYears = Math.min(5, (p.contractYears ?? 2) + 2);
+  p.morale = clamp(p.morale + 4, 0, 100);
+  p.baskanaGuven = clamp((p.baskanaGuven ?? 50) + 4, 0, 100);
+  const zam = Math.round(p.wage * 0.08 * 100) / 100; // %8 maaş zammı — gelecekteki yük
+  p.wage = Math.round((p.wage + zam) * 100) / 100;
+  p.refreshValue && p.refreshValue();
+  p._renewTerm = term;
+  pushInbox(G, { cat: 'transfer', t: `Sözleşme yenilendi: ${p.name}`, b: `${p.name} ${p.contractYears} yıllık yeni sözleşmeye imza attı. Soyunma odasında "başkan bana güveniyor" havası — moral ve bağlılık yükseldi. Maaş ${fmt1(zam)}mn arttı (yıllık ${fmt1(p.wage)}mn).`, noQueue: true });
+  return { ok: true, contractYears: p.contractYears };
 }
 function vitrinTick(G) {
   const V = TUNING.MEGA.VITRIN;

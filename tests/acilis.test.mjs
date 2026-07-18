@@ -34,19 +34,19 @@ console.log('\n── Sahne 1: Ana giriş ──');
 {
   setSeed(11);
   const G = A.newGame(data, 'normal');
-  const bare = shell(G, { content: 'X', center: true, bare: true });
-  check('1a: bare kabukta topbar YOK (takvim/kasa kariyer öncesi görünmez)', !bare.includes('topbar') && !bare.includes('class="money"'), '');
-  check('1a: main.js CLUB_SELECT bare:true kullanıyor', /CLUB_SELECT[\s\S]{0,120}bare: true/.test(mainSrc), '');
-  check('1b: projektör huzmeleri CSS\'te (.gate::after)', css.includes('.gate::after'), '');
+  const html = clubSelect.render(G);
+  // AÇILIŞ sb- görsel katman (2026-07): tam-ekran sb-gate, topbar yok (kariyer öncesi)
+  check('1a: açılış tam-ekran sb-gate (topbar yok — kariyer öncesi)', html.includes('sb-gate') && !html.includes('sb-topbar'), '');
+  check('1a: main.js CLUB_SELECT doğrudan clubSelect render eder', /CLUB_SELECT[\s\S]{0,120}clubSelect\.render/.test(mainSrc), '');
+  check('1b: gece atmosferi CSS\'te (.sb-atmo + vinyet)', css.includes('.sb-atmo') && css.includes('.sb-vignette'), '');
   const eksikLore = data.teams.filter((t) => !t.lore || t.lore.length < 20);
   check(`1c: lore alanı 18/18 dolu (≥20 karakter)`, data.teams.length === 18 && eksikLore.length === 0, eksikLore.map((t) => t.name).join(',') || '18/18');
-  const html = clubSelect.render(G);
-  check('1c: kartta lore paragrafı var, üstte anlatı', (html.match(/class="lore"/g) || []).length >= 3, '');
-  check('1d: mikro-SVG ikonlar (stroke=1), emoji istatistik YOK', html.includes('stroke-width="1"') && !/[⚡👥🎯💰]/u.test(html), '');
-  check('1e: Ironman tooltip\'i tek-şans uyarısı taşıyor', html.includes('Tek dönem, tek şans'), '');
-  check('1f: hover sahneyi kulüp rengine boyar (--gate-glow) + uğultu köprüsü', html.includes("setProperty('--gate-glow'") && html.includes('SBhover') && mainSrc.includes('globalThis.SBhover'), '');
+  check('1c: kartta lore paragrafı + anlatı (sb-cc-lore ≥3)', (html.match(/sb-cc-lore/g) || []).length >= 3, '');
+  check('1d: stat grid etiketleri (GÜÇ/STADYUM/BÜTÇE/BORÇ/TARAFTAR/ZORLUK)', ['GÜÇ', 'STADYUM', 'BÜTÇE', 'BORÇ', 'TARAFTAR', 'ZORLUK'].every((k) => html.includes(k)), '');
+  check('1e: mod tooltip\'i — Geri Adım Yok (ironman) tek-yaşam uyarısı', html.includes('Geri Adım Yok') && html.includes('imza geri alınmaz'), '');
+  check('1f: kart renk şeridi + hover (kulüp rengine boyanır)', html.includes('sb-cc-strip') && css.includes('.sb-club-card:hover'), '');
   check('1g: yeniden çevirme SINIRSIZ (hak sayacı yok)', html.includes('İstediğin kadar çevir') && !mainSrc.includes('_rerollLeft'), '');
-  check('1h: "İlk dönemin mi? <kulüp> ile başla." satırı önerilir kartında', html.includes('Yıldızspor ile başla'), '');
+  check('1h: önerilen kulüp "yeni başkana göre" rozeti + featured', html.includes('yeni başkana göre') && html.includes('is-featured'), '');
 }
 
 // ══ SAHNE 2 — VAAT SEÇİMİ ══
@@ -57,18 +57,19 @@ console.log('\n── Sahne 2: Vaat seçimi ──');
   A.selectClub(G, 'orta');
   G.phase = 'TERM_SETUP'; G._setupStep = 1; G._sel = [];
   let html = promiseSelect.render(G);
-  check('2a: zorluk 4-5 kart BÜYÜK (vow--buyuk + "Büyük Kumar" rozeti)', html.includes('vow--buyuk') && html.includes('Büyük Kumar'), '');
-  check('2a: zorluk 1-2 kart kompakt (vow--kompakt)', html.includes('vow--kompakt'), '');
-  check('2b: risk/oy göstergesi + fısıltı her açık kartta', (html.match(/vow-oy/g) || []).length >= 5 && html.includes('tutmazsan'), '');
+  // sb- görsel katman (2026-07): zorluk 4-5 → BÜYÜK KUMAR rozeti (sb-gamble); zorluk noktaları (sb-dot)
+  check('2a: zorluk 4-5 kart BÜYÜK KUMAR rozeti (sb-gamble)', html.includes('sb-gamble') && html.includes('BÜYÜK KUMAR'), '');
+  check('2a: zorluk noktaları render (dolu + boş)', html.includes('sb-dot is-on') && /class="sb-dot "/.test(html), '');
+  check('2b: risk/oy tag\'leri (+/△) + fısıltı her açık kartta', (html.match(/sb-tag-pos/g) || []).length >= 5 && html.includes('tutmazsan'), '');
   const conflictsVar = data.promises.filter((p) => p.conflicts && p.conflicts.length);
   check('2c: promises.json çelişki alanı (≥6 vaat)', conflictsVar.length >= 6, `${conflictsVar.length} vaat`);
   G._sel = ['P02', 'P04']; // Borçsuz Kulüp ↔ Kadro Değeri: çelişen ikili
   html = promiseSelect.render(G);
-  check('2c: çelişen ikili seçilince GM fısıltısı yanar', html.includes('celiski-uyari') && html.includes('Aynı kasadan iki kere para çıkmaz'), '');
+  check('2c: çelişen ikili seçilince GM fısıltısı yanar', html.includes('sb-conflict-note') && html.includes('Aynı kasadan iki kere para çıkmaz'), '');
   G._sel = ['P01'];
   html = promiseSelect.render(G);
-  check('2c: çelişkisiz seçimde uyarı YOK (engel değil, fısıltı)', !html.includes('celiski-uyari'), '');
-  check('2d: rakip gölgesi kulis kartı sahnede', G.rakipKulis && html.includes('kulis-golge') && html.includes(G.rakipKulis), G.rakipKulis);
+  check('2c: çelişkisiz seçimde uyarı YOK (engel değil, fısıltı)', !html.includes('sb-conflict-note'), '');
+  check('2d: rakip gölgesi kulis kartı sahnede', G.rakipKulis && html.includes('sb-whisper') && html.includes(G.rakipKulis), G.rakipKulis);
   check('2e: açıklama TEK cümle + detay tooltip\'te', html.includes('tutmazsan sandıkta koz') && html.includes('data-tip="Söz verdiğin yolda'), '');
 }
 
@@ -85,14 +86,14 @@ console.log('\n── Sahne 3: Direktif ──');
   G.phase = 'TERM_SETUP'; G._setupStep = 2; G._sel = ['P15'];
   G._dir = { budgetKey: 'yuksek', line: 'yildiz' };
   const html = promiseSelect.render(G);
-  check('3a: GM kartı seçimle KONUŞUR (yuksek|yildiz cümlesi sahnede)', html.includes('gm-kart') && html.includes(gmD['yuksek|yildiz'].slice(0, 25)), '');
+  check('3a: GM kartı seçimle KONUŞUR (yuksek|yildiz cümlesi sahnede)', html.includes('sb-gm-card') && html.includes(gmD['yuksek|yildiz'].slice(0, 25)), '');
   const beklenen = Math.round(G.economy.kasa * TUNING.APPROVAL.BUDGET_PRESET.orta);
   check('3b: bütçe butonunda GERÇEK rakam (≈mn, kasadan hesaplı)', html.includes('≈') && html.includes(`${beklenen}`), `Dengeli ≈${beklenen}mn`);
-  check('3c: düzen — GM kartı solda (makam-grid)', html.includes('makam-grid') && css.includes('.makam-grid'), '');
+  check('3c: düzen — GM kartı solda (sb-three)', html.includes('sb-three') && css.includes('.sb-three'), '');
   // MAKAM ODASI kurgusu: GM açılışı GERÇEK rakamlarla konuşur, kararlar başkan repliği, tutanak satırı
-  check('3d: GM açılış repliği kasadaki gerçek parayla konuşur', html.includes('gm-balon') && html.includes('Hayırlı olsun') && html.includes('milyon borç'), '');
-  check('3d: SEÇİLİ karar başkan repliğini taşır (yuksek+yildiz seçili)', html.includes('btn replik') && html.includes('Gerekeni harca') && html.includes('gelişi manşet olsun'), '');
-  check('3d: TAM GENİŞLİK tutanak belgesi + MÜHÜRLE CTA + mühürlü sözler rayı', html.includes('DÖNEM SÖZLEŞMESİ') && html.includes('MÜHÜRLE') && html.includes('Mühürlü Sözler') && html.includes('Basına ne diyeyim'), '');
+  check('3d: GM açılış repliği kasadaki gerçek parayla konuşur', html.includes('sb-brief') && html.includes('Hayırlı olsun') && html.includes('milyon borç'), '');
+  check('3d: SEÇİLİ karar başkan repliğini taşır (yuksek+yildiz seçili)', html.includes('sb-opt-q') && html.includes('Gerekeni harca') && html.includes('gelişi manşet olsun'), '');
+  check('3d: TAM GENİŞLİK tutanak belgesi + MÜHÜRLE CTA + mühürlü sözler', html.includes('DÖNEM SÖZLEŞMESİ') && html.includes('MÜHÜRLE') && html.includes('MÜHÜRLÜ SÖZLER') && html.includes('BASINA NE DİYEYİM'), '');
   check('3d: zafer barında başkanın ADI yazar (SEN değil)', readFileSync(new URL('../src/main.js', import.meta.url), 'utf8').includes('z.baskanAd'), '');
 }
 
@@ -128,18 +129,19 @@ console.log('\n── Sahne 5: İlk kokpit ──');
   check('5a: kariyerin ilk kokpiti işaretli (G._ilkKokpit)', G._ilkKokpit === true, '');
   G.transition = null;
   const ilkHtml = cockpit.render(G);
-  check('5a: ilk render "ilk-kokpit" sınıfı taşır (nabız devralma 0→değer)', ilkHtml.includes('ilk-kokpit') && css.includes('gaugeDol'), '');
-  check('5a: ikinci render animasyonu TEKRARLAMAZ (tek sefer)', !cockpit.render(G).includes('ilk-kokpit'), '');
-  check('5b: hafta-1 vaat şeridinde "riskte"=0, durum "başlangıç"', !ilkHtml.includes('>riskte<') && ilkHtml.includes('başlangıç'), '');
+  // KOKPİT sb- (2026-07): KULÜP NABZI gauge halkaları + dolum geçişi (stroke-dashoffset transition)
+  check('5a: kokpit gauge halkaları render + dolum geçişi', ilkHtml.includes('sb-gauge-fg') && ilkHtml.includes('KULÜP NABZI') && css.includes('stroke-dashoffset'), '');
+  check('5a: ilk kokpit bayrağı ilk render sonrası düşer (tek sefer)', G._ilkKokpit === false, '');
+  check('5b: hafta-1 gündemde "riskte" YOK, "başlangıç" var', !ilkHtml.includes('riskte') && ilkHtml.includes('başlangıç'), '');
   check('5d: temiz başlangıçta NEGATİF çip = 0 (düşük/formsuz/bitkin yok)', !/düşük|formsuz|bitkin/.test(ilkHtml) && !ilkHtml.includes('chip--warn'), '');
   check('5d: hafta ≤2 form çipi "sezon başı" der (form henüz konuşmaz)', /sezon başı/i.test(ilkHtml), '');
   // 6d kuralı korunur: kond 0.95 (nötr .94 + tolerans içinde) "zinde" DEĞİL; 0.97 zinde
   G.meta.week = 3;
   G.power = { ...G.power, kond: 0.95 };
   const h95 = cockpit.render(G);
-  check('5d: kond 0.95 → "yorgun" (6d: kelime çarpanı abartmaz)', h95.includes('yorgun') && !h95.includes('zinde'), '');
+  check('5d: kond 0.95 → "yorgun" (6d: kelime çarpanı abartmaz)', /yorgun/i.test(h95) && !/zinde/i.test(h95), '');
   G.power = { ...G.power, kond: 0.97 };
-  check('5d: kond 0.97 → "zinde" hâlâ kazanılabilir', cockpit.render(G).includes('zinde'), '');
+  check('5d: kond 0.97 → "zinde" hâlâ kazanılabilir', /zinde/i.test(cockpit.render(G)), '');
 }
 
 // ══ TUTARLILIK — rakip gölgesi seçim gecesine döner ══

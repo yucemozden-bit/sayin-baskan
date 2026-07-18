@@ -4,11 +4,11 @@
 // Not: yaprak bileşenler (gauge/tablo/inbox/vaat) korunur; radikallik DÜZEN + DERİNLİK katmanında.
 import { TUNING } from '../config.js';
 import { standings } from '../engines/league.js';
-import { esc, gaugesBlock } from './frame.js';
+import { esc, gaugesBlock, fmt } from './frame.js';
 import { isCriticalWeek, relWord, promiseStatus } from '../actions.js';
 import { DESK_CARDS } from '../engines/director.js';
 import { oppColor, clubPalette, rawClubColor } from './theme.js';
-import { rail as inboxRail } from './inbox.js';
+import { rail as inboxRail, itemActions } from './inbox.js';
 
 export function render(G) {
   const table = standings(G.league);
@@ -162,21 +162,269 @@ export function render(G) {
   // AÇILIŞ 5a: ilk kokpit — gauge halkaları 0→değere dolar (tek sefer)
   const ilk = G._ilkKokpit; if (ilk) G._ilkKokpit = false;
 
-  // 3 KOLON: [Inbox SOLDA] · [Komuta masası] · [Lig]
-  return `<div class="cx-desk-wrap ${ilk ? 'ilk-kokpit' : ''}">
-    ${inboxRail(G)}
-    <section class="cx-col cx-col-main">
-      <div class="cx-hero-row">${gucPanel}${gaugesPanel}</div>
-      ${fixture}
-      ${prep}
-      ${desk}
-    </section>
-    <aside class="cx-col cx-col-league">
-      ${leaguePanel}
-      ${vaatPanel}
-      ${socialPanel}
-    </aside>
-    ${G.ligDetay ? ligModal(G, table) : ''}
+  return sbShell(G, {
+    crumb: `KOKPİT · SEZON ${G.meta.season} · ${hazir ? 'HAZIRLIK DÖNEMİ' : 'Hafta ' + Math.min(G.meta.week, G.SEASON_WEEKS)}`,
+    title: 'Başkanlık Masası',
+    body: `
+      ${sbPower(G, p)}
+      <div class="sb-kok-grid">
+        <div class="sb-kok-col">
+          ${sbFixtureCard(G, next, meRow, myC, oc)}
+          ${sbDecision(G)}
+        </div>
+        <div class="sb-kok-col">
+          ${sbGauges(G)}
+          ${hazir ? '' : sbTalk(G, p, next, injured)}
+          ${sbAgenda(G, next, meRow, injured)}
+        </div>
+        <div class="sb-kok-col">
+          ${sbTable(G)}
+        </div>
+      </div>`,
+  }) + (G.ligDetay ? ligModal(G, table) : '');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SB KABUK — Claude Design görsel katmanı (tam-ekran; #app'i doldurur)
+// topbar + sol nav rayı + ana içerik + alt aksiyon şeridi. nav/io/devam
+// mevcut data-act dispatch'ine bağlı (main.js). Diğer ekranlar hâlâ eski
+// shell()'i kullanır; ekran ekran göç.
+// ═══════════════════════════════════════════════════════════════════
+const NAV_SB = [
+  ['cockpit', 'Kokpit', '<rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/>'],
+  ['kadro', 'Kadro', '<circle cx="7" cy="7" r="3"/><path d="M2 17c0-3 2.3-5 5-5s5 2 5 5"/><path d="M13 4.4a3 3 0 010 5.2"/><path d="M14 12.2c2 .5 3.4 2.3 3.4 4.8"/>'],
+  ['transfer', 'Transfer', '<path d="M4 8h11l-3.2-3.2"/><path d="M16 12H5l3.2 3.2"/>'],
+  ['tesis', 'Tesisler', '<rect x="4" y="3" width="12" height="14" rx="1.2"/><path d="M8 6.5h.5M11.5 6.5h.5M8 9.5h.5M11.5 9.5h.5M8 12.5h.5M11.5 12.5h.5"/>'],
+  ['finans', 'Finans', '<path d="M3 3v14h14"/><path d="M6 14l3.2-3.4 2.6 1.8L17 6.5"/>'],
+  ['medya', 'Medya', '<circle cx="10" cy="13.5" r="1.6"/><path d="M10 11.4V4"/><path d="M6.4 6.4a6 6 0 000 8M13.6 6.4a6 6 0 010 8"/>'],
+  ['kongre', 'Kongre', '<path d="M3 7l7-4 7 4"/><path d="M4.5 7.5v7M8 7.5v7M12 7.5v7M15.5 7.5v7"/><path d="M3 16.5h14"/>'],
+  ['veri', 'Veri', '<rect x="3" y="10" width="3" height="7" rx=".6"/><rect x="8.5" y="4.5" width="3" height="12.5" rx=".6"/><rect x="14" y="8" width="3" height="9" rx=".6"/>'],
+  ['kulup', 'Kulüp', '<path d="M10 3l6 2v5c0 4-3 6.2-6 7-3-.8-6-3-6-7V5z"/>'],
+  ['inbox', 'Inbox', '<rect x="3" y="4" width="14" height="12" rx="1.6"/><path d="M3 7l7 4 7-4"/>'],
+];
+const SVG_IC = (inner) => `<svg class="sb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+
+// ARMA — kulüp kresti (kalkan/daire/klasik) + baş harf. color: runtime tema için 'var(--club)', önizleme için hex.
+export function crestSvg(style = 'kalkan', size = 'md', color = 'var(--club)', initial = 'K') {
+  const txt = `<text x="10" y="13.4" text-anchor="middle" font-family="Archivo,system-ui,sans-serif" font-weight="900" font-size="9" fill="#12100a">${esc(initial)}</text>`;
+  const shape = style === 'daire' ? `<circle cx="10" cy="10" r="8.6" fill="${color}"/>`
+    : style === 'klasik' ? `<rect x="1.6" y="1.6" width="16.8" height="16.8" rx="3.6" fill="${color}"/>`
+      : `<path d="M10 1.8l7.2 2.2v5.4c0 4.5-3.1 7.2-7.2 8.4-4.1-1.2-7.2-3.9-7.2-8.4V4z" fill="${color}"/>`;
+  return `<svg class="sb-crest-svg sb-crest-${size}" viewBox="0 0 20 20" aria-hidden="true">${shape}${txt}</svg>`;
+}
+
+// Ortak sb- TOPBAR — arma + kulüp + faz çipi + kasa/borç + başkan. back: {label, act, arg?} (setup ekranları için).
+// Kokpit + Sözünü Ver + göç edecek tüm ekranlar bunu paylaşır (tek doğruluk kaynağı).
+export function sbTopbar(G, { phaseChip = null, back = null } = {}) {
+  const m = G.meta || {};
+  const hazir = (G.hazirlik || 0) > 0;
+  const lig = (G.lig || 1) === 2 ? '2. Lig' : '1. Lig';
+  const chip = phaseChip || (hazir ? `HAZIRLIK · LİGE ${G.hazirlik} HAFTA` : `HAFTA ${Math.min(m.week, G.SEASON_WEEKS)} · ${lig}`);
+  const backBtn = back ? `<button class="sb-back" data-act="${back.act}"${back.arg ? ` data-arg="${esc(back.arg)}"` : ''}>${esc(back.label)}</button>` : '';
+  return `<header class="sb-topbar">
+    ${backBtn}
+    ${crestSvg(G.club?.arma, 'md', 'var(--club)', (G.club?.name || 'S')[0])}
+    <div class="sb-brand"><span class="sb-brand-name">${esc(G.club?.name || 'SAYIN BAŞKAN')}</span><span class="sb-brand-sub">${lig}${G.club?.city ? ' · ' + esc(G.club.city) : ''}</span></div>
+    <span class="sb-divider"></span>
+    <span class="sb-chip sb-chip-club"><i class="sb-dot-live"></i>${chip}</span>
+    <span class="sb-spacer"></span>
+    <span class="sb-pill sb-pill-pos"><b>KASA</b><span>${fmt(G.economy.kasa)}mn</span></span>
+    <span class="sb-pill sb-pill-neg"><b>BORÇ</b><span>${fmt(G.economy.borc)}mn</span></span>
+    ${G.mode === 'aile' ? `<span class="sb-pill sb-pill-pos" title="Aile serveti"><b>SERVET</b><span>${fmt(G.servet ?? 0)}mn</span></span>` : ''}
+    <span class="sb-divider"></span>
+    <span class="sb-avatar"></span>
+    <div class="sb-brand"><span class="sb-brand-name sb-fs-body">${esc(G.baskan?.name || 'Sayın Başkan')}</span><span class="sb-brand-sub">Kulüp Başkanı · ${m.term}. Dönem</span></div>
+  </header>`;
+}
+
+export function sbShell(G, { crumb, title, body }) {
+  const hazir = (G.hazirlik || 0) > 0;
+  const inboxN = (G.inbox || []).filter((x) => x.action && !x.resolved).length;
+  const navItems = NAV_SB.map(([id, label, ic]) => {
+    const active = (G.nav || 'cockpit') === id;
+    const badge = id === 'inbox' && inboxN ? `<span class="sb-nav-badge">${inboxN}</span>`
+      : id === 'transfer' && G.transferWindow ? '<span class="sb-nav-dot"></span>' : '';
+    return `<button class="sb-nav ${active ? 'is-active' : ''}" data-act="nav" data-arg="${id}">${SVG_IC(ic)}<span>${label}</span>${badge}</button>`;
+  }).join('');
+  const io = G.mode === 'ironman'
+    ? `<button class="sb-io" data-act="sndToggle">${SVG_IC('<path d="M4 8v4h3l4 3V5L7 8H4z"/>')}<span>Ses</span></button><button class="sb-io" data-act="ayarlar">${SVG_IC('<circle cx="10" cy="10" r="2.4"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2"/>')}<span>Ayarlar</span></button>`
+    : `<button class="sb-io" data-act="sndToggle">${SVG_IC('<path d="M4 8v4h3l4 3V5L7 8H4z"/>')}<span>Ses</span></button>
+       <button class="sb-io" data-act="ayarlar">${SVG_IC('<circle cx="10" cy="10" r="2.4"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2"/>')}<span>Ayarlar</span></button>
+       <button class="sb-io" data-act="save">${SVG_IC('<path d="M4 4h9l3 3v9H4z"/><path d="M7 4v4h6"/>')}<span>Kaydet</span></button>
+       <button class="sb-io" data-act="load">${SVG_IC('<path d="M3 6h5l2 2h7v8H3z"/>')}<span>Yükle</span></button>`;
+  const goalPct = Math.max(4, Math.min(100, Math.round((19 - (G.myPos ?? G.club.hedefSira)) / 18 * 100)));
+  const devamLbl = hazir ? (G.hazirlik === 1 ? 'Sezonu Başlat' : `Hazırlık Haftası`) : 'Sonraki Maç';
+  const bbNote = hazir ? 'Transfer dönemi — kadronu kur, maçlar sonra' : `Lig ${G.myPos ? G.myPos + '.' : '—'} · hedef ${G.club.hedefSira}. · güven %${Math.round(G.gauges.guven)}`;
+  const bbBadge = hazir ? `<b class="sb-btn-badge">LİGE ${G.hazirlik}</b>` : '';
+  return `<div class="sb-root">
+    <div class="sb-atmo"></div><div class="sb-vignette"></div>
+    ${sbTopbar(G)}
+    <div class="sb-body">
+      <nav class="sb-rail">
+        <div class="sb-nav-list">${navItems}</div>
+        <div class="sb-rail-io">${io}</div>
+        <div class="sb-goal">
+          <div class="sb-goal-k">SEZON HEDEFİ</div>
+          <div class="sb-goal-t">${esc(hedefMetni(G.club.hedefSira))}</div>
+          <div class="sb-bar"><span class="sb-bar-fill" style="width:${goalPct}%"></span></div>
+          <div class="sb-goal-m">Beklenti: <b>${G.club.hedefSira}. sıra</b></div>
+        </div>
+      </nav>
+      <main class="sb-main">
+        <div class="sb-crumb">${esc(crumb)}</div>
+        <div class="sb-h1row"><h1 class="sb-h1">${esc(title)}</h1><span class="sb-h1-underline"></span></div>
+        ${body}
+      </main>
+    </div>
+    <footer class="sb-bottombar">
+      <div class="sb-bb-l"><span class="sb-bb-k">${hazir ? 'HAZIRLIK' : 'SEZON'}</span><span class="sb-bb-note">${esc(bbNote)}</span></div>
+      <button class="sb-btn sb-btn-primary" data-act="devam">${devamLbl} ▸ ${bbBadge}</button>
+    </footer>
+  </div>`;
+}
+function hedefMetni(h) { return h <= 1 ? 'Şampiyonluk' : h <= 4 ? 'Avrupa hattı' : h <= 9 ? 'Üst yarıda bitir' : h <= 13 ? 'Ligde kal, geliş' : 'Küme hattından uzak dur'; }
+
+// Takım gücü kompakt şeridi (hero yerine — akıllı yerleşim)
+function sbPower(G, p) {
+  const N = TUNING.REPORT.NEUTRAL;
+  const dusus = (p.efektif || 0) < (p.temel || 0) - 9;
+  const injured = G.squad.filter((x) => x.injuryWeeks > 0).length;
+  const erken = G.meta.week <= 2;
+  const pc = (lbl, val, warn) => `<span class="sb-pchip ${warn ? 'warn' : ''}"><i>${lbl}</i>${cap(val)}</span>`;
+  return `<div class="sb-panel sb-power">
+    <span class="sb-power-lbl">TAKIM GÜCÜ</span>
+    <div class="sb-power-nums"><b class="sb-power-n">${Math.round(p.temel || 0)}</b><span class="sb-power-ar">→</span><b class="sb-power-n" style="color:${dusus ? 'var(--warn)' : 'var(--club)'}">${Math.round(p.efektif || 0)}</b><span class="sb-power-lbl">MAÇ GÜNÜ</span></div>
+    <div class="sb-power-chips">
+      ${pc('REVİR', injured === 0 ? 'sakin' : injured + ' kişi', injured > 2)}
+      ${pc('MORAL', wordOf(p.moral, N.moral, ['düşük', 'orta', 'yüksek']), p.moral != null && p.moral < N.moral - 0.025)}
+      ${pc('FORM', erken ? 'sezon başı' : wordOf(p.form, N.form, ['formsuz', 'dalgalı', 'formda']), !erken && p.form != null && p.form < N.form - 0.025)}
+      ${pc('KONDİSYON', wordOf(p.kond, N.kond, ['bitkin', 'yorgun', 'zinde']), p.kond != null && p.kond < N.kond - 0.025)}
+    </div>
+  </div>`;
+}
+
+// Kulüp Nabzı — 4 gauge halkası (Design)
+function sbGauges(G) {
+  const C = 2 * Math.PI * 28; // 175.9
+  const ring = (v, lbl, word) => {
+    const off = (C * (1 - Math.max(0, Math.min(100, v)) / 100)).toFixed(1);
+    return `<div class="sb-gauge"><div class="sb-gauge-ring"><svg viewBox="0 0 72 72"><circle class="sb-gauge-bg" cx="36" cy="36" r="28"/><circle class="sb-gauge-fg" cx="36" cy="36" r="28" transform="rotate(-90 36 36)" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off}"/></svg><span class="sb-gauge-val">${Math.round(v)}</span></div><div class="sb-gauge-l">${lbl}</div><div class="sb-gauge-n">${word}</div></div>`;
+  };
+  const g = G.gauges;
+  const w = (v, lo, mid, hi) => (v < 40 ? lo : v < 60 ? mid : hi);
+  return `<div class="sb-panel sb-gauges">
+    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">KULÜP NABZI</span></div>
+    <div class="sb-gauge-row">
+      ${ring(g.guven, 'GÜVEN', w(g.guven, 'kırılgan', 'temkinli', 'sağlam'))}
+      ${ring(g.taraftar, 'TARAFTAR', w(g.taraftar, 'küskün', 'umutlu', 'coşkulu'))}
+      ${ring(g.mali, 'MALİ', w(g.mali, 'sıkışık', 'dengede', 'rahat'))}
+      ${ring(g.sportif, 'SPORTİF', w(g.sportif, 'zayıf', 'orta', 'güçlü'))}
+    </div>
+  </div>`;
+}
+
+// Karar Masası — GM masa kartı varsa onu, yoksa bekleyen inbox kararını, yoksa sakin durum
+function sbDecision(G) {
+  const gmName = G.gm?.name || 'Ferda Koyuncu';
+  const desk = G.deskCard && !G.deskUsedThisTick ? DESK_CARDS[G.deskCard] : null;
+  if (desk) {
+    return `<div class="sb-panel sb-decision">
+      <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">KARAR MASASI</span></div>
+      <div class="sb-dec-role"><span class="sb-gm-av">${esc(gmName[0])}</span><div><div class="sb-gm-name">${esc(gmName)} · GM</div><div class="sb-gm-role">Masa dokunuşu</div></div></div>
+      <p class="sb-dec-text">${esc(desk.desc)}</p>
+      <div class="sb-dec-actions"><button class="sb-btn sb-btn-neg" data-act="desk" data-arg="gec">Geç</button><button class="sb-btn sb-btn-primary" data-act="desk" data-arg="katil">${esc(desk.label)}</button></div>
+    </div>`;
+  }
+  const pendCount = (G.inbox || []).filter((x) => x.action && !x.resolved).length;
+  const pend = (G.inbox || []).find((x) => x.action && !x.resolved);
+  if (pend) {
+    // Gerçek aksiyon butonları burada (Onayla/Reddet/Sat/... — inbox ile aynı) + detay için İncele.
+    return `<div class="sb-panel sb-decision">
+      <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">KARAR MASASI</span><span class="sb-panel-r">${pendCount > 1 ? pendCount + ' bekliyor' : 'masanda'}</span></div>
+      <div class="sb-dec-role"><span class="sb-gm-av">${esc(gmName[0])}</span><div><div class="sb-gm-name">${esc(pend.t || 'Bekleyen karar')}</div><div class="sb-gm-role">imza bekliyor</div></div></div>
+      <p class="sb-dec-text">${esc((pend.b || '').slice(0, 160))}</p>
+      <div class="sb-dec-body">${itemActions(G, pend)}</div>
+      <div class="sb-dec-foot"><button class="sb-back sb-btn-sm" data-act="nav" data-arg="inbox" style="padding:.4em .8em">İncele ▸ tam dosya${pendCount > 1 ? ` (+${pendCount - 1})` : ''}</button></div>
+    </div>`;
+  }
+  return `<div class="sb-panel sb-decision">
+    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">KARAR MASASI</span></div>
+    <div class="sb-dec-role"><span class="sb-gm-av">${esc(gmName[0])}</span><div><div class="sb-gm-name">${esc(gmName)} · GM</div><div class="sb-gm-role">masa sakin</div></div></div>
+    <p class="sb-dec-text">Bekleyen imza yok, Başkanım. Dosyalar sabah masanızda olur — bu arada kulübün nabzına göz atın.</p>
+  </div>`;
+}
+
+// Sonraki Maç kartı (yatay) — hazırlıkta kamp bilgisi
+function sbFixtureCard(G, next, meRow, myC, oc) {
+  const hazir = (G.hazirlik || 0) > 0;
+  if (hazir) {
+    return `<div class="sb-panel sb-fixture">
+      <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">HAZIRLIK DÖNEMİ</span><span class="sb-panel-r">kamp</span></div>
+      <div class="sb-fx"><div class="sb-fx-team"><span class="sb-fx-badge">${esc(G.club.name[0])}</span>${esc(G.club.name)}</div><span class="sb-fx-vs">sezona ${G.hazirlik} hafta</span><div class="sb-fx-team sb-fx-away">Transfer masası açık</div><button class="sb-btn sb-btn-primary sb-btn-sm" data-act="nav" data-arg="transfer">TRANSFER ▸</button></div>
+      <div class="sb-fixture-foot">Lig hazırlık bitince başlıyor · Beklenti <b>${G.club.hedefSira}.</b> sıra</div>
+    </div>`;
+  }
+  if (!next) {
+    return `<div class="sb-panel sb-fixture"><div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">SONRAKİ MAÇ</span></div><div class="sb-dec-text">Sezon tamamlandı.</div></div>`;
+  }
+  return `<div class="sb-panel sb-fixture">
+    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">SONRAKİ MAÇ</span>${next.isDerby ? '<span class="sb-panel-r" style="color:var(--warn)">DERBİ</span>' : ''}</div>
+    <div class="sb-fx">
+      <div class="sb-fx-team"><span class="sb-fx-badge">${esc(G.club.name[0])}</span>${esc(G.club.name)}</div>
+      <span class="sb-fx-vs">${next.isHome ? '🏟 EV' : '✈ DEP'}</span>
+      <div class="sb-fx-team sb-fx-away">${esc(next.opp)}<span class="sb-fx-badge sb-fx-badge-2">${esc(next.opp[0])}</span></div>
+    </div>
+    <div class="sb-odds"><span class="g" style="width:${next.pW}%"></span><span class="b" style="width:${next.pD}%"></span><span class="m" style="width:${next.pL}%"></span></div>
+    <div class="sb-odds-lbl"><span class="pos">Galibiyet %${next.pW}</span><span>Berabere %${next.pD}</span><span class="neg">Mağlubiyet %${next.pL}</span></div>
+    <div class="sb-fixture-foot">Lig sırası <b>${meRow.rank}.</b> · ${G.season.W}G ${G.season.D}B ${G.season.L}M · hedef <b>${G.club.hedefSira}.</b></div>
+  </div>`;
+}
+
+// Maç öncesi soyunma odası — kompakt team-talk + prim (sb-)
+function sbTalk(G, p, next, injured) {
+  const N = TUNING.REPORT.NEUTRAL;
+  const critical = isCriticalWeek(G);
+  const oppWord = next ? (next.pW - next.pL >= 15 ? 'zayıf' : next.pL - next.pW >= 35 ? 'dev gibi' : next.pL - next.pW >= 15 ? 'güçlü' : 'denk') : '—';
+  const kondW = wordOf(p.kond, N.kond, ['bitkin', 'yorgun', 'zinde']);
+  const tb = (id, ic, lbl) => { const on = id === 'off' ? !G.telkin : G.telkin === id; return `<button class="sb-talk-btn ${on ? 'on' : ''}" data-act="telkin" data-arg="${id}"><span class="sb-talk-ic">${ic}</span>${lbl}</button>`; };
+  const pb = (id, lbl, cls = '') => `<button class="sb-prim-btn ${cls} ${G.matchPrim === id ? 'on' : ''}" data-act="prim" data-arg="${id}">${lbl}</button>`;
+  const ozel = G.ozelUsed ? '<button class="sb-prim-btn" disabled>⚡ kullanıldı</button>'
+    : critical ? `<button class="sb-prim-btn ozel ${G.ozelArmed ? 'on' : ''}" data-act="ozelPrim">⚡ Özel</button>`
+      : '<button class="sb-prim-btn" disabled title="Yalnız kritik/derbi">⚡ Özel</button>';
+  return `<div class="sb-panel sb-talk">
+    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">MAÇ ÖNCESİ · SOYUNMA ODASI</span><span class="sb-panel-r">TD: ${relWord(G.tdRelation)}</span></div>
+    <div class="sb-talk-lead">${critical ? '<b>⚡ Kritik maç.</b> ' : ''}Rakip <b>${oppWord}</b>, revir <b>${injured === 0 ? 'boş' : injured + ' kişi'}</b>, bacaklar <b>${kondW}</b>. Ne diyorsun?</div>
+    <div class="sb-talk-grid">
+      ${tb('tamkadro', '💪', 'Tam Kadro')}${tb('rotasyon', '🔄', 'Rotasyon')}${tb('gencler', '🌱', 'Gençler')}${tb('kale', '🛡️', 'Kaleyi Koru')}${tb('off', '🎯', 'Karışma')}
+    </div>
+    <div class="sb-prim-row">${pb('yok', 'Prim Yok')}${pb('normal', 'Normal')}${pb('yuksek', 'Yüksek')}${ozel}</div>
+  </div>`;
+}
+
+// Gündem — gerçek durum satırları + vaat ilerlemesi
+function sbAgenda(G, next, meRow, injured) {
+  const items = [];
+  if ((G.hazirlik || 0) > 0) items.push(['warn', `Transfer dönemi açık — sezona ${G.hazirlik} hafta`]);
+  else if (G.transferWindow) items.push(['warn', 'Transfer penceresi açık — dosyalar masada']);
+  const secimSezon = TUNING.SEASONS_PER_TERM - ((G.meta.season - 1) % TUNING.SEASONS_PER_TERM);
+  items.push(['info', secimSezon <= 1 ? 'Kongre bu sezon — sandık yaklaşıyor' : `Kongre ${secimSezon} sezon sonra`]);
+  if (injured > 0) items.push(['neg', `Revirde ${injured} oyuncu — rotasyon düşün`]);
+  // Vaat durumu — hafta ≤6'da hepsi taban (pct 10) ise "başlangıç" (riskte diye alarma geçme)
+  const erkenVaat = G.meta.week <= 6;
+  const vs = promiseStatus(G);
+  if (vs.length && erkenVaat && vs.every((v) => v.pct <= 10)) {
+    items.push(['club', `${vs.length} söz verildi — başlangıç, iş sahada`]);
+  } else {
+    const riskli = vs.filter((v) => v.pct > 0 && v.pct < 55 && !(erkenVaat && v.pct === 10));
+    if (riskli.length) items.push(['warn', `${riskli.length} vaat riskte — "${riskli[0].name}"`]);
+    const iyi = vs.filter((v) => v.pct >= 55);
+    if (iyi.length) items.push(['pos', `${iyi.length} vaat yolunda`]);
+  }
+  if (!next && (G.hazirlik || 0) === 0) items.push(['club', 'Sezon tamam — kongre defterini kapat']);
+  while (items.length < 3) items.push(['club', 'Kulüp sakin — ibre senin elinde']);
+  return `<div class="sb-panel sb-agenda">
+    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">GÜNDEM</span></div>
+    ${items.slice(0, 5).map(([c, t]) => `<div class="sb-agenda-i"><span class="sb-adot sb-adot-${c}"></span>${esc(t)}</div>`).join('')}
   </div>`;
 }
 
@@ -266,6 +514,23 @@ function tweet(post, i) {
       <div class="tw-text">${esc(clean)}</div>
       <div class="tw-acts"><span>💬 ${kfmt(rep)}</span><span>🔁 ${kfmt(rt)}</span><span class="tw-like">♥ ${kfmt(likes)}</span></div>
     </div>
+  </div>`;
+}
+
+// Puan Durumu — kokpitte HER ZAMAN açık (18 satır flex:1 ile sığar). Terfi/küme hattı renkli.
+function sbTable(G) {
+  let rows = standings(G.league);
+  if (rows.every((t) => t.P === 0)) rows = rows.slice().sort((a, b) => b.strength - a.strength).map((t, i) => ({ ...t, rank: i + 1 }));
+  const lig = G.lig || 1;
+  const body = rows.map((t) => {
+    const cls = lig === 2 ? (t.rank <= 3 ? 'avr' : '') : (t.rank <= 4 ? 'avr' : t.rank >= 16 ? 'kume' : '');
+    const av = (t.GD ?? (t.GF - t.GA));
+    return `<div class="sb-lig-row ${t.id === 'ME' ? 'is-us' : ''}"><span class="sb-lig-pos ${cls}">${t.rank}</span><span class="sb-lig-name">${esc(t.name)}</span><span class="sb-lig-num" style="color:${av > 0 ? 'var(--pos)' : av < 0 ? 'var(--neg)' : 'var(--ink-3)'}">${av >= 0 ? '+' : ''}${av}</span><span class="sb-lig-num sb-lig-pts">${t.Pts}</span></div>`;
+  }).join('');
+  return `<div class="sb-panel sb-stand">
+    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">PUAN DURUMU</span><button class="sb-back sb-btn-sm" data-act="ligDetay" style="padding:.2em .6em;margin-left:auto">detay ▸</button></div>
+    <div class="sb-lig-head"><span>#</span><span>Takım</span><span>AV</span><span>P</span></div>
+    <div class="sb-lig-list">${body}</div>
   </div>`;
 }
 

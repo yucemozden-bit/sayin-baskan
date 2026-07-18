@@ -118,7 +118,7 @@ setSeed(920);
   const m = captainMsg(G);
   check('sezon başı TD kaptan önerisi (KARAR kartı)', !!m && m.b.includes('pazubandı'), m ? m.t : '—');
   A.resolveCaptain(G, m.id, 'onay');
-  check('onay: kaptan atandı + kadroda (C) rozeti', !!G.captainId && squadView.render(G).includes('>C</span>'));
+  check('onay: kaptan atandı + kadroda (C) rozeti', !!G.captainId && squadView.render(G).includes('>C</b>'));
   // veto: TD ilişki −2 + alternatif aday
   setSeed(921);
   const G2 = fresh();

@@ -141,11 +141,16 @@ for (const name of Object.keys(SCEN)) {
 }
 
 console.log('\n── SANITY: SENARYO BANTLARI ──');
-// Bantlar WIN_LINE 0.55 eşiğine göre güncellendi (idealize senaryolar; ölçülen: popülist kayıp
-// %100, cimri %59.8, dengeli %75.6). Sıralama korunur: dengeli > cimri >> popülist.
+// Bantlar WIN_LINE 0.55 eşiğine göre güncellendi (idealize senaryolar). Sıralama korunur: dengeli > cimri >> popülist.
+// GÜÇ ETKİSİ (2026-07, kullanıcı isteği): SHARPNESS_K 1.6→3.0 — takım gücü galibiyeti daha çok belirliyor.
+// Bu İDEALİZE senaryolarda (ortalama-üstü kadro, hep borç kapatılır, kariyer eskalasyonu YOK) etki
+// tavana yakın: ortalama-üstü kulüp ligde istikrarlı yüksek bitince seçim karnesi uçuyor → cimri %60→92,
+// dengeli %76→99. NOT: gerçek TAM-KARİYER zorluğu (autoplay hayatta kalma bantları) DEĞİŞMEDİ — eskalasyon
+// ve ekonomi baskısı orada devrede. Bu bantlar yalnız formülün ideal-senaryo tepkisini ölçer.
 check('T1 popülist kaybetme ≥ %90', (100 - winPct['T1 Popülist']) >= 90, `kayıp %${r1(100 - winPct['T1 Popülist'])}`);
-check('T2 cimri kazanma %48-72', winPct['T2 Cimri'] >= 48 && winPct['T2 Cimri'] <= 72, `%${r1(winPct['T2 Cimri'])}`);
-check('T3 dengeli kazanma %65-88', winPct['T3 Dengeli'] >= 65 && winPct['T3 Dengeli'] <= 88, `%${r1(winPct['T3 Dengeli'])}`);
+check('T2 cimri kazanma %82-98', winPct['T2 Cimri'] >= 82 && winPct['T2 Cimri'] <= 98, `%${r1(winPct['T2 Cimri'])}`);
+check('T3 dengeli kazanma %90-100', winPct['T3 Dengeli'] >= 90 && winPct['T3 Dengeli'] <= 100, `%${r1(winPct['T3 Dengeli'])}`);
+check('sıralama korunur: dengeli > cimri', winPct['T3 Dengeli'] > winPct['T2 Cimri'], `dengeli %${r1(winPct['T3 Dengeli'])} > cimri %${r1(winPct['T2 Cimri'])}`);
 
 console.log(`\n${'─'.repeat(48)}\nSONUÇ: ${pass} geçti, ${fail} kaldı\n`);
 process.exit(fail ? 1 : 0);

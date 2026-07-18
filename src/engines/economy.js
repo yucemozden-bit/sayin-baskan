@@ -95,8 +95,9 @@ export function haftalikGider(state) {
 export function maliHedef(state, gelirHafta, giderHafta) {
   const tierScale = TUNING.TIER_SCALE[state.club.tier];
   const { kasa, borc } = state.economy;
+  const borcsuzBonus = borc <= 0 ? (TUNING.ECONOMY.BORCSUZ_MALI_BONUS || 0) : 0; // borçsuz kulüp mali tabloyu uçurur
   return clamp(
-    TUNING.GAUGE.NEUTRAL + (kasa - borc) / tierScale - Math.max(0, giderHafta - gelirHafta) * TUNING.ECONOMY.MALI_DEFICIT_MULT,
+    TUNING.GAUGE.NEUTRAL + (kasa - borc) / tierScale - Math.max(0, giderHafta - gelirHafta) * TUNING.ECONOMY.MALI_DEFICIT_MULT + borcsuzBonus,
     0, 100,
   );
 }

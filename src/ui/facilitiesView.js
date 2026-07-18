@@ -3,6 +3,7 @@
 // Kaydırma yok — 6 tesis viewport'u doldurur.
 import { fmt } from './frame.js';
 import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES } from '../engines/facilities.js';
+import { sbShell } from './cockpit.js';
 
 const AD = {
   stadyum: 'Stadyum', antrenman: 'Antrenman Tesisi', tibbi: 'Tıbbi Merkez',
@@ -97,14 +98,12 @@ export function render(G) {
       <div class="ihale-desc">${o.desc}</div>
       <button class="cx-btn ${o.type === 'B' ? 'on' : ''}" data-act="tender" data-arg="${i}" ${G.economy.kasa < o.cost ? 'disabled' : ''}>${G.economy.kasa < o.cost ? 'Kasa yetmiyor' : 'Bu firmayı seç'}</button>
     </div>`).join('');
-    return `<div class="tesis-wrap tesis-ihale">
-      <div class="tesis-head">
-        <div><div class="overline">Tesis İhalesi · ${AD[t.tesis] || t.tesis}</div><h2>Firma Teklifleri</h2></div>
-        <span class="tesis-kasa"><i>KASA</i><b>${fmt(G.economy.kasa)}mn</b></span>
-      </div>
+    const ihaleBody = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden;justify-content:center">
       <div class="ihale-grid">${offers}</div>
       <div class="btnrow" style="justify-content:center"><button class="cx-btn" data-act="tenderCancel">İhaleden vazgeç</button></div>
     </div>`;
+    const ihaleCrumb = `TESİSLER · İHALE · ${(AD[t.tesis] || t.tesis).toLocaleUpperCase('tr')} · KASA ${fmt(G.economy.kasa)}MN`;
+    return sbShell(G, { crumb: ihaleCrumb, title: 'Firma Teklifleri', body: ihaleBody });
   }
 
   // ── KAMPÜS PANOSU: 6 tesis, tam ekran ──
@@ -144,12 +143,12 @@ export function render(G) {
     ? '<span class="badge" style="margin-left:auto">aktif — camia gururlu</span>'
     : `<button class="cx-btn" data-act="kadinTakim" style="margin-left:auto" ${G.economy.kasa < 8 ? 'disabled' : ''} data-tip="Kuruluş 8mn + haftalık bakım. Taraftar +3, itibar +2; 'Kadın Takımını Kuracağım' sözünü tutar">Kur · 8mn</button>`}
   </div>`;
-  return `<div class="tesis-wrap">
-    <div class="tesis-head">
-      <div><div class="overline">Tesisler · Kulüp Kampüsü</div><h2>Altyapı Yatırımı</h2></div>
-      <span class="tesis-kasa" data-tip="Yatırıma hazır nakit"><i>KASA</i><b>${fmt(G.economy.kasa)}mn</b></span>
-    </div>
+  const ortLvl = FACILITIES.reduce((a, f) => a + (G.facilities[f] || 0), 0) / FACILITIES.length;
+  const altyapi = ortLvl < 3.5 ? 'DÜŞÜK' : ortLvl < 6.5 ? 'ORTA' : 'YÜKSEK';
+  const body = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
     <div class="tesis-grid">${cards}</div>
     ${kadinSerit}
   </div>`;
+  const crumb = `TESİSLER · STADYUM ${G.facilities.stadyum}. SEVİYE · ALTYAPI ${altyapi} · KASA ${fmt(G.economy.kasa)}MN`;
+  return sbShell(G, { crumb, title: 'Tesisler & Altyapı', body });
 }

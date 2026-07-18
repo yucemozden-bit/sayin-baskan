@@ -1,48 +1,81 @@
-// src/ui/campaignView.js — D6: Kampanya fazı + Münazara sahnesi (v5-§5).
+// src/ui/campaignView.js — D6: Kampanya fazı + Münazara sahnesi (sb- cinematic görsel katman).
 import { TUNING } from '../config.js';
 import { esc } from './frame.js';
 import { CAMPAIGN_ACTIONS } from '../engines/campaign.js';
+import { sbTopbar } from './cockpit.js';
 
 export function renderCampaign(G) {
   const c = G.campaign || { tick: 1, kp: 0 };
+  const TICKS = TUNING.DELUXE.CAMPAIGN_TICKS;
   const proj = G.lastProj;
   const pct = proj ? Math.round(proj.oyOrani * 100) : null;
-  const acts = Object.entries(CAMPAIGN_ACTIONS).map(([k, a]) =>
-    `<button class="btn" data-act="campaign" data-arg="${k}" ${c.kp < a.kp ? 'disabled' : ''}>${a.label} <span class="muted">(${a.kp} KP)</span></button>`).join('');
+  const kazandi = !!(proj && proj.kazandi);
+  const esikPct = Math.round(TUNING.WIN_LINE * 100);
   const b = proj ? proj.breakdown : null;
-  const bloklar = b ? `<div class="fin-lines" style="margin-top:6px">
-    <div class="l"><span>🏟 Tribün delegeleri</span><b class="tnum">${Math.round(b.taraftar)}</b></div>
-    <div class="l"><span>💼 İş dünyası</span><b class="tnum">${Math.round((b.mali + b.itibar) / 2)}</b></div>
-    <div class="l"><span>🏛 Eski yönetimler</span><b class="tnum">${Math.round((b.soz + b.sportif) / 2)}</b></div>
-  </div>` : '<div class="muted">—</div>';
-  return `<div class="scene" style="max-width:640px">
-    <div class="overline">KAMPANYA · Hafta ${c.tick}/${TUNING.DELUXE.CAMPAIGN_TICKS} · Seçime az kaldı</div>
-    <h2 style="margin:6px 0">Bugün seçim olsa: ${pct != null ? `<span style="color:${proj.kazandi ? 'var(--pos)' : 'var(--neg)'}">%${pct}</span>` : '—'}</h2>
-    <div class="card" style="text-align:left"><div class="overline">Kampanya Puanı: <b>${c.kp} KP</b></div>
-      <div class="btnrow" style="margin-top:8px">${acts}</div>
-      <div class="muted" style="font-size:12px;margin-top:6px">3 sezonluk emek &gt; 3 haftalık şov — kampanya karneyi yenemez, kıl payını çevirir.</div>
+  const acts = Object.entries(CAMPAIGN_ACTIONS).map(([k, a]) =>
+    `<button class="kmp-act ${a.kp >= 2 ? 'big' : ''}" data-act="campaign" data-arg="${k}" ${c.kp < a.kp ? 'disabled' : ''} data-tip="${a.kp} kampanya puanı harcar">
+      <span class="kmp-act-l">${esc(a.label)}</span><span class="kmp-act-kp">${a.kp} KP</span></button>`).join('');
+  const blok = (ik, ad, val) => {
+    const v = Math.round(val);
+    const cls = v >= 55 ? 'pos' : v < 45 ? 'neg' : '';
+    return `<div class="kmp-blok"><span>${ik} ${ad}</span><span class="kmp-blok-r"><span class="kmp-blok-bar"><i class="${cls}" style="width:${Math.max(4, Math.min(100, v))}%"></i></span><b class="${cls}">${v}</b></span></div>`;
+  };
+  const bloklar = b
+    ? blok('🏟', 'Tribün delegeleri', b.taraftar) + blok('💼', 'İş dünyası', (b.mali + b.itibar) / 2) + blok('🏛', 'Eski yönetimler', (b.soz + b.sportif) / 2)
+    : '<div class="sb-muted">Projeksiyon birikmedi — ilk kampanya haftasından sonra bloklar netleşir.</div>';
+  return `<div class="sb-root sb-cinematic kmp-root">
+    <div class="sb-atmo"></div><div class="sb-vignette"></div>
+    ${sbTopbar(G, { phaseChip: `KAMPANYA · HAFTA ${c.tick}/${TICKS}` })}
+    <div class="sb-body sb-body-col kmp-body">
+      <div class="kmp-head">
+        <div class="sb-crumb">KAMPANYA · HAFTA ${c.tick}/${TICKS} · SEÇİME AZ KALDI</div>
+        <div class="kmp-proj">Bugün seçim olsa: <b class="${kazandi ? 'pos' : 'neg'}">${pct != null ? '%' + pct : '—'}</b></div>
+        <div class="kmp-bar"><span class="kmp-bar-fill ${kazandi ? 'pos' : 'neg'}" style="width:${pct || 0}%"></span><span class="kmp-esik" style="left:${esikPct}%"></span></div>
+        <div class="kmp-esik-lbl">kazanma eşiği %${esikPct}</div>
+      </div>
+      <div class="kmp-grid">
+        <div class="sb-panel">
+          <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">KAMPANYA PUANI</span><span class="sb-panel-r"><b class="sb-club-ink">${c.kp}</b> KP</span></div>
+          <div class="kmp-acts">${acts}</div>
+          <div class="kmp-note">3 sezonluk emek &gt; 3 haftalık şov — kampanya karneyi yenemez, kıl payını çevirir.</div>
+        </div>
+        <div class="sb-panel">
+          <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">DELEGE BLOKLARI</span><span class="sb-panel-r">%50 = kararsız</span></div>
+          <div class="kmp-bloklar">${bloklar}</div>
+        </div>
+      </div>
     </div>
-    <div class="card" style="text-align:left;margin-top:12px"><div class="overline">Delege Blokları</div>${bloklar}</div>
+    <footer class="sb-bottombar">
+      <div class="sb-bb-l"><span class="sb-bb-k">KAMPANYA</span><span class="sb-bb-note">Hafta ${c.tick}/${TICKS} · ${c.kp} kampanya puanı elde</span></div>
+      <button class="sb-btn sb-btn-primary" data-act="devam">Kampanya haftasını bitir ▸ (${c.tick}/${TICKS})</button>
+    </footer>
   </div>`;
 }
 
 export function renderDebate(G) {
   const d = G.debate;
-  if (!d) return '<div class="muted">…</div>';
+  const empty = '<div class="sb-root sb-cinematic"><div class="sb-atmo"></div><div class="sb-body sb-body-col" style="justify-content:center;align-items:center"><div class="sb-muted">Münazara hazırlanıyor…</div></div></div>';
+  if (!d) return empty;
   const q = d.qs[d.idx];
-  const done = d.answers.map((a) => `<span class="chip">${a.comp}: ${a.puan > 0 ? '+' : ''}${a.puan}</span>`).join(' ');
-  return `<div class="scene" style="max-width:640px">
-    <div class="overline">MÜNAZARA · Soru ${d.idx + 1}/4 · canlı yayın</div>
-    <h2 style="margin:10px 0">Moderatör: "${esc(q.label)} hakkında ne diyeceksiniz?"</h2>
-    <div class="muted" style="margin-bottom:14px">Konudaki gerçek karnen belli — yanlış tonda cevap geri teper.</div>
-    <div class="btnrow" style="justify-content:center">
-      <button class="btn" data-act="debate" data-arg="veri">📊 Veriyle savun</button>
-      <button class="btn" data-act="debate" data-arg="vizyon">🌅 Vizyonla büyüle</button>
-      <button class="btn" data-act="debate" data-arg="saldiri">⚔ Rakibe saldır</button>
+  if (!q) return empty;
+  const done = d.answers.map((a) => `<span class="mnz-chip ${a.puan > 0 ? 'pos' : a.puan < 0 ? 'neg' : ''}">${esc(a.comp)} ${a.puan > 0 ? '+' : ''}${a.puan}</span>`).join('');
+  return `<div class="sb-root sb-cinematic mnz-root">
+    <div class="sb-atmo sb-atmo-pitch"></div><div class="sb-vignette"></div><div class="sb-pitch-lines"></div>
+    ${sbTopbar(G, { phaseChip: `MÜNAZARA · SORU ${d.idx + 1}/4` })}
+    <div class="sb-body sb-body-col mnz-body">
+      <span class="sb-chip sb-chip-live mnz-live"><i class="sb-dot-live"></i>CANLI YAYIN · MÜNAZARA</span>
+      <div class="mnz-q"><span class="mnz-mod">🎙 Moderatör</span>"${esc(q.label)} hakkında ne diyeceksiniz?"</div>
+      <div class="mnz-note">Konudaki gerçek karnen belli — yanlış tonda cevap geri teper.</div>
+      <div class="mnz-acts">
+        <button class="mnz-act veri" data-act="debate" data-arg="veri"><b>📊 Veriyle savun</b><i>karnen sağlamsa işler, çürükse geri teper</i></button>
+        <button class="mnz-act vizyon" data-act="debate" data-arg="vizyon"><b>🌅 Vizyonla büyüle</b><i>güvenli, küçük ama garanti etki</i></button>
+        <button class="mnz-act saldiri" data-act="debate" data-arg="saldiri"><b>⚔ Rakibe saldır</b><i>yüksek risk — tutarsa çok, tutmazsa ters</i></button>
+      </div>
+      ${done ? `<div class="mnz-prog"><span class="mnz-prog-l">CEVAPLAR</span>${done}</div>` : ''}
     </div>
-    <div class="btnrow" style="justify-content:center;margin-top:14px">
-      <button class="btn" data-act="debateSkip" style="opacity:.6">Münazarayı terk et (−2, "kaçtı" manşeti)</button>
-    </div>
-    ${done ? `<div class="power-strip" style="justify-content:center;margin-top:14px">${done}</div>` : ''}
+    <footer class="sb-bottombar">
+      <div class="sb-bb-l"><span class="sb-bb-k">MÜNAZARA</span><span class="sb-bb-note">Soru ${d.idx + 1}/4 · doğru tonu bul</span></div>
+      <button class="sb-btn" data-act="debateSkip" data-tip="Terk et: −2 kampanya puanı + 'kaçtı' manşeti">Münazarayı terk et</button>
+    </footer>
   </div>`;
 }

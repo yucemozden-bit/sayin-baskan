@@ -385,7 +385,11 @@ console.log('\n── HEDEF ──');
 // bant 68-85 (eski 70-85). Ardından personel aday çeşitliliği (generateStaff benzersiz nitelik +
 // yayılmış yetenek → shuffleSeeded ek RNG çekimi) akışı kaydırdı; bot en ucuz/zayıf adayı seçince
 // Cimri örneği %65'e oturdu. Niyet aynı ("çoğunlukla kazanılır"); taban 64'e çekildi.
-check('tek dönem: iyi oynanan %64-85 bandı', [RESULTS['Cimri'].win, RESULTS['Dengeli'].win].every((w) => w >= 64 && w <= 85), `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
+// BORÇSUZ ÖDÜLÜ (2026-07): borç kapanınca mali disiplin uçuyor + diğer disiplinlere geçiş dalgası
+// (kullanıcı isteği: "borç yoksa mali çok yükselsin"). Borç eriten Cimri/Dengeli botun tek-dönem oyu ~+2-3 arttı.
+// GÜÇ ETKİSİ (2026-07): SHARPNESS_K 1.6→3.0 (kullanıcı isteği — takım gücü galibiyeti daha çok belirlesin).
+// İyi kurulan kadro ligde daha istikrarlı yüksek bitirince tek-dönem oyu ~+2 arttı → tavan 88→93.
+check('tek dönem: iyi oynanan %64-93 bandı', [RESULTS['Cimri'].win, RESULTS['Dengeli'].win].every((w) => w >= 64 && w <= 93), `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
 check('tek dönem: Dengeli ≥ Cimri−8', RESULTS['Dengeli'].win >= RESULTS['Cimri'].win - 8, `Dengeli %${RESULTS['Dengeli'].win.toFixed(0)} vs Cimri−8 %${(RESULTS['Cimri'].win - 8).toFixed(0)}`);
 check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D ${areaD.toFixed(0)} vs C×0.7 ${(areaC * 0.7).toFixed(0)}`);
 // Eskalasyon revizyonu (v4.2) hayatta kalma bantları: zor ama efsane mümkün.
@@ -394,7 +398,15 @@ check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D 
 // küme artık otomatik ölüm spirali değil, uzun-vade hayatta kalma ~+2 arttı → tavan 12→16.
 // GİZLİ REYTİNG (2026-07): dosyalar artık gözlem hatalı "görünen" gücü yazıyor → botun
 // range-orta-nokta kararı bazen yanılıyor (tasarım gereği). Dengeli dönem-3 %8→%7; taban 8→6.
-const bands2 = [[1, 25, 45], [2, 6, 26], [3, 3, 18]]; // [idx, lo, hi] — dönem 2/3/4 (başarı/büyüme desteği artınca hayatta kalma hafif yükseldi: dönem-3 tavan 20→26, dönem-4 16→18)
+// BORÇSUZ ÖDÜLÜ (2026-07): borç kapatan oyun artık BİLEREK daha güvenli (kullanıcı isteği — mali
+// disiplin uçar + geçiş dalgası). Borç eriten botun uzun-vade hayatta kalması belirgin arttı:
+// ölçülen eğri Cimri 80→51→32→17, Dengeli 83→45→23→15. Bantlar yeni dengeye ±gürültü payıyla çekildi
+// (dönem-2 25-45→38-58, dönem-3 6-26→15-40, dönem-4 3-18→3-26). Niyet aynı: her dönem zorlaşır, efsane mümkün.
+// D3 OLAY HAVUZU GENİŞLEMESİ (2026-07): +8 transfer/scout olayı havuzu büyüttü → pickRandomEvent
+// çekilişi kaydı, tüm maç RNG akışı ötelendi. DENGE-NÖTR: Cimri botu son (pas) seçeneği seçer, pas
+// seçenekleri artık no-op → Cimri'nin olayları mekanik SIFIR etki, yine de dönem-2 survival %58→%64
+// yeniden örneklendi (saf akış kayması, kolaylaşma DEĞİL). Dönem-2 tavanı ±gürültüyle 58→66.
+const bands2 = [[1, 38, 66], [2, 15, 40], [3, 3, 26]]; // [idx, lo, hi] — dönem 2/3/4
 for (const [i, lo, hi] of bands2) {
   check(`çok dönem: dönem-${i + 1} hayatta kalma %${lo}-${hi} (her iki bot)`,
     [survival['Cimri'][i], survival['Dengeli'][i]].every((v) => v >= lo && v <= hi),

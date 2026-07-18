@@ -3,6 +3,7 @@
 import { fmt, gaugesBlock } from './frame.js';
 import { telkinKarne } from '../actions.js';
 import { boyutCard } from './congress.js';
+import { sbShell } from './cockpit.js';
 
 const KARNE_TR = {
   tamkadro: 'Tam kadro', rotasyon: 'Rotasyon', gencler: 'Gençler', kale: 'Kalemizi koruyalım',
@@ -79,11 +80,8 @@ export function render(G) {
     ekoBlok = '<div class="muted" style="font-size:12px;padding:10px 0">İlk maç oynanınca haftalık bilanço burada.</div>';
   }
 
-  return `<div class="dh-wrap">
-    <div class="tr-head">
-      <div><div class="overline">Veri Merkezi</div><h2 style="margin:2px 0 0">Analitik</h2></div>
-      <span class="tesis-kasa" style="border-color:var(--line)"><i>SEZON</i><b style="color:var(--ink-1);font-size:15px">S${G.worldSeason || 1} · H${G.meta.week} · D${G.meta.term}</b></span>
-    </div>
+  const crumb = `VERİ · SEZON ${G.worldSeason || 1} · ${G.meta.week}. HAFTA · DÖNEM ${G.meta.term}`;
+  const body = `<div class="dh-wrap" style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
     ${hero}
     <div class="dh-grid">
       <div class="dh-col">
@@ -111,4 +109,5 @@ export function render(G) {
       </div>
     </div>
   </div>`;
+  return sbShell(G, { crumb, title: 'Veri Merkezi', body });
 }

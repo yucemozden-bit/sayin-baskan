@@ -81,23 +81,27 @@ setSeed(3001);
 {
   const G0 = A.newGame(data, 'normal');
   const gate = clubSelect.render(G0);
-  check('5a AÇILIŞ: sahne (gate) + arma daire + renk şeridi + zorluk fısıltısı', gate.includes('gate') && gate.includes('class="arma"') && gate.includes('class="serit"') && gate.includes('Mühür hâlâ masada'));
-  check('5a senaryo sekmesi ayrı ton (meydan okuma)', clubSelect.render(Object.assign(G0, { _selTab: 'senaryo' })).includes('tier--senaryo'));
+  check('5a AÇILIŞ sb-: sahne (sb-gate) + arma + renk şeridi + hikâye', gate.includes('sb-gate') && gate.includes('sb-cc-badge') && gate.includes('sb-cc-strip') && gate.includes('Mühür hâlâ masada'));
+  check('5a senaryo sekmesi ayrı ton (meydan okuma)', clubSelect.render(Object.assign(G0, { _selTab: 'senaryo' })).includes('sb-club-senaryo'));
   const G = fresh();
   G.myPos = 9;
   G.hazirlik = 0; // maç kokpiti testi — hazırlık dönemini atla (maç önizlemesi görünsün)
   const kok = cockpit.render(G);
-  check('5b KOKPİT: hero .led güç + yarım halka gauge + stacked tahmin barı + hat etiketleri', kok.includes('cx-guc-n led') && gaugesBlock(G.gauges).includes('gauge-arc') && kok.includes('cx-odds') && kok.includes('Küme hattı'));
-  check('5b sosyal balonlar + rakip renk şeridi', kok.includes('class="balon') || !G.socialFeed || !G.socialFeed.length ? true : false, '');
+  // KOKPİT sb- görsel katmanı (2026-07 Claude Design): tam-ekran kabuk + takım gücü şeridi +
+  // KULÜP NABZI gauge halkaları + tahmin barı. Eski cx- hero/yarım-halka/stacked markup değişti.
+  check('5b KOKPİT sb-: tam-ekran kabuk + takım gücü + gauge halkaları + tahmin barı', kok.includes('sb-root') && kok.includes('sb-topbar') && kok.includes('sb-rail') && kok.includes('sb-power') && kok.includes('sb-gauge-fg') && kok.includes('sb-odds') && kok.includes('KULÜP NABZI'));
+  check('5b sonraki maç + karar masası + gündem panelleri', kok.includes('SONRAKİ MAÇ') && kok.includes('KARAR MASASI') && kok.includes('GÜNDEM'));
   const kadro = squadView.render(G);
-  check('5d KADRO: grup başlıkları + sparkline + pil + sis barı + vitrin dili', kadro.includes('kad-grp') && kadro.includes('kad-rate') && kadro.includes('kad-m') && kadro.includes('SATIŞA ÇIKAR'));
+  // 5d KADRO sb- görsel katmanı: 4 mevki kolonu (sb-kad-grid) + oyuncu satırı (sb-pl → pcard) +
+  // güç rozeti (sb-pl-ov) + kompakt TD şeridi. Eski kad-grp/kad-rate/kad-m/SATIŞA ÇIKAR markup değişti.
+  check('5d KADRO sb-: tam-ekran kabuk + 4 mevki kolonu + detaylı oyuncu kartı(pcard) + güç rozeti + değer + TD band', kadro.includes('sb-root') && kadro.includes('sb-kad-grid') && kadro.includes('sb-kad-col') && kadro.includes('data-act="pcard"') && kadro.includes('kad-c-ov') && kadro.includes('kad-c-money') && kadro.includes('data-act="fireCoach"') && kadro.includes('kad-td-band') && kadro.includes('Takım Kadrosu'));
   A.beginWeek(G);
   let g = 0; while (G.phone && g++ < 8) A.answerPhone(G, (G.phone.options || []).length - 1);
   if (G.pendingMatch && G.pendingMatch.phase === 'pre') { A.htDecision(G, 'tdguven'); const r = A.finishWeek(G); if (r && r.waitLate) A.lateDecision(G, 'devam'); }
   const md = matchday.render(G);
-  check('5e MAÇ: skorbord bar + akan momentum + staggered ticker', md.includes('md-board') && md.includes('class="md-momentum"') && md.includes('md-tick'));
+  check('5e MAÇ CANLI YAYIN: skorbord + akan anlatım + istatistik + telkin + oynat kontrolü', md.includes('sb-scoreboard') && md.includes('CANLI ANLATIM') && md.includes('MAÇ İSTATİSTİĞİ') && md.includes('data-act="matchPlay"') && md.includes('sb-sb-num'));
   G.pendingMatch.phase = 'post';
-  check('5e sonuç: .led skor + xG çift bar + gecenin adamı çipi', matchday.render(G).includes('score led') && matchday.render(G).includes('xg-bar'));
+  check('5e SONUÇ (yayın dili): sonuç bandı + skorbord + xG çift bar + gecenin adamı', matchday.render(G).includes('sb-result-banner') && matchday.render(G).includes('sb-scoreboard') && matchday.render(G).includes('sb-xg2') && matchday.render(G).includes('GECENİN ADAMI'));
   // 5f seçim gecesi
   G.election = { oyOrani: 0.58, kazandi: true, done: true, counting: false, displayVote: 58, breakdown: { sportif: 60, taraftar: 60, mali: 60, itibar: 55, soz: 50, rival: 12 }, revealStep: 6 };
   const en = electionNight.render(G);
@@ -107,7 +111,7 @@ setSeed(3001);
   // 5g inbox
   G.inbox.unshift({ id: 'gX1', t: 'Karar bekliyor', b: 'x', wk: 2, action: 'ticket' });
   const ib = inboxUI.render(G);
-  check('5g INBOX: bekleyen kararlar ayrık blok + sticky hafta grubu + karar rozeti', ib.includes('Bekleyen Kararlar') && ib.includes('inbox-grup') && ib.includes('rozet-karar'));
+  check('5g INBOX (sb-): bekleyen kararlar paneli + hafta grubu + karar rozeti', ib.includes('BEKLEYEN KARARLAR') && ib.includes('inbox-grup') && ib.includes('rozet-karar') && ib.includes('sb-root'));
 }
 
 // ══ §2 tema yardımcıları motorsuz ══

@@ -77,8 +77,11 @@ setSeed(1101);
   // kazanma dalını zorla (formül testleri ayrıca aşağıda) → ENKAZ
   G.election.kazandi = true;
   const borcOnce = G.devirRaporu.borc;
+  G.gauges.guven = 12; // seçimi kaybettiğin andaki DÜŞÜK değer (3 sezon boyunca donuk kaldı)
   A.applyComebackWin(G);
   check('dönüş zaferi: ENKAZ raporu + staff DAĞILMIŞ + lossStreak sıfır', !!G.enkazRaporu && G.enkazRaporu.maddeler.length > 0 && ['cfo', 'akademi', 'basin', 'stat'].every((r) => G.staff[r] === null) && G.lossStreak === 0, G.enkazRaporu.maddeler[0]);
+  // DÖNÜŞ MANDASI: kongre seni geri çağırdı → kurul güveni taze mandaya oturur, 12'de KALMAZ
+  check('dönüş mandası: kurul güveni taze başlar (düşükte kalmaz)', G.gauges.guven >= TUNING.MIRAS.COMEBACK.MANDATE.GUVEN_FLOOR && G.gauges.guven > 12, `güven %${Math.round(G.gauges.guven)} (oy %${Math.round(G.election.oyOrani * 100)})`);
   void borcOnce;
   // 2 üst üste kayıp → kariyer kapanış
   setSeed(1102);

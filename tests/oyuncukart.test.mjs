@@ -61,6 +61,27 @@ console.log('\n── Oyuncu Kartı ──');
   check('satış listesi kulüp aidiyetini düşürür', pc.aidiyet(p, G) < a0, `${a0} → ${pc.aidiyet(p, G)}`);
 }
 
+// TELEFON DOSYASI: gece yarısı fırsatı / panik alım / kiralık — kadroda OLMAYAN konu oyuncusunun kartı açılır
+{
+  const G = fresh();
+  const teklif = { id: 'ph9001', name: 'Bruno Alencar', pos: 'FWD', age: 27, overall: 60, potential: 60, marketValue: 12, wage: 2, contractYears: 2, form: 60, fitness: 70, morale: 60 };
+  G.phone = { kind: 'kriz', caller: 'gm', file: { player: teklif, fee: 12.3 } };
+  check('findAnyPlayer: aktif telefon teklifindeki oyuncuyu bulur', pc.findAnyPlayer(G, 'ph9001') === teklif);
+  G._pcard = 'ph9001';
+  const h = pc.render(G);
+  check('telefon oyuncusunun kartı render olur (kadroda olmasa da)', h.includes('Bruno Alencar') && h.includes('GÜÇ'));
+  check('SİS: teklif oyuncusunun KESİN gücü sızmaz — aralık gösterilir', h.includes('GÜÇ ~') && h.includes('–'));
+  check('SİS: ilişkisel çubuklar (aidiyet/başkana güven) imzadan önce gizli', !h.includes('KULÜP AİDİYETİ') && !h.includes('BAŞKANA GÜVEN') && h.includes('İMZADAN SONRA'));
+  check('SİS: potansiyel yıldızı (gizli yetenek) sızmaz', !h.includes('POTANSİYEL ★'));
+  // kuyruk + ertelenen dosyalar da açılabilir
+  const q = { id: 'ph9002', name: 'Kuyruk Oyuncu', pos: 'MID', age: 25, overall: 58, potential: 58, marketValue: 8, wage: 1, contractYears: 2, form: 60, fitness: 70, morale: 60 };
+  const d = { id: 'ph9003', name: 'Ertelenen Oyuncu', pos: 'DEF', age: 26, overall: 57, potential: 57, marketValue: 7, wage: 1, contractYears: 2, form: 60, fitness: 70, morale: 60 };
+  G.phoneQueue = [{ file: { player: q } }];
+  G.phoneDeferred = { file: { player: d } };
+  check('findAnyPlayer: telefon kuyruğundaki oyuncuyu bulur', pc.findAnyPlayer(G, 'ph9002') === q);
+  check('findAnyPlayer: ertelenen telefon oyuncusunu bulur', pc.findAnyPlayer(G, 'ph9003') === d);
+}
+
 console.log('\n' + '─'.repeat(48));
 console.log(`SONUÇ: ${pass} geçti, ${fail} kaldı`);
 process.exit(fail ? 1 : 0);

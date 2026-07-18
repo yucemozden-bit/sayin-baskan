@@ -3,6 +3,7 @@
 // primler, borç masası. Panel dili tr-panel (3B yüzey) ile ortak.
 import { fmt, esc } from './frame.js';
 import { sponsorOffers } from '../actions.js';
+import { sbShell } from './cockpit.js';
 
 export function render(G) {
   const e = G.economy;
@@ -111,24 +112,18 @@ export function render(G) {
   // Tip → marka logo aksan rengi (kurumsal altın, fintech mavi, bahis kırmızı, kripto turuncu, yerel yeşil)
   const SPO_ACCENT = { standart: 'var(--club)', fintech: 'var(--info)', bahis: 'var(--neg)', kripto: 'var(--warn)', yerel: 'var(--pos)', naming: 'var(--club-2)' };
   const sezonluk = (o) => Math.round((o.annual ?? o.weekly * 52) * 10) / 10;
+  // Sade satır — tıkla → DETAY kartı açılır (tüm şart/avantaj/dezavantaj + imza/red orada)
   const slotCell = (slot) => {
     const signed = deals[slot];
     if (signed) {
       const sv = Math.round((signed.weekly * 52) * 10) / 10;
       return `<div class="spo-slot filled">
         <div class="spo-slot-h">${SLT[slot]}<span class="spo-slot-tag on">✓ İmzalı</span></div>
-        <div class="spo-card signed" style="--sc:${SPO_ACCENT[signed.type] || 'var(--club)'}">
-          <div class="spo-c-top">
-            <div class="spo-logo">${signed.ik || '🤝'}</div>
-            <div class="spo-c-id"><div class="spo-c-nm">${esc(signed.name)}</div><div class="spo-c-sec">${esc(signed.sector)}${signed.riskProfile ? ' · riskli' : ''}</div></div>
-            <div class="spo-c-val"><b>${fmt(sv)}</b><span>mn/sezon</span></div>
-          </div>
-          <div class="spo-c-terms">
-            <span><i>Haftalık</i><b>${fmt(signed.weekly)}mn</b></span>
-            <span><i>Kalan</i><b>${signed.remainingSeasons ?? signed.years} yıl</b></span>
-            <span><i>Durum</i><b class="pos">Aktif</b></span>
-          </div>
-          <button class="spo-fesih" data-act="cancelSponsor" data-arg="${slot}" data-tip="Erken fesih AĞIR bedellidir: ceza kasadan düşer + itibar −3">Sözleşmeyi Feshet (−${fmt(signed.fesihCeza)}mn)</button>
+        <div class="spo-row signed" style="--sc:${SPO_ACCENT[signed.type] || 'var(--club)'}" data-act="spDetay" data-arg="${slot}|signed" data-tip="Anlaşma detayı + fesih">
+          <span class="spo-logo-sm">${signed.ik || '🤝'}</span>
+          <div class="spo-row-id"><b>${esc(signed.name)}</b><i>${esc(signed.sector)} · ${signed.remainingSeasons ?? signed.years} yıl kaldı</i></div>
+          <span class="spo-row-val"><b>${fmt(sv)}</b><em>mn/sezon</em></span>
+          <span class="spo-detay">Detay ›</span>
         </div>
       </div>`;
     }
@@ -138,53 +133,82 @@ export function render(G) {
     }
     const offers = sponsorOffers(G, slot);
     return `<div class="spo-slot"><div class="spo-slot-h">${SLT[slot]}<span class="spo-slot-tag">${offers.length} teklif</span></div>
-      ${offers.map((o) => `<div class="spo-card ${o.riskProfile ? 'risky' : ''}" style="--sc:${SPO_ACCENT[o.type] || 'var(--club)'}" data-tip="${o.note ? esc(o.note) + ' · ' : ''}Erken fesih cezası ${fmt(o.fesihCeza)}mn">
-        <div class="spo-c-top">
-          <div class="spo-logo">${o.ik || '🤝'}</div>
-          <div class="spo-c-id"><div class="spo-c-nm">${esc(o.name)}${o.riskProfile ? ' <span class="spo-warn">⚠</span>' : ''}</div><div class="spo-c-sec">${esc(o.sektor || o.sector || '')}</div></div>
-          <div class="spo-c-val"><b>${fmt(sezonluk(o))}</b><span>mn/sezon</span></div>
-        </div>
-        <div class="spo-c-terms">
-          <span><i>Peşinat</i><b>${fmt(o.pesinat)}mn</b></span>
-          <span><i>Haftalık</i><b>${fmt(o.weekly)}mn</b></span>
-          <span><i>Süre</i><b>${o.years} yıl</b></span>
-        </div>
-        <div class="spo-c-foot">
-          <span class="spo-badge ${o.dezavantaj ? 'risk' : 'clean'}">${o.dezavantaj ? '⚠ ' + esc(o.dezavantaj) : '✓ temiz anlaşma'}</span>
-          <span class="spo-wait" data-tip="Teklif masada bu kadar hafta daha bekler — sonra çekilir">🕒 ${o.kalanHafta}h</span>
-        </div>
-        <div class="spo-c-act">
-          <button class="spo-al" data-act="signSponsor" data-arg="${slot}|${o.id}">İmzala</button>
-          <button class="spo-ret" data-act="rejectSponsor" data-arg="${slot}|${o.id}" data-tip="Kapıyı göster — yeni markalar sonraki haftalarda gelir">Reddet</button>
-        </div>
-      </div>`).join('') || '<div class="spo-empty">Masada teklif yok<span>Menajerler piyasada — yeni markalar önümüzdeki haftalarda kapıyı çalacak.</span></div>'}
+      ${offers.map((o) => `<div class="spo-row ${o.riskProfile ? 'risky' : ''}" style="--sc:${SPO_ACCENT[o.type] || 'var(--club)'}" data-act="spDetay" data-arg="${slot}|${o.id}" data-tip="Detayları aç — avantaj/dezavantaj, şartlar, imza">
+        <span class="spo-logo-sm">${o.ik || '🤝'}</span>
+        <div class="spo-row-id"><b>${esc(o.name)}${o.riskProfile || o.dezavantaj ? ' <span class="spo-warn">⚠</span>' : ''}</b><i>${esc(o.sektor || o.sector || '')} · ${o.years} yıl${o.dezavantaj ? ' · ⚠ riskli' : ' · ✓ temiz'}</i></div>
+        <span class="spo-row-val"><b>${fmt(sezonluk(o))}</b><em>mn/sezon</em></span>
+        <span class="spo-detay">Detay ›</span>
+      </div>`).join('') || '<div class="spo-empty">Masada teklif yok<span>Yeni markalar önümüzdeki haftalarda kapıyı çalacak.</span></div>'}
     </div>`;
   };
+  const yurtBtn = G.expansion && G.expansion.officeCount >= 1
+    ? '<span class="cx-hint" style="color:var(--pos)">🌍 Yurt dışı ofisi AÇIK · +%6</span>'
+    : `<button class="cx-btn cx-btn-sm" data-act="yurtOfis" ${G.economy.kasa < 25 || (G.club.reputation ?? 50) < 60 ? 'disabled' : ''} data-tip="25mn · itibar ≥60 ister. Sponsor geliri kalıcı +%6; 'Adımızı Sınırın Ötesine Taşıyacağım' sözünü tutar">🌍 Yurt Dışı Ofisi · 25mn</button>`;
   const sponsorPanel = `<div class="tr-panel fin-sponsor">
-    <div class="cx-panel-head"><span class="overline">Sponsorluk Pazarı</span><span class="cx-hint">her kariyerde farklı markalar · peşinat kasaya · haftalık gelir</span></div>
+    <div class="cx-panel-head"><span class="overline">Sponsorluk Pazarı</span><span class="cx-hint" data-tip="Peşinat kasaya · haftalık gelir · bahis/kripto çok getirir ama taraftar/itibar riski. Süre dolunca cezasız biter; erken fesih ağır bedellidir.">peşinat kasaya · haftalık gelir</span>${yurtBtn}</div>
     <div class="spo-grid">${['gogus', 'naming', 'kol'].map(slotCell).join('')}</div>
-    <div class="tr-not">Teklifler bekletilirse çekilir; reddedersen piyasaya haber gider, yeni markalar sonraki haftalarda kapıyı çalar. Bahis/kripto çok getirir ama taraftar/itibar riski + kısa süre. Süre dolunca cezasız biter; erken fesih AĞIR bedellidir.</div>
-    <div class="btnrow" style="margin-top:8px">
-      ${G.expansion && G.expansion.officeCount >= 1
-    ? '<span class="badge">🌍 Yurt dışı ofisi AÇIK — sponsor geliri +%6</span>'
-    : `<button class="cx-btn" data-act="yurtOfis" ${G.economy.kasa < 25 || (G.club.reputation ?? 50) < 60 ? 'disabled' : ''} data-tip="25mn · itibar ≥60 ister. Sponsor geliri kalıcı +%6; 'Adımızı Sınırın Ötesine Taşıyacağım' sözünü tutar">🌍 Yurt Dışı Ofisi Aç · 25mn</button>`}
-    </div>
   </div>`;
 
-  return `<div class="tr-wrap fin-wrap">
-    <div class="tr-head">
-      <div><div class="overline">Finans · Mali Merkez</div><h2>Kulübün Kasası</h2></div>
-      <div class="fin-plates">
-        <span class="tesis-kasa"><i>KASA</i><b>${fmt(e.kasa)}mn</b></span>
-        <span class="tesis-kasa" style="border-color:rgba(224,82,82,.35)"><i>BORÇ</i><b style="color:var(--neg)">${fmt(e.borc)}mn</b></span>
-        <span class="tesis-kasa" style="border-color:var(--line)"><i>FAİZ</i><b style="color:var(--ink-1)">%${Math.round(e.faizOrani * 100)}</b></span>
-      </div>
-    </div>
-    <div class="fin-grid">
-      <div class="tr-sol">${biletPanel}${borcPanel}</div>
-      ${akisPanel}
-      <div class="tr-sol">${ffpPanel}${primPanel}</div>
-    </div>
-    ${sponsorPanel}
+  const faizPct = Math.round(e.faizOrani * 100);
+  const ffpDurum = ffp.taahhut ? 'TAAHHÜT' : !ffp.limit ? 'BEKLEMEDE' : fPct >= 100 ? 'AŞILDI' : fPct >= 90 ? 'SINIRDA' : 'TAKİPTE';
+  const crumb = `FİNANS · KASA ${fmt(e.kasa)}MN · BORÇ ${fmt(e.borc)}MN · FAİZ %${faizPct} · FFP ${ffpDurum}`;
+  const body = `<div class="fin-root">
+    <div class="fin-strip">${biletPanel}${borcPanel}${ffpPanel}${primPanel}</div>
+    <div class="fin-main">${akisPanel}${sponsorPanel}</div>
   </div>`;
+  return sbShell(G, { crumb, title: 'Kulübün Kasası', body });
+}
+
+// ── SPONSOR DETAY KARTI (modal): tüm şartlar + avantajlar + dezavantajlar + imza/red/fesih ──
+const SP_SLT = { gogus: 'Forma Göğüs', naming: 'Stadyum İsmi', kol: 'Forma Kol' };
+const SP_ACCENT = { standart: 'var(--club)', fintech: 'var(--info)', bahis: 'var(--neg)', kripto: 'var(--warn)', yerel: 'var(--pos)', naming: 'var(--club-2)' };
+const SP_TIP_AD = { standart: 'Kurumsal', fintech: 'Fintech', bahis: 'Bahis', kripto: 'Kripto', yerel: 'Yerel esnaf', naming: 'İsim hakkı' };
+export function renderSponsorCard(G) {
+  const sc = G._spCard;
+  if (!sc) return '';
+  const signedDeal = (G.sponsorDeals || {})[sc.slot];
+  let o, isSigned = false;
+  if (sc.id === 'signed' && signedDeal) { o = signedDeal; isSigned = true; }
+  else { o = (sponsorOffers(G, sc.slot) || []).find((x) => x.id === sc.id); }
+  if (!o) return ''; // teklif imzalandı/reddedildi/çekildi → kart kapanır
+  const annual = Math.round((o.annual ?? o.weekly * 52) * 10) / 10;
+  const rp = o.riskProfile || {};
+  const avant = [];
+  avant.push(`Yıllık gelir <b>${fmt(annual)}mn</b> · haftalık ${fmt(o.weekly)}mn — kasaya düzenli akış`);
+  if (!isSigned) avant.push(`İmza anında <b>${fmt(o.pesinat)}mn peşinat</b> doğrudan kasaya`);
+  if (o.incomeMult > 1.15) avant.push(`Yüksek gelir çarpanı <b>×${o.incomeMult}</b> — sektör ortalamasının üstünde`);
+  if (rp.taraftar > 0) avant.push(`Taraftar memnuniyeti <b>+${rp.taraftar}</b> — "bizim kulüp" havası`);
+  if (rp.gencTaban) avant.push(`Genç taban <b>+${rp.gencTaban}</b> — dijital kampanyalar, yeni nesil`);
+  if (o.years >= 3) avant.push(`Uzun vade — <b>${o.years} yıl</b> gelir garantisi`);
+  const dez = [];
+  if (rp.taraftar < 0) dez.push(`Taraftar <b>${rp.taraftar}</b> — ılımlı grup imajı zedeler`);
+  if (rp.itibar) dez.push(`İtibar <b>${rp.itibar}</b> — kamuoyu tepkisi`);
+  if (rp.batmaChance) dez.push(`<b>%${Math.round(rp.batmaChance * 100)} batma riski</b> — batarsa gelir kesilir, manşet olur`);
+  dez.push(`Erken fesih cezası <b>${fmt(o.fesihCeza)}mn</b> — peşinatı aşar (imzala-boz hilesi yok)`);
+  if (o.years <= 1) dez.push(`Kısa süre — yalnız <b>${o.years} yıl</b>, yenileme garantisi yok`);
+  if (!dez.length) dez.push('Kayda değer bir dezavantaj yok — <b>temiz anlaşma</b>.');
+  const line = (arr, cls) => arr.map((t) => `<div class="sp-li ${cls}">${cls === 'pos' ? '＋' : '－'} ${t}</div>`).join('');
+  return `<div class="sp-ovl" data-act="spCardClose"><div class="sp-card" data-act="noop" style="--sc:${SP_ACCENT[o.type] || 'var(--club)'}">
+    <button class="pc-close" data-act="spCardClose" aria-label="Kapat">✕</button>
+    <div class="sp-head">
+      <span class="sp-logo">${o.ik || '🤝'}</span>
+      <div class="sp-head-id"><div class="sp-nm">${esc(o.name)}${isSigned ? ' <span class="sp-imzali">İMZALI</span>' : ''}</div><div class="sp-sub">${SP_TIP_AD[o.type] || ''} · ${esc(o.sektor || o.sector || '')} · ${SP_SLT[sc.slot]}</div></div>
+      <div class="sp-val"><b>${fmt(annual)}</b><span>mn/sezon</span></div>
+    </div>
+    <div class="sp-terms">
+      <span class="sp-cell"><i>PEŞİNAT</i><b>${fmt(o.pesinat)}mn</b></span>
+      <span class="sp-cell"><i>HAFTALIK</i><b>${fmt(o.weekly)}mn</b></span>
+      <span class="sp-cell"><i>SÜRE</i><b>${isSigned ? (o.remainingSeasons ?? o.years) + ' yıl kaldı' : o.years + ' yıl'}</b></span>
+      <span class="sp-cell"><i>FESİH CEZASI</i><b>${fmt(o.fesihCeza)}mn</b></span>
+    </div>
+    <div class="sp-lists">
+      <div class="sp-list"><div class="sp-list-h pos">✓ AVANTAJLAR</div>${line(avant, 'pos')}</div>
+      <div class="sp-list"><div class="sp-list-h neg">⚠ DEZAVANTAJLAR</div>${line(dez, 'neg')}</div>
+    </div>
+    <div class="sp-actions">
+      ${isSigned
+    ? `<span class="pc-hint">İmzalı anlaşma — süre dolunca cezasız biter.</span><button class="pc-btn on" data-act="cancelSponsor" data-arg="${sc.slot}">🔨 Sözleşmeyi Feshet · −${fmt(o.fesihCeza)}mn</button><button class="pc-btn" data-act="spCardClose">Kapat</button>`
+    : `<button class="pc-btn" data-act="rejectSponsor" data-arg="${sc.slot}|${o.id}">Reddet</button><button class="pc-btn pri" data-act="signSponsor" data-arg="${sc.slot}|${o.id}">✍ İmzala · peşinat ${fmt(o.pesinat)}mn</button><button class="pc-btn" data-act="spCardClose">Kapat</button>`}
+    </div>
+  </div></div>`;
 }

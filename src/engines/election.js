@@ -21,12 +21,19 @@ export function kupaSkor(s) {
   return Math.min(raw, C.cap);
 }
 
-// Sportif karne: 3 sezon (ligSkor+kupaSkor) SEASON_W ağırlıklı, clamp 0-100 (Bible-16.2)
+// Sportif karne: 3 sezon (ligSkor+kupaSkor) SEASON_W ağırlıklı, clamp 0-100 (Bible-16.2).
+// KISMİ DÖNEM (canlı projeksiyon): sezonlar EN YENİ ağırlığa SAĞDAN hizalanır ve kullanılan ağırlıkla
+// NORMALİZE edilir — böylece dönem başında tek (mevcut) sezon en yüksek ağırlığı alır, "hayalet" eksik
+// sezonlar sportifi 5 kat düşürmez. 3 tam sezonda (dönem sonu seçimi) sonuç birebir AYNIdır (Σağırlık=1).
 export function sportifKarne(seasons) {
   const W = TUNING.SEASON_W;
-  let sum = 0;
-  seasons.forEach((s, i) => { sum += (W[i] ?? 0) * (ligSkor(s.pos) + kupaSkor(s)); });
-  return clamp(sum, 0, 100);
+  if (!seasons || !seasons.length) return N; // veri yok → nötr (0 değil)
+  const n = Math.min(seasons.length, W.length);
+  const use = seasons.slice(-n);          // en yeni n sezon
+  const wts = W.slice(W.length - n);      // ağırlıkları sona hizala (en yeni → en yüksek)
+  let sum = 0, wsum = 0;
+  use.forEach((s, i) => { sum += wts[i] * (ligSkor(s.pos) + kupaSkor(s)); wsum += wts[i]; });
+  return clamp(sum / (wsum || 1), 0, 100);
 }
 
 // Mali karne: dönem başı vs sonu borç farkı + mali gauge (Bible-16)
@@ -34,7 +41,8 @@ export function maliKarne(state, baslangicBorc) {
   const ts = TUNING.TIER_SCALE[state.club.tier];
   const cap = TUNING.ELECTION.MALI_DEBT_CAP;
   const debtDelta = clamp((baslangicBorc - state.economy.borc) / ts, -cap, cap); // ±6 ile sınırlı
-  return clamp(N + debtDelta + (state.gauges.mali - N) * TUNING.ELECTION.MALI_GAUGE_W, 0, 100);
+  const borcsuzBonus = state.economy.borc <= 0 ? (TUNING.ELECTION.BORCSUZ_MALI_BONUS || 0) : 0; // borçsuz kulüp sandıkta ödüllenir
+  return clamp(N + debtDelta + (state.gauges.mali - N) * TUNING.ELECTION.MALI_GAUGE_W + borcsuzBonus, 0, 100);
 }
 
 // Söz tutma karnesi (Bible-16). 0 vaat → sozTutmaBirikim 0 → nötr 50.

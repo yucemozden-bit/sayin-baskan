@@ -16,6 +16,7 @@ import * as seasonEnd from './ui/seasonEnd.js';
 import * as electionNight from './ui/electionNight.js';
 import * as playerCard from './ui/playerCard.js';
 import * as setupUi from './ui/setup.js';
+import * as mainMenu from './ui/mainMenu.js';
 import * as squadView from './ui/squadView.js';
 import * as transferView from './ui/transferView.js';
 import * as facilitiesView from './ui/facilitiesView.js';
@@ -36,6 +37,29 @@ import { topNudge } from './engines/objectives.js';
 const app = document.getElementById('app');
 let G = null;
 
+// ── Global tooltip: data-tip'i SABİT konumlu tek kutuda gösterir → overflow:hidden panelleri AŞAR,
+//    viewport dışına taşmaz (yukarıda yer yoksa aşağı açılır). CSS ::after tooltip'in yerini alır. ──
+const _tip = document.createElement('div');
+_tip.className = 'sb-tip';
+_tip.setAttribute('role', 'tooltip');
+document.body.appendChild(_tip);
+function _showTip(t) {
+  const txt = t && t.getAttribute('data-tip');
+  if (!txt) { _tip.style.display = 'none'; return; }
+  _tip.textContent = txt;
+  _tip.style.display = 'block';
+  const r = t.getBoundingClientRect();
+  const tw = _tip.offsetWidth, th = _tip.offsetHeight, M = 8;
+  let left = Math.max(M, Math.min(r.left + r.width / 2 - tw / 2, window.innerWidth - tw - M));
+  let top = r.top - th - 8;
+  if (top < M) top = r.bottom + 8; // yukarıda yer yoksa aşağı aç
+  _tip.style.left = Math.round(left) + 'px';
+  _tip.style.top = Math.round(top) + 'px';
+}
+document.addEventListener('mouseover', (ev) => { const t = ev.target.closest && ev.target.closest('[data-tip]'); _showTip(t); });
+document.addEventListener('mouseout', (ev) => { const t = ev.target.closest && ev.target.closest('[data-tip]'); if (t) _tip.style.display = 'none'; });
+window.addEventListener('scroll', () => { _tip.style.display = 'none'; }, true);
+
 // ── Veri yükle (Live Server üzerinden fetch) ──
 async function boot() {
   const load = (f) => fetch(`src/data/${f}`).then((r) => r.json());
@@ -46,6 +70,7 @@ async function boot() {
     G = A.newGame(data, 'normal');
     globalThis.SB = { G, TUNING, A }; // konsol kancası
     autoLoadCheck(); // kayıtlı kariyer varsa açılışta "Devam Et" sunulur
+    G.phase = 'MAIN_MENU'; // sinematik ana menü ilk ekran (Yeni Oyun → kulüp seçimi)
     render();
   } catch (err) {
     app.innerHTML = `<div style="padding:40px;color:#E05252">Veri yüklenemedi. Live Server (http) ile açın.<br><small>${err}</small></div>`;
@@ -116,18 +141,18 @@ function render() {
     return;
   }
   switch (G.phase) {
+    case 'MAIN_MENU':
+      html = mainMenu.render(G); break; // sinematik ana menü — kendi tam-ekran sb- kabuğu
     case 'CLUB_SELECT':
-      html = shell(G, { content: clubSelect.render(G), center: true, bare: true }); break; // AÇILIŞ 1a: topbar yok
-    case 'SETUP': // kariyer kuruluşu: başkan adı + kulüp adı/renk + şehir + zorluk (bare — kariyer henüz yok)
-      html = shell(G, { content: setupUi.render(G), center: true, bare: true }); break;
+      html = clubSelect.render(G); break; // AÇILIŞ — kendi tam-ekran sb- kabuğu (topbar yok)
+    case 'SETUP': // kariyer kuruluşu — kendi tam-ekran sb- kabuğu (topbar yok, kariyer henüz başlamadı)
+      html = setupUi.render(G); break;
     case 'TERM_SETUP': {
       // M6: YENİ DÖNEM RİTÜELİ — vaatlerden önce tören: defter kartları + kurul önünde vizyon
       if (G.ritual && !G.ritual.done) { html = shell(G, { content: ritualScene(G), center: true }); break; }
       // v4.3-4: iki adım — 1/2 vaat, 2/2 direktif; buton her adımda sticky (devam-wrap)
-      const step = G._setupStep || 1;
-      // step 2'de alt bar YOK — CTA belgenin üstündeki "● MÜHÜRLE" (tutanak finaldir)
-      const label = `Sözleri Mühürle (${(G._sel || []).length}/${TUNING.MAX_PROMISES}) → Direktif ►`;
-      html = shell(G, { content: promiseSelect.render(G), devam: step === 1 ? { label, disabled: false, pulse: true } : null });
+      // Her iki adım da (1/2 Sözünü Ver, 2/2 Makam Odası) kendi tam-ekran sb- kabuğunu üretir — shell'siz.
+      html = promiseSelect.render(G);
       break;
     }
     case 'OPPOSITION': {
@@ -141,22 +166,35 @@ function render() {
       if (G.phone) { // Y2: TELEFON EKRANI KESER — inbox'a düşmez
         html = shell(G, { content: phoneModal(G), center: true });
       } else if (G.pendingMatch) {
-        const needsChoice = G.pendingMatch.phase === 'ht' || G.pendingMatch.phase === 'late';
-        html = shell(G, { content: matchday.render(G), center: true, devam: needsChoice ? null : { label: 'DEVAM ►', pulse: true } });
+        if (G.pendingMatch.phase === 'live' || G.pendingMatch.phase === 'post') {
+          // CANLI YAYIN + SONUÇ — kendi tam-ekran kabuğu (shell yok); saat ilk girişte başlar
+          if (G.pendingMatch.phase === 'live' && G.pendingMatch._clock === undefined) { G.pendingMatch._clock = 0; G.pendingMatch._playing = false; G.pendingMatch._speed = 1; }
+          html = matchday.render(G);
+        } else {
+          const needsChoice = G.pendingMatch.phase === 'ht' || G.pendingMatch.phase === 'late';
+          html = shell(G, { content: matchday.render(G), center: true, devam: needsChoice ? null : { label: 'DEVAM ►', pulse: true } });
+        }
       } else {
         const screens = { cockpit, kadro: squadView, transfer: transferView, tesis: facilitiesView, finans: finance, medya: media, kongre: congress, veri: dataHub, kulup: clubView, inbox, ayarlar: settings };
         const screen = screens[G.nav] || cockpit;
+        // sb- görsel katmana göç etmiş nav ekranları — kendi tam-ekran sbShell kabuğunu üretir
+        const SB_NAV = new Set(['cockpit', 'kadro', 'transfer', 'tesis', 'finans', 'medya', 'kongre', 'veri', 'kulup', 'inbox']);
         const hazir = (G.hazirlik || 0) > 0;
-        const devamLbl = hazir ? (G.hazirlik === 1 ? 'Sezonu Başlat ►' : `Hazırlık Haftası ► (lige ${G.hazirlik})`) : 'Sonraki Maç ►';
-        html = shell(G, { content: screen.render(G), nav: true, navActive: G.nav, devam: { label: devamLbl, sub: hazir ? 'Transfer dönemi — kadronu kur, maçlar sonra' : nextHint(G), pulse: true } });
+        if (SB_NAV.has(G.nav)) {
+          // sb- göç etmiş nav ekranı — kendi tam-ekran sbShell kabuğunu üretir (shell() ile sarmalanmaz)
+          html = screen.render(G);
+        } else {
+          const devamLbl = hazir ? (G.hazirlik === 1 ? 'Sezonu Başlat ►' : `Hazırlık Haftası ► (lige ${G.hazirlik})`) : 'Sonraki Maç ►';
+          html = shell(G, { content: screen.render(G), nav: true, navActive: G.nav, devam: { label: devamLbl, sub: hazir ? 'Transfer dönemi — kadronu kur, maçlar sonra' : nextHint(G), pulse: true } });
+        }
       }
       break;
     case 'SEASON_END':
       html = shell(G, { content: seasonEnd.render(G), center: true, devam: { label: 'Yeni Sezona Başla ►', pulse: true } }); break;
     case 'CAMPAIGN':
-      html = shell(G, { content: renderCampaign(G), center: true, devam: { label: `Kampanya haftasını bitir ► (${G.campaign?.tick}/3)`, pulse: true } }); break;
+      html = renderCampaign(G); break;    // sb-cinematic tam-ekran (kendi topbar+bottombar)
     case 'DEBATE':
-      html = shell(G, { content: renderDebate(G), center: true }); break; // cevap butonları sahnede
+      html = renderDebate(G); break;      // sb-cinematic; cevap butonları sahnede
     case 'ELECTION_NIGHT': {
       const e = G.election;
       const revealing = (e.revealStep ?? 0) <= 5 && !e.counting && !e.done;
@@ -174,6 +212,7 @@ function render() {
   // OYUNCU KARTI overlay'i — kadrodaki oyuncuya tıklayınca açılır (satılan/giden oyuncuda kendini kapatır)
   if (G._pcard && !playerCard.findAnyPlayer(G, G._pcard)) G._pcard = null; // kadro + teklif + piyasa oyuncusu kartı açık kalsın
   if (G._pcard) html += playerCard.render(G);
+  if (G._spCard) html += finance.renderSponsorCard(G); // sponsor detay kartı (modal)
   if (G._achModal) html += clubView.renderAchModal(G); // başarım duvarı (kulüp ekranından "Tümünü Gör")
   app.innerHTML = html;
   document.body.classList.toggle('kontrast', !!G.uiKontrast); // Ayarlar → Yüksek Kontrast
@@ -187,6 +226,36 @@ function render() {
     || (G.gauges && (G.gauges.guven < 25 || G.gauges.mali < 20));
   document.body.classList.toggle('kriz', !!kriz);
   flushToasts(); // RETENTION: yeni açılan başarımlar/olaylar tören toast'ı olarak belirir
+  ensureMatchClock(); // CANLI YAYIN: maç saati oynuyorsa dakika dakika ilerlet
+}
+
+// Devre arası/son-dakika KARAR ekranlarını atla — maçı nötr çözüp DİREK canlı yayına al.
+// (RNG akışı aynı: htDecision('tdguven') + finishWeek + lateDecision('devam') mevcut sırayla çalışır.)
+function autoResolveToLive() {
+  const pm = G && G.pendingMatch;
+  if (!pm || G.phone) return;                 // telefon varsa önce o cevaplanır (pre kalır)
+  if (pm.phase === 'pre') { A.htDecision(G, 'tdguven'); const r = A.finishWeek(G); if (r && r.waitLate) A.lateDecision(G, 'devam'); }
+  else if (pm.phase === 'ht') { A.htDecision(G, 'tdguven'); const r = A.finishWeek(G); if (r && r.waitLate) A.lateDecision(G, 'devam'); }
+  else if (pm.phase === 'late') { A.lateDecision(G, 'devam'); }
+}
+
+// ═══ CANLI MAÇ SAATİ — yayın oynatılıyorken dakikaları ilerletir (highlights REVEAL; RNG'ye dokunmaz) ═══
+let _matchIv = null;
+function ensureMatchClock() {
+  const pm = G && G.pendingMatch;
+  const canli = pm && pm.phase === 'live' && pm._playing && (pm._clock ?? 0) < 90;
+  if (!canli) { if (_matchIv) { clearInterval(_matchIv); _matchIv = null; } return; }
+  if (_matchIv) return; // zaten dönüyor
+  _matchIv = setInterval(() => {
+    const p = G && G.pendingMatch;
+    if (!p || p.phase !== 'live' || !p._playing) { clearInterval(_matchIv); _matchIv = null; return; }
+    const prev = p._clock ?? 0;
+    p._clock = Math.min(90, prev + (p._speed || 1));
+    const golAr = (p.highlights || []).some((h) => h.type === 'gol' && h.min > prev && h.min <= p._clock);
+    if (p._clock >= 90) { p._clock = 90; p._playing = false; }
+    if (golAr) { try { FX.gol(); } catch {} }
+    render();
+  }, 460);
 }
 
 // KAYDIRMASIZ GARANTİ (GLOBAL): HİÇBİR ekranda scroll yok. Sahne içeriği görünür
@@ -215,10 +284,11 @@ function fitVaat() {
 function readSetupInputs() {
   if (!G._setup) G._setup = {};
   const v = (id) => { const el = app.querySelector('#' + id); return el ? el.value : undefined; };
-  const b = v('su-baskan'), k = v('su-kulup'), s = v('su-sehir');
+  const b = v('su-baskan'), k = v('su-kulup'), s = v('su-sehir'), l = v('su-lakap');
   if (b !== undefined) G._setup.baskanAd = b;
   if (k !== undefined) G._setup.kulupAd = k;
   if (s !== undefined) G._setup.sehir = s;
+  if (l !== undefined) G._setup.lakap = l;
 }
 
 // CANLI SKOR SAYIMI (ekrana kitleme): yayın skorbordu 0-0 açılır; her gol, ticker
@@ -283,6 +353,9 @@ function flushToasts() {
   G._achSeen = G._achSeen || {};
   const keys = Object.keys(G.achUnlocked || {});
   if (!G._achSeenInit) { for (const k of keys) G._achSeen[k] = 1; G._achSeenInit = true; return; } // ilk/yükleme: sessiz tohum
+  // Maç yayını sürerken (canlı, 90'a gelmemiş) HİÇBİR toast patlamasın — sonucu (galibiyet serisi/başarım)
+  // sızdırır. Maç bitince (90' / sonuç ekranı) ertelenen toast'lar akar. (_achSeen/_lastStreakToast güncellenmez.)
+  if (G.pendingMatch && G.pendingMatch.phase === 'live' && (G.pendingMatch._clock ?? 90) < 90) return;
   const defs = (G.data.achievements && (G.data.achievements.achievements || G.data.achievements)) || [];
   let gecik = 0;
   for (const k of keys) {
@@ -313,6 +386,25 @@ function flushToasts() {
 // Y2: Telefon modalı — arayan kimliği renkli çerçeveyle EKRANI KESER
 const CALLER_COLOR = { gm: 'var(--info)', gazeteci: 'var(--warn)', kurul: 'var(--club)', menajer: 'var(--neg)', kaptan: 'var(--pos)' };
 const CALLER_TR = { gm: 'GENEL MENAJER', gazeteci: 'GAZETECİ', kurul: 'KURUL', menajer: 'MENAJER', kaptan: 'KAPTAN' };
+// TELEFON KONU OYUNCUSU — kart HER telefonda çıksın: önce açık referans (file.player/playerId),
+// yoksa başlık/gövdede ADI GEÇEN kadro/teklif/piyasa oyuncusunu bul (en uzun ad = en spesifik).
+// Böylece savas/kaptan/kontrat/sakat/skandal gibi oyuncu konulu tüm telefonlarda kart açılır.
+function phoneKonuId(G, ph) {
+  if (ph.file?.player?.id != null) return ph.file.player.id;
+  if (ph.playerId != null) return ph.playerId;
+  const text = `${ph.title || ''} ${ph.body || ''}`;
+  const havuz = [
+    ...(G.squad || []),
+    ...(G.inbox || []).flatMap((m) => (m.file && m.file.player) ? [m.file.player] : []),
+    ...(G.market || []),
+    ...(G.loanedOut || []),
+  ];
+  let best = null;
+  for (const p of havuz) {
+    if (p && p.name && p.name.length >= 4 && text.includes(p.name) && (!best || p.name.length > best.name.length)) best = p;
+  }
+  return best ? best.id : null;
+}
 function phoneModal(G) {
   const ph = G.phone;
   const color = CALLER_COLOR[ph.caller] || 'var(--club)';
@@ -320,11 +412,17 @@ function phoneModal(G) {
       <button class="btn" data-act="phoneOpt" data-arg="${i}" style="border-color:${color}">${escH(o.label)}</button>
       ${o.whisper ? `<span class="muted" style="font-size:11px;padding-left:2px">${escH(o.whisper)}</span>` : ''}
     </span>`).join('');
+  // Konu oyuncusu varsa DOSYAYI AÇ — teklif/panik/kiralık oyuncusunun kartını incele (findAnyPlayer telefonu da tarar)
+  const konuId = phoneKonuId(G, ph);
+  const kartBtn = konuId != null
+    ? `<div style="margin-top:10px"><button class="btn" data-act="pcard" data-arg="${escH(String(konuId))}" style="border-color:${color};font-size:12px;opacity:.92">🔎 Oyuncu kartını aç</button></div>`
+    : '';
   return `<div class="scene" style="max-width:520px">
     <div class="card card--phone phone-ring" style="border:2px solid ${color};text-align:left">
       <div class="overline" style="color:${color}">📞 ARIYOR · ${CALLER_TR[ph.caller] || 'ARAYAN'} — ${escH(ph.callerName || '')}</div>
       <h2 style="margin:10px 0 6px">${escH(ph.title)}</h2>
       <div class="muted">${escH(ph.body)}</div>
+      ${kartBtn}
       ${ph.deferred ? '<div class="muted" style="font-size:11px;margin-top:6px;color:var(--warn)">İkinci arayış — daha fazla bekletme.</div>' : ''}
       <div class="btnrow" style="margin-top:14px">${opts}</div>
       <div class="btnrow" style="margin-top:8px"><button class="btn" data-act="phoneDefer" style="opacity:.6">⏳ Ertele (arayan hatırlar: ilişki −, fırsat pahalanır)</button></div>
@@ -396,6 +494,8 @@ function dispatch(act, arg) {
     }
     case 'setupRenk': readSetupInputs(); G._setup.renk = arg; break;
     case 'setupZorluk': readSetupInputs(); G._setup.zorluk = arg; break;
+    case 'setupArma': readSetupInputs(); G._setup.arma = arg; break;             // arma stili (kalkan/daire/klasik)
+    case 'setupGecmis': readSetupInputs(); G._setup.baskanGecmisi = arg; break;  // başkan geçmişi (pasif yetenek)
     case 'setupGeri': G.phase = 'CLUB_SELECT'; break;
     case 'setupStart': { // kuruluş imzası: girilenleri uygula, kariyer başlasın
       readSetupInputs();
@@ -423,9 +523,11 @@ function dispatch(act, arg) {
     case 'restructure': A.restructureDebt(G); break;
     case 'takeLoan': A.takeLoan(G, parseFloat(arg)); break;
     case 'bankLoan': { const [id, c] = arg.split('|'); A.resolveBankLoan(G, id, c); break; }
-    case 'signSponsor': { const [slot, bid] = arg.split('|'); A.signSponsor(G, slot, bid); break; }
-    case 'cancelSponsor': A.cancelSponsor(G, arg); break;
-    case 'rejectSponsor': { const [slot, oid] = arg.split('|'); A.rejectSponsorOffer(G, slot, oid); break; } // teklife kapıyı göster
+    case 'spDetay': { const [slot, id] = arg.split('|'); G._spCard = { slot, id }; render(); return; } // sponsor detay kartı aç
+    case 'spCardClose': G._spCard = null; render(); return;
+    case 'signSponsor': { const [slot, bid] = arg.split('|'); A.signSponsor(G, slot, bid); G._spCard = null; break; }
+    case 'cancelSponsor': A.cancelSponsor(G, arg); G._spCard = null; break;
+    case 'rejectSponsor': { const [slot, oid] = arg.split('|'); A.rejectSponsorOffer(G, slot, oid); G._spCard = null; break; } // teklife kapıyı göster
     case 'achModal': G._achModal = !G._achModal; break;                                        // başarım duvarı modalı
     case 'sndTest': FX.devam(); break;                                                         // ayarlar: örnek efekt
     case 'uiKontrast': G.uiKontrast = !G.uiKontrast; break;                                    // ayarlar: yüksek kontrast
@@ -433,6 +535,7 @@ function dispatch(act, arg) {
     case 'pcard': G._pcard = arg; break;                                                       // oyuncu kartını aç
     case 'pcardClose': G._pcard = null; break;
     case 'kiralikListe': A.toggleKiralikListe(G, arg); break;                                  // kiralık listesine koy/çek
+    case 'renewContract': A.renewContract(G, arg); break;                                       // oyuncu kartı: sözleşme yenile
     case 'noop': break;                                                                        // kart içi boş tık (kapatmasın)
     case 'midPromise': A.makeMidPromise(G, arg); break;                                        // oyun-içi yeni söz
     case 'trFiltre': G._trFiltre = arg; G._trSayfa = 0; break;                                 // piyasa filtresi (bütçe/mevki/hepsi)
@@ -489,9 +592,12 @@ function dispatch(act, arg) {
     case 'ffpLobi': A.ffpLobi(G); break;                                                      // A2 lobi
     case 'htMove': { A.htDecision(G, arg); const r = A.finishWeek(G); if (!(r && r.waitLate)) FX.devam(); render(); return; } // Y3 devre arası
     case 'lateMove': { A.lateDecision(G, arg); render(); return; }                            // Y3 son 10 dk
+    case 'matchPlay': { const p = G.pendingMatch; if (p) { p._playing = !p._playing; } render(); return; }        // canlı yayın: oynat/duraklat
+    case 'matchSpeed': { const p = G.pendingMatch; if (p) { p._speed = ((p._speed || 1) % 3) + 1; } render(); return; } // 1x→2x→3x
+    case 'matchFinish': { const p = G.pendingMatch; if (p) { p._clock = 90; p._playing = false; } render(); return; } // maçı bitir (90'a atla)
     case 'phoneOpt': { A.answerPhone(G, arg); FX.devam(); render(); return; }                 // Y2 telefon
     case 'phoneDefer': { A.deferPhone(G); render(); return; }
-    case 'desk': { A.deskAction(G); FX.tik(); break; }                                        // Y6 masa dokunuşu
+    case 'desk': { A.deskAction(G, arg || 'katil'); FX.tik(); break; }                         // Y6 masa dokunuşu (katil/gec)
     case 'sndToggle': { setEnabled(!getSound().enabled); break; }                             // Y7 ses
     case 'sndVol': setVolume(parseFloat(arg)); break;                                        // B6b
     case 'ambVol': setAmbience(parseFloat(arg)); break;                                       // ÇELİK 5d ambiyans kanalı
@@ -509,6 +615,13 @@ function dispatch(act, arg) {
     case 'load': doLoad(); return;
     case 'devam': onDevam(); autoSave(); return;                                              // her ilerleyişte otokayıt
     case 'contSave': autoContinue(); return;                                                  // açılış: kayıtlı kariyere devam
+    // ── ANA MENÜ aksiyonları ──
+    case 'menuYeni': G.phase = 'CLUB_SELECT'; break;                                          // Yeni Oyun → kulüp seçimi
+    case 'menuDevam': autoContinue(); return;                                                 // Devam Et → kayıtlı kariyer
+    case 'menuKariyer': showToast({ icon: '🏆', title: 'Kariyer & Rekorlar', sub: 'Yakında — kariyer defterin buraya açılacak.' }); return;
+    case 'menuAyarlar': showToast({ icon: '⚙️', title: 'Ayarlar', sub: 'Yakında — ses, dil ve erişilebilirlik burada.' }); return;
+    case 'menuSteam': showToast({ icon: '▸', title: 'Steam İstek Listesi', sub: 'Steam sayfası yakında yayında.' }); return;
+    case 'menuCikis': showToast({ icon: '👋', title: 'İyi oyunlar Başkanım', sub: 'Çıkmak için tarayıcı sekmesini kapatabilirsin.' }); return;
     case 'contSil': { try { localStorage.removeItem(AUTO_KEY); } catch {} G._devamVar = null; break; }
     default: return;
   }
@@ -536,10 +649,13 @@ function onDevam() {
     case 'SEASON_LOOP':
       if (G.phone) break; // telefon açıkken DEVAM çalışmaz — cevap şart
       if (G.pendingMatch) {
-        // Y3: pre → HT (karar) → [late karar] → live → post → kapan
-        if (G.pendingMatch.phase === 'pre') { G.pendingMatch.phase = 'ht'; FX.devam(); render(); break; }
-        if (G.pendingMatch.phase === 'ht' || G.pendingMatch.phase === 'late') break; // seçim butonları sahnede
+        // Kullanıcı isteği: devre arası/son-dakika KARAR ekranları kaldırıldı — DİREK canlı yayına.
+        // pre → (HT/late nötr auto-çöz) → live → post → kapan
+        if (G.pendingMatch.phase === 'pre') { autoResolveToLive(); FX.devam(); render(); break; }
+        if (G.pendingMatch.phase === 'ht' || G.pendingMatch.phase === 'late') { autoResolveToLive(); render(); break; }
         if (G.pendingMatch.phase === 'live') {
+          // yayın bitmeden DEVAM → önce maçı bitir (90'a atla); ikinci DEVAM sonuç ekranına geçer
+          if ((G.pendingMatch._clock ?? 90) < 90) { G.pendingMatch._clock = 90; G.pendingMatch._playing = false; render(); break; }
           G.pendingMatch.phase = 'post';
           if (G.pendingMatch.myRes === 'W') { FX.gol(); konfetiAt(); } // ekran sarsıntısı kaldırıldı (kullanıcı isteği)
           else if (G.pendingMatch.myRes === 'L') FX.yenilgi();
@@ -549,7 +665,7 @@ function onDevam() {
         if (G.meta.week > G.SEASON_WEEKS) { A.endSeason(G); }
         render();
       } else if ((G.hazirlik || 0) > 0) { A.preSeasonWeek(G); FX.devam(); render(); } // sezon başı hazırlık dönemi
-      else { A.beginWeek(G); FX.devam(); render(); }
+      else { A.beginWeek(G); autoResolveToLive(); FX.devam(); render(); } // DİREK maça: pre'yi atla (telefon yoksa)
       break;
     case 'SEASON_END':
       A.afterSeasonEnd(G); render(); break;

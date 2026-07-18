@@ -14,13 +14,16 @@ const OPP_TR = { POPULIST: 'Popülist', MUHASEBECI: 'Muhasebeci', INSAATCI: 'İn
 export const oppTypeTr = (t) => OPP_TR[t] || t;
 
 export function oppositionSeason(type, st) {
+  const E = TUNING.MIRAS.ENKAZ_BORC;
   let karar = '', sonuc = '';
   switch (type) {
     case 'POPULIST': {
-      const harcama = st.kadroDeger * rand(0.15, 0.30);
-      st.borc += harcama; st.kadroDeger *= rand(1.06, 1.14); st.guc += randint(1, 3);
-      karar = `Borçla iki yıldız transferi (${harcama.toFixed(0)}mn)`;
-      sonuc = 'Tribün coştu, kasa kan ağlıyor — faiz kalemi kabardı.';
+      // Borçla transfer — ama sezon başına en çok E.PER_SEASON şişer (eskiden kadroDeger'e
+      // endeksli sınırsızdı → büyük kulüpte 3 sezonda 300mn+ bileşik borç).
+      const harcama = Math.min(st.kadroDeger * rand(0.08, 0.15), E.PER_SEASON);
+      st.borc += harcama; st.kadroDeger *= rand(1.04, 1.09); st.guc += randint(1, 3);
+      karar = `Borçla yıldız transferi (${harcama.toFixed(0)}mn)`;
+      sonuc = 'Tribün coştu, kasa zorlandı — faiz kalemi kabardı.';
       break;
     }
     case 'MUHASEBECI': {
@@ -43,8 +46,14 @@ export function oppositionSeason(type, st) {
       sonuc = 'Komisyoncular kazandı; altyapı hocaları istifa sınırında.';
     }
   }
-  // sezon sırası: güç kaymasına göre kabaca (hedef etrafında gürültü)
-  const pos = clamp(Math.round(st.hedefSira + (58 - st.guc) * 0.4 + rand(-2.5, 2.5)), 1, 18);
+  // BORÇ TAVANI: rakip dönemi borcu kadro değerinin makul bir oranını ve mutlak tavanı aşamaz —
+  // "krizde ama kurtarılabilir" enkaz (kredi tavanı 400mn'ye asla yaklaşmaz). RNG akışını tüketmez.
+  st.borc = clamp(st.borc, 0, Math.min(st.kadroDeger * E.RATIO_CAP, E.ABS_CAP));
+  // sezon sırası: kulübün BEKLENEN yeri (hedefSira) + rakip tipinin SPORTİF sapması.
+  // (Eskiden mutlak güce (58-guc) endeksliydi → güçlü kulüpte hep 1. bitip tip farkı sıraya
+  //  yansımıyordu; artık hedef etrafında tipe göre sapar → her boyutta ayrışır. rand yine 1 çekiş.)
+  const drift = TUNING.MIRAS.OPP_SPORTIF[type] ?? 0;
+  const pos = clamp(Math.round(st.hedefSira + drift + rand(-1.6, 1.6)), 1, 18);
   st.posList.push(pos);
   return { karar, sonuc, pos };
 }

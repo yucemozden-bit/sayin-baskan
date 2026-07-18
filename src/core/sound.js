@@ -6,6 +6,11 @@
 const S = { volume: 0.6, ambience: 0.5, enabled: true, ctx: null, aktif: 0 };
 const MAX_ES_ZAMANLI = 3;
 
+// ═══ GEÇİCİ: TÜM SESLER KAPALI (kullanıcı isteği — sonra revize edilecek) ═══
+// tone()/noise() tek çıkış noktası; burada susturunca hiçbir efekt/ambiyans çalmaz (ayarlardan da açılamaz).
+// Geri açmak için: SESSIZ = false yap ya da bu satırı sil.
+const SESSIZ = true;
+
 // Miks tablosu: efektlerin birbirine GÖRELİ seviyesi + kesme önceliği (yüksek = önemli)
 const MIX = {
   tik: { vol: 0.30, pri: 0 }, devam: { vol: 0.55, pri: 1 }, inbox: { vol: 0.35, pri: 1 },
@@ -30,6 +35,7 @@ function say(dur) {
   if (typeof setTimeout !== 'undefined') setTimeout(() => { S.aktif = Math.max(0, S.aktif - 1); }, dur * 1000 + 80);
 }
 function tone(freq, dur, { type = 'sine', vol = 1, slide = 0, delay = 0, pri = 1, kanal = 'fx' } = {}) {
+  if (SESSIZ) return;
   const c = ac(); if (!c || !S.enabled || !kapi(pri)) return;
   sonPri = pri; say(dur + delay);
   const master = kanal === 'amb' ? S.ambience : S.volume;
@@ -43,6 +49,7 @@ function tone(freq, dur, { type = 'sine', vol = 1, slide = 0, delay = 0, pri = 1
   o.start(c.currentTime + delay); o.stop(c.currentTime + delay + dur + 0.05);
 }
 function noise(dur, { vol = 1, delay = 0, pri = 1, kanal = 'fx' } = {}) {
+  if (SESSIZ) return;
   const c = ac(); if (!c || !S.enabled || !kapi(pri)) return;
   sonPri = pri; say(dur + delay);
   const master = kanal === 'amb' ? S.ambience : S.volume;

@@ -5,6 +5,7 @@ import { esc } from './frame.js';
 import { isCriticalWeek, promiseStatus } from '../actions.js';
 import { PRESS_POOL, MUHABIRLER } from '../data/pressPool.js';
 import { TUNING } from '../config.js';
+import { sbShell } from './cockpit.js';
 
 const TONE_LABEL = { iddiali: 'İddialı', sakin: 'Sakin', savunmaci: 'Savunmacı', atesli: 'Ateşli' };
 // Etkiler TUNING.PRESS ile birebir — her tonun artısı VE eksisi yazar
@@ -198,11 +199,8 @@ export function render(G) {
     : [AKIS_FALLBACK[wk % AKIS_FALLBACK.length], AKIS_FALLBACK[(wk + 2) % AKIS_FALLBACK.length]]
       .map((t) => `<div class="balon" style="opacity:.75">${esc(t)}</div>`).join('');
 
-  return `<div class="tr-wrap">
-    <div class="tr-head">
-      <div><div class="overline">Medya Merkezi</div><h2>Basın Toplantısı</h2></div>
-      ${havaSerit(tone)}
-    </div>
+  const body = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
+    ${havaSerit(tone)}
     <div class="med-grid">
       <div class="tr-panel med-salon">
         ${pressStage(G, tone)}
@@ -223,4 +221,6 @@ export function render(G) {
       </div>
     </div>
   </div>`;
+  const crumb = `MEDYA · BASIN HAVASI ${havaAd(tone).toUpperCase()} · SOSYAL AKIŞ ${feed.length ? 'CANLI' : 'SAKİN'}`;
+  return sbShell(G, { crumb, title: 'Basın Toplantısı', body });
 }

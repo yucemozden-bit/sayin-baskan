@@ -52,7 +52,7 @@ export const SLOT_TIPLERI = {
 
 // Tek teklif üret. ctx: { clubName, week, seq, weeklyBase, usedNames[] } · forceType init kompozisyonu için.
 export function generateSponsorOffer(ctx, slot, forceType = null) {
-  const rng = mkRng(hashStr(ctx.clubName || 'kulup') ^ Math.imul((ctx.week || 0) + 7, 40503) ^ Math.imul((ctx.seq || 0) + 13, 2654435761));
+  const rng = mkRng(hashStr(ctx.clubName || 'kulup') ^ Math.imul((ctx.week || 0) + 7, 40503) ^ Math.imul((ctx.seq || 0) + 13, 2654435761) ^ Math.imul((ctx.salt || 0) + 1, 374761393));
   const ri = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
   const rr = (lo, hi) => lo + rng() * (hi - lo);
   const tipler = SLOT_TIPLERI[slot] || ['standart'];

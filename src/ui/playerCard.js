@@ -1,12 +1,15 @@
-// src/ui/playerCard.js — OYUNCU KARTI: kadroda oyuncuya tıklayınca açılan 3D dosya kartı.
-// Deterministik SVG futbolcu avatarı (kulüp formalı büst; ten/saç/sakal çeşitli — düz vektör,
-// telifsiz, her oyuncuda aynı yüz) + tüm kritik veriler: güç/potansiyel, değer/tahmini
-// bedel/maaş/sözleşme, FORM/KONDİSYON/MUTLULUK + türetilmiş TD UYUMU / KULÜP AİDİYETİ /
-// BAŞKANA GÜVEN çubukları + satış listesi & kiralık listesi aksiyonları.
+// src/ui/playerCard.js — OYUNCU KARTI (sb- görsel katman): geniş dosya kartı.
+// Bizim deterministik SVG futbolcu avatarımız korunur (kulüp formalı büst). Güç halkası +
+// potansiyel yıldızları + YETENEK PROFİLİ radar altıgeni + 6 segment çubuğu (FORM/KONDİSYON/
+// MUTLULUK/TD UYUMU/KULÜP AİDİYETİ/BAŞKANA GÜVEN) + mevki mini sahası + son 5 maç + sezon
+// istatistikleri + değer/bedel/maaş/sözleşme + satış/kiralık/sözleşme-yenile aksiyonları.
+// Kadroda OLMAYAN (teklif/piyasa) oyuncu sisli/lite gösterilir: gerçek güç imzadan önce sızmaz.
 import { esc, fmt } from './frame.js';
+import { shownRating } from '../engines/market.js';
 
 const POS_TR = { GK: 'Kaleci', DEF: 'Stoper', MID: 'Orta saha', FWD: 'Forvet' };
 const POS_COL = { GK: 'var(--club)', DEF: 'var(--info)', MID: 'var(--pos)', FWD: 'var(--warn)' };
+const POS_HARF = { GK: 'K', DEF: 'S', MID: 'O', FWD: 'F' };
 
 function h32(s) { let h = 0; const t = String(s); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return h; }
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -27,6 +30,23 @@ export function aidiyet(p, G) {
 export function karakterOf(p) {
   const K = ['Lider ruhlu', 'Sakin ve dengeli', 'Hırslı', 'Alevlenebilir', 'Profesyonel', 'Mahalle çocuğu', 'Sessiz ama derin'];
   return K[h32(p.id + p.name) % K.length];
+}
+const KARAKTER_NOT = {
+  'Lider ruhlu': 'soyunma odasını arkasından sürükler; sorumluluk ister, boşta bırakılırsa küser.',
+  'Sakin ve dengeli': 'krizde soğukkanlı kalır; ne çok parlar ne söner, güvenilir bir eksendir.',
+  'Hırslı': 'sürekli daha fazlasını ister; oynadıkça büyür, kulübede unutulursa patlar.',
+  'Alevlenebilir': 'iyi yönetilirse lider olur, kötü günde soyunma odasını gerer.',
+  'Profesyonel': 'işini duygusundan ayırır; sahada dengeli, kulis dedikodusuna karışmaz.',
+  'Mahalle çocuğu': 'tribünle arası iyi, formaya bağlı; sevgi görürse taşın altına elini koyar.',
+  'Sessiz ama derin': 'az konuşur çok gözler; doğru anda söz alır, hafife alınırsa içine kapanır.',
+};
+// Ayak (deterministik kozmetik — avatar/karakter deseniyle aynı): çoğunlukla sağ
+const AYAK = ['Sağ ayak', 'Sağ ayak', 'Sağ ayak', 'Sol ayak', 'Çift ayak'];
+const ayakOf = (p) => AYAK[h32(p.id + '#ayak') % AYAK.length];
+// Potansiyel yıldızı (gerçek p.potential'dan) — 1..5
+function potStars(potential) {
+  const s = potential >= 78 ? 5 : potential >= 68 ? 4 : potential >= 58 ? 3 : potential >= 48 ? 2 : 1;
+  return '★'.repeat(s) + '☆'.repeat(5 - s);
 }
 
 // ── SVG FUTBOLCU AVATARI — düz-vektör büst (faceless): kulüp forması + forma numarası,
@@ -67,16 +87,92 @@ export function playerAvatar(p, size = 92) {
 }
 
 const renk = (v) => (v >= 62 ? 'var(--pos)' : v >= 45 ? 'var(--warn)' : 'var(--neg)');
-const bar = (lbl, v, col, tip) => `<div class="pc-bar" data-tip="${esc(tip || '')}"><i>${lbl}</i><span class="tr"><b style="width:${clamp(Math.round(v), 3, 100)}%;background:${col || renk(v)}"></b></span><em class="tnum">${Math.round(v)}</em></div>`;
+// Segment çubuğu (10 dilim) — sağda etiketli metrik
+function segBar(lbl, v, col, tip) {
+  const val = clamp(Math.round(v), 0, 100);
+  const dolu = Math.round(val / 10);
+  const c = col || renk(val);
+  const segs = Array.from({ length: 10 }, (_, i) => `<span class="pc-seg${i < dolu ? ' on' : ''}" style="${i < dolu ? `background:${c}` : ''}"></span>`).join('');
+  return `<div class="pc-mrow" data-tip="${esc(tip || '')}"><i>${lbl}</i><span class="pc-segs">${segs}</span><em class="tnum" style="color:${c}">${val}</em></div>`;
+}
+
+// Güç halkası — dairesel gauge, ortada büyük sayı/aralık
+function gucRing(pct, big, sub, tier, tip) {
+  const C = 2 * Math.PI * 26;
+  const off = (C * (1 - clamp(pct, 0, 100) / 100)).toFixed(1);
+  return `<div class="pc-ring ${tier}" data-tip="${esc(tip || '')}">
+    <svg viewBox="0 0 64 64"><circle class="pc-ring-bg" cx="32" cy="32" r="26"/><circle class="pc-ring-fg" cx="32" cy="32" r="26" transform="rotate(-90 32 32)" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off}"/></svg>
+    <div class="pc-ring-c"><b${big.length > 3 ? ' style="font-size:.62em;letter-spacing:-.5px"' : ''}>${big}</b><i>${sub}</i></div>
+  </div>`;
+}
+
+// YETENEK PROFİLİ radar altıgeni — 6 eksen (FORM/KOND/TD/GÜVEN/AİDİYET/MUTLU)
+function radar(axes) {
+  const cx = 90, cy = 88, R = 62;
+  const ang = (i) => (-90 + i * 60) * Math.PI / 180;
+  const pt = (i, r) => [cx + Math.cos(ang(i)) * r, cy + Math.sin(ang(i)) * r];
+  const grid = [0.34, 0.67, 1].map((f) => `<polygon points="${axes.map((_, i) => pt(i, R * f).map((n) => n.toFixed(1)).join(',')).join(' ')}" class="pc-rd-grid"/>`).join('');
+  const spokes = axes.map((_, i) => { const [x, y] = pt(i, R); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" class="pc-rd-spoke"/>`; }).join('');
+  const valPoly = axes.map((a, i) => pt(i, R * clamp(a.v, 0, 100) / 100).map((n) => n.toFixed(1)).join(',')).join(' ');
+  const dots = axes.map((a, i) => { const [x, y] = pt(i, R * clamp(a.v, 0, 100) / 100); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.3" class="pc-rd-dot"/>`; }).join('');
+  const labels = axes.map((a, i) => { const [x, y] = pt(i, R + 13); return `<text x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" class="pc-rd-lbl" text-anchor="middle">${a.lbl}</text>`; }).join('');
+  return `<svg class="pc-radar" viewBox="0 0 180 176">${grid}${spokes}<polygon points="${valPoly}" class="pc-rd-val"/>${dots}${labels}</svg>`;
+}
+
+// Mevki mini sahası — oyuncunun bölgesinde nokta
+function miniPitch(pos) {
+  const zx = ({ GK: 16, DEF: 62, MID: 100, FWD: 150 }[pos] ?? 100);
+  return `<svg class="pc-pitch" viewBox="0 0 200 92">
+    <rect x="1" y="1" width="198" height="90" rx="6" class="pc-pt-bg"/>
+    <line x1="100" y1="1" x2="100" y2="91" class="pc-pt-ln"/><circle cx="100" cy="46" r="15" class="pc-pt-ln" fill="none"/>
+    <rect x="1" y="26" width="24" height="40" class="pc-pt-ln" fill="none"/><rect x="175" y="26" width="24" height="40" class="pc-pt-ln" fill="none"/>
+    <circle cx="${zx}" cy="46" r="9" class="pc-pt-dot"/><text x="${zx}" y="49.5" class="pc-pt-t" text-anchor="middle">${POS_HARF[pos] || '?'}</text>
+  </svg>`;
+}
+
+// Sezon istatistiği — deterministik türetme (sim per-oyuncu gol/asist tutmaz; overall/pos/form'dan makul)
+function seasonStats(p, G) {
+  const mine = Object.values(G.league?.table || {}).find((t) => t.mine);
+  const oynanan = mine?.P ?? Math.max(0, Math.min(G.meta?.week ?? 0, 34));
+  const kadroRol = 0.55 + 0.45 * clamp((p.overall - 45) / 35, 0, 1);
+  const mac = clamp(Math.round(oynanan * kadroRol) - Math.min(p.injuryWeeks || 0, 4), 0, 34);
+  const golRate = { FWD: 0.42, MID: 0.16, DEF: 0.05, GK: 0 }[p.pos] ?? 0.12;
+  const asRate = { FWD: 0.16, MID: 0.22, DEF: 0.08, GK: 0.01 }[p.pos] ?? 0.12;
+  const jit = (k) => 0.75 + (h32(p.id + k) % 51) / 100; // 0.75-1.25
+  const gol = Math.max(0, Math.round(mac * golRate * (p.overall / 66) * jit('#g')));
+  const asist = Math.max(0, Math.round(mac * asRate * (p.overall / 66) * jit('#a')));
+  const puan = (clamp(5.7 + (p.form - 50) / 32 + (p.overall - 60) / 55, 5.1, 8.7)).toFixed(1).replace('.', ',');
+  return { mac, gol, asist, puan };
+}
+// Son 5 maç — OYUNCU BAŞINA (form + takım standing harmanı), per-oyuncu+per-maç hash ile ÇEŞİTLİ.
+// Deterministik; asla "hep G" değil (G olasılığı tavanlı) ve her oyuncuda farklı dizi.
+function son5(p, G) {
+  const mine = Object.values(G.league?.table || {}).find((t) => t.mine);
+  const P = mine?.P || 0;
+  if (!P) return Array.from({ length: 5 }, () => '<span class="pc-s5c">·</span>').join(''); // henüz maç yok
+  const teamG = mine.W / P, teamD = mine.D / P;
+  const formF = clamp((p.form ?? 60) / 100, 0, 1);
+  const pG = clamp(teamG * 0.55 + formF * 0.35, 0.1, 0.72);   // G eğilimi: takım oranı + form; tavan %72 → çeşitlilik
+  const pB = clamp(teamD * 0.7 + 0.15, 0.1, 0.38);            // beraberlik payı
+  const base = h32(p.id + '|s5|' + (G.worldSeason ?? G.meta?.season ?? 1));
+  return Array.from({ length: 5 }, (_, i) => {
+    // her maç için AYRI iyi-dağılmış değer (ardışık i'ler birbirine yakın çıkmasın → tek harf tuzağı)
+    let x = (base ^ Math.imul(i + 1, 0x9E3779B1)) >>> 0;
+    x = Math.imul(x ^ (x >>> 15), 0x85EBCA77) >>> 0;
+    const r = (x % 1000) / 1000;
+    const [cls, ch] = r < pG ? ['g', 'G'] : r < pG + pB ? ['b', 'B'] : ['m', 'M'];
+    return `<span class="pc-s5c ${cls}">${ch}</span>`;
+  }).join('');
+}
 
 // Oyuncuyu HER YERDE bul: kadro + gelen/giden teklif dosyaları (inbox tfile/sfile) + gecikmeli dosya + piyasa.
-// Böylece BENİM OLMAYAN oyuncuların da (teklifteki, scout'taki) kartı açılabilir.
 export function findAnyPlayer(G, id) {
   if (id == null) return null;
   const sid = String(id);
   let p = (G.squad || []).find((x) => String(x.id) === sid);
   if (p) return p;
   for (const m of G.inbox || []) if (m.file && m.file.player && String(m.file.player.id) === sid) return m.file.player;
+  for (const ph of [G.phone, G.phoneDeferred, ...(G.phoneQueue || [])]) if (ph && ph.file && ph.file.player && String(ph.file.player.id) === sid) return ph.file.player;
   if (G.delayedFile && G.delayedFile.player && String(G.delayedFile.player.id) === sid) return G.delayedFile.player;
   p = (G.market || []).find((x) => String(x.id) === sid);
   return p || null;
@@ -86,60 +182,123 @@ export function render(G) {
   const p = findAnyPlayer(G, G._pcard);
   if (!p) return '';
   const yabanci = !(G.squad || []).some((x) => x === p); // kadromda değil (teklif/piyasa oyuncusu)
-  const tier = p.overall >= 75 ? 't1' : p.overall >= 60 ? 't2' : p.overall >= 45 ? 't3' : 't4';
+  const derin = !!p._derin;              // derin rapor alındıysa gerçek güç bilinir
+  const sisli = yabanci && !derin;       // sisli göster: kadroda değil ve derin rapor yok
+
+  let gucBig, gucSub, gucTip, tierVal;
+  if (!sisli) {
+    gucBig = String(p.overall); gucSub = 'GÜÇ'; gucTip = 'Mevcut güç'; tierVal = p.overall;
+  } else if (p._sorgu) {
+    const g = p._sorgu.guc, hh = p._sorgu.h ?? 1;
+    gucBig = `${g - hh}–${g + hh}`; gucSub = 'GÜÇ ±'; gucTip = 'Sorgu sonrası daralmış tahmin — gerçek güç imzadan sonra sahada belli olur'; tierVal = g;
+  } else {
+    const s = shownRating(p, G.facilities?.scout ?? 0, G.meta?.week ?? 0);
+    gucBig = `${s.deger - s.h}–${s.deger + s.h}`; gucSub = 'GÜÇ ~'; gucTip = 'Scout tahmini — sis scout tesisiyle daralır; gerçek güç imzadan sonra belli olur'; tierVal = s.deger;
+  }
+  const tier = tierVal >= 75 ? 't1' : tierVal >= 60 ? 't2' : tierVal >= 45 ? 't3' : 't4';
   const uyum = tdUyum(p, G.coach);
   const aid = aidiyet(p, G);
   const guven = Math.round(p.baskanaGuven ?? 50);
-  const bedel = Math.round(p.marketValue * 1.12 * 10) / 10; // tahmini bonservis (piyasa primi)
-  const potChip = p.age < 24 && (p.potential || p.overall) > p.overall + 2
-    ? '<span class="pc-chip pot" data-tip="Genç — tavanı mevcut gücünün üstünde; doğru gelişimle patlar">POTANSİYEL ★</span>' : '';
-  return `<div class="pcard-ovl" data-act="pcardClose">
-    <div class="pcard ${tier}" data-act="noop">
+  const bedel = Math.round(p.marketValue * 1.12 * 10) / 10;
+  const krk = karakterOf(p);
+
+  // — ORTAK BAŞLIK —
+  const potStar = !sisli && p.potential ? `<div class="pc-pot" data-tip="Potansiyel — gelişim tavanı">POTANSİYEL <b>${potStars(p.potential)}</b></div>` : '';
+  const chips = `<span class="pc-chip" style="border-color:${POS_COL[p.pos]};color:${POS_COL[p.pos]}">${POS_TR[p.pos] || p.pos}</span>
+    <span class="pc-chip">${p.age} yaş</span>
+    <span class="pc-chip">${ayakOf(p)}</span>
+    ${p.age <= 21 ? '<span class="pc-chip g">GENÇ</span>' : ''}
+    ${p.id === G.captainId ? '<span class="pc-chip c" data-tip="Kaptan">C</span>' : ''}
+    ${p.loanIn ? '<span class="pc-chip i">KİRALIK</span>' : ''}
+    ${p.vitrin ? '<span class="pc-chip i">SATIŞTA</span>' : ''}
+    ${p.kiralikListe ? '<span class="pc-chip i">KİRALIK LİSTESİNDE</span>' : ''}
+    ${p.injuryWeeks > 0 ? `<span class="pc-chip i">🩹 ${p.injuryWeeks} HAFTA</span>` : ''}
+    ${p.suspensionWeeks > 0 ? '<span class="pc-chip i">🟥 CEZALI</span>' : ''}
+    <span class="pc-chip krk" data-tip="Karakter — ${esc(KARAKTER_NOT[krk] || '')}">${esc(krk)}</span>`;
+  const head = `<div class="pc-head">
+    ${playerAvatar(p, 84)}
+    <div class="pc-kim">
+      <div class="pc-nm">${esc(p.name)}</div>
+      <div class="pc-chips">${chips}</div>
+    </div>
+    <div class="pc-guc">${gucRing(tierVal, gucBig, gucSub, tier, gucTip)}${potStar}</div>
+  </div>`;
+
+  // — SİSLİ / YABANCI: lite kart (gerçek profil imzadan önce sızmaz) —
+  if (sisli) {
+    return `<div class="pcard-ovl" data-act="pcardClose"><div class="pcard pcard-lite ${tier}" data-act="noop">
       <button class="pc-close" data-act="pcardClose" aria-label="Kapat">✕</button>
-      <span class="pcard-wm">${esc((p.name || '?')[0])}</span>
-      <div class="pc-head">
-        ${playerAvatar(p, 92)}
-        <div class="pc-kim">
-          <div class="pc-nm">${esc(p.name)}</div>
-          <div class="pc-chips">
-            <span class="pc-chip" style="border-color:${POS_COL[p.pos]};color:${POS_COL[p.pos]}">${POS_TR[p.pos] || p.pos}</span>
-            <span class="pc-chip">${p.age} yaş</span>
-            ${p.age <= 21 ? '<span class="pc-chip g">GENÇ</span>' : ''}
-            ${p.id === G.captainId ? '<span class="pc-chip c" data-tip="Kaptan">C</span>' : ''}
-            ${p.loanIn ? '<span class="pc-chip i">KİRALIK</span>' : ''}
-            ${p.vitrin ? '<span class="pc-chip i">SATIŞTA</span>' : ''}
-            ${p.kiralikListe ? '<span class="pc-chip i">KİRALIK LİSTESİNDE</span>' : ''}
-            ${p.injuryWeeks > 0 ? `<span class="pc-chip i">🩹 ${p.injuryWeeks} HAFTA</span>` : ''}
-            ${p.suspensionWeeks > 0 ? `<span class="pc-chip i">🟥 CEZALI</span>` : ''}
-            ${potChip}
-          </div>
-          <div class="pc-karakter">💬 Karakter: <b>${karakterOf(p)}</b></div>
+      ${head}
+      <div class="pc-lite-body">
+        <div class="pc-mrows">
+          ${segBar('FORM', p.form, null, 'Son haftalardaki saha performansı')}
+          ${segBar('KONDİSYON', p.fitness, null, 'Bacaklardaki güç')}
+          ${segBar('MUTLULUK', p.morale, null, 'Moral')}
         </div>
-        <div class="pc-rate ${tier}" data-tip="Mevcut güç"><b>${p.overall}</b><i>GÜÇ</i></div>
+        <div class="pc-lite-note">🔒 TD uyumu · kulüp aidiyeti · başkana güven — ancak <b>İMZADAN SONRA</b> ölçülür (senin kulübüne/hocana göre şekillenir).</div>
       </div>
-      <div class="pc-stats">
+      <div class="pc-stats-strip">
         <span class="pc-cell"><i>DEĞER</i><b>${fmt(p.marketValue)}mn</b></span>
         <span class="pc-cell" data-tip="Bugün satılsa piyasa primiyle beklenen bedel"><i>TAHMİNİ BEDEL</i><b>~${fmt(bedel)}mn</b></span>
         <span class="pc-cell"><i>MAAŞ</i><b>${fmt(p.wage)}mn<em>/sezon</em></b></span>
         <span class="pc-cell"><i>SÖZLEŞME</i><b>${p.contractYears ?? '—'} yıl</b></span>
       </div>
-      <div class="pc-bars">
-        ${bar('FORM', p.form, null, 'Son haftalardaki saha performansı')}
-        ${bar('KONDİSYON', p.fitness, null, 'Bacaklardaki güç — rotasyonla toparlar')}
-        ${bar('MUTLULUK', p.morale, null, 'Moral — satış listesi ve kötü seriler yıpratır')}
-        ${bar('TD UYUMU', uyum, 'var(--info)', 'Hocayla sahadaki kimyası — TD değişirse bu da değişir')}
-        ${bar('KULÜP AİDİYETİ', aid, 'var(--club-2)', 'Armaya bağlılık — kaptanlık bağlar, satış listesi koparır')}
-        ${bar('BAŞKANA GÜVEN', guven, 'var(--pos)', 'Sana güveni — verdiğin kararlar iz bırakır')}
-      </div>
       <div class="pc-actions">
-        ${yabanci
-      ? '<span class="muted" style="font-size:11px">👁 Kadronda değil — teklif/piyasa oyuncusu; mevkisi ve gücü inceleniyor. Transfer masası GM dosyasından yürür.</span>'
-      : p.loanIn
-        ? '<span class="muted" style="font-size:11px">🔒 Kiralık oyuncu — sezon sonu asıl kulübüne döner; satılamaz, listelenemez.</span>'
-        : `<button class="cx-btn ${p.vitrin ? 'on' : ''}" data-act="vitrin" data-arg="${p.id}" data-tip="${p.vitrin ? 'Satış listesinden geri çek' : 'Menajerlere sinyal gider; teklifler 2-4 haftada gelir'}">${p.vitrin ? '🏷 Satıştan çek' : 'Satış listesine koy'}</button>
-         <button class="cx-btn ${p.kiralikListe ? 'on' : ''}" data-act="kiralikListe" data-arg="${p.id}" data-tip="${p.kiralikListe ? 'Kiralık listesinden çek' : 'Pencere açıkken alt sıralardan kiralık dosyası gelebilir'}">${p.kiralikListe ? '↩ Kiralıktan çek' : 'Kiralık listesine koy'}</button>`}
-        <button class="cx-btn pc-kapat" data-act="pcardClose">Kapat</button>
+        <span class="pc-hint">👁 Kadronda değil — teklif/piyasa oyuncusu. Transfer masası GM dosyasından yürür.</span>
+        <button class="pc-btn" data-act="pcardClose">Kapat</button>
+      </div>
+    </div></div>`;
+  }
+
+  // — ZENGİN KART (kadro oyuncusu) —
+  const st = seasonStats(p, G);
+  const talip = p._ilgi ?? (p.overall >= 70 ? (h32(p.id + '#tlp') % 3) : 0);
+  const endYil = 2025 + (G.worldSeason ?? G.meta?.season ?? 1) + (p.contractYears ?? 1);
+  const renewKilit = (p.contractYears ?? 0) >= 5 || p._renewTerm === (G.meta?.term ?? 1);
+  const aksiyon = p.loanIn
+    ? `<span class="pc-hint">🔒 Kiralık oyuncu — sezon sonu asıl kulübüne döner; satılamaz, listelenemez.</span>
+       <button class="pc-btn" data-act="pcardClose">Kapat</button>`
+    : `<button class="pc-btn ${p.vitrin ? 'on' : ''}" data-act="vitrin" data-arg="${p.id}" data-tip="${p.vitrin ? 'Satış listesinden geri çek' : 'Menajerlere sinyal gider; teklifler 2-4 haftada gelir'}">${p.vitrin ? '🏷 Satıştan çek' : 'Satış listesi'}</button>
+       <button class="pc-btn ${p.kiralikListe ? 'on' : ''}" data-act="kiralikListe" data-arg="${p.id}" data-tip="${p.kiralikListe ? 'Kiralık listesinden çek' : 'Pencere açıkken alt sıralardan kiralık dosyası gelebilir'}">${p.kiralikListe ? '↩ Kiralıktan çek' : 'Kiralık'}</button>
+       <button class="pc-btn pri" data-act="renewContract" data-arg="${p.id}" ${renewKilit ? 'disabled' : ''} data-tip="${renewKilit ? 'Sözleşmesi zaten uzun / bu dönem yenilendi' : 'Sözleşmeyi uzat: moral ve aidiyet yükselir, maaş biraz artar'}">Sözleşme Yenile</button>
+       <button class="pc-btn" data-act="pcardClose">Kapat</button>`;
+
+  return `<div class="pcard-ovl" data-act="pcardClose"><div class="pcard pcard-rich ${tier}" data-act="noop">
+    <button class="pc-close" data-act="pcardClose" aria-label="Kapat">✕</button>
+    ${head}
+    <div class="pc-sec-t">YETENEK PROFİLİ</div>
+    <div class="pc-profil">
+      ${radar([
+    { lbl: 'FORM', v: p.form }, { lbl: 'KOND', v: p.fitness }, { lbl: 'TD', v: uyum },
+    { lbl: 'GÜVEN', v: guven }, { lbl: 'AİDİYET', v: aid }, { lbl: 'MUTLU', v: p.morale },
+  ])}
+      <div class="pc-mrows">
+        ${segBar('FORM', p.form, null, 'Son haftalardaki saha performansı')}
+        ${segBar('KONDİSYON', p.fitness, null, 'Bacaklardaki güç — rotasyonla toparlar')}
+        ${segBar('MUTLULUK', p.morale, null, 'Moral — satış listesi ve kötü seriler yıpratır')}
+        ${segBar('TD UYUMU', uyum, 'var(--info)', 'Hocayla sahadaki kimyası — TD değişirse bu da değişir')}
+        ${segBar('KULÜP AİDİYETİ', aid, 'var(--club-2)', 'Armaya bağlılık — kaptanlık bağlar, satış listesi koparır')}
+        ${segBar('BAŞKANA GÜVEN', guven, 'var(--pos)', 'Sana güveni — verdiğin kararlar iz bırakır')}
       </div>
     </div>
-  </div>`;
+    <div class="pc-mid">
+      <div class="pc-pitch-box"><div class="pc-sec-s">MEVKİ · ${(POS_TR[p.pos] || p.pos).toLocaleUpperCase('tr')}</div>${miniPitch(p.pos)}</div>
+      <div class="pc-s5-box"><div class="pc-sec-s">SON 5 MAÇ</div><div class="pc-s5">${son5(p, G)}</div></div>
+    </div>
+    <div class="pc-krk-note"><span class="pc-krk-tag">${esc(krk)}</span> karakter: ${esc(KARAKTER_NOT[krk] || '')}</div>
+    <div class="pc-stats">
+      <span class="pc-cell"><i>MAÇ</i><b>${st.mac}</b></span>
+      <span class="pc-cell"><i>GOL</i><b>${st.gol}</b></span>
+      <span class="pc-cell"><i>ASİST</i><b>${st.asist}</b></span>
+      <span class="pc-cell"><i>ORT. PUAN</i><b style="color:${st.puan >= '7' ? 'var(--pos)' : 'var(--ink-1)'}">${st.puan}</b></span>
+      <span class="pc-cell"><i>TALİP</i><b>${talip ? talip + ' kulüp' : 'yok'}</b></span>
+    </div>
+    <div class="pc-stats-strip">
+      <span class="pc-cell"><i>DEĞER</i><b>${fmt(p.marketValue)}mn</b></span>
+      <span class="pc-cell" data-tip="Bugün satılsa piyasa primiyle beklenen bedel"><i>TAHMİNİ BEDEL</i><b>~${fmt(bedel)}mn</b></span>
+      <span class="pc-cell"><i>MAAŞ</i><b>${fmt(p.wage)}mn<em>/sezon</em></b></span>
+      <span class="pc-cell" data-tip="Sözleşme bitişi"><i>SÖZLEŞME BİTİŞİ</i><b>30.06.${endYil}<em>${p.contractYears ?? '—'} sezon</em></b></span>
+    </div>
+    <div class="pc-actions">${aksiyon}</div>
+  </div></div>`;
 }

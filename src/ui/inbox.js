@@ -2,6 +2,7 @@
 // Aksiyonlar: bilet mektubu · TRANSFER ONAY DOSYASI · SATIŞ TEKLİFİ · TD ADAY DOSYASI (§1-2).
 // Y8: KARAR mesajları en üste sabitlenir + hafta gruplamaları + tıklanabilir imzalar.
 import { esc } from './frame.js';
+import { sbShell } from './cockpit.js';
 
 // İmza → sekme eşlemesi: gazeteci imzası Medya'ya, yönetici imzası Kulüp'e götürür
 function sigLink(G, body) {
@@ -18,7 +19,8 @@ function sigLink(G, body) {
 }
 
 // Tek mesaj kartı — hem tam inbox hem sağ rail kullanır (tek doğruluk kaynağı)
-function renderMsg(G, m) {
+// Tek item'ın aksiyon butonları (opts) — tek doğruluk kaynağı; inbox + kokpit Karar Masası paylaşır.
+export function itemActions(G, m) {
     const active = m.action && !m.resolved;
     let opts = '';
     if (active && m.action === 'ticket') {
@@ -55,7 +57,10 @@ function renderMsg(G, m) {
           ${o.whisper ? `<span class="muted" style="font-size:11px;padding-left:2px">${esc(o.whisper)}</span>` : ''}
         </span>`).join('')}</div>`;
     } else if (active && m.action === 'stfile') { // A1: yönetici aday dosyası
-      opts = `<div class="opts">${((G.staffCands || {}).cands || []).map((c, i) =>
+      // Adaylar ÖNCE mesajdan (m.stCands — her dosya kendi listesini taşır); eski kayıtta global fallback.
+      const cands = (m.stCands && m.stCands.length) ? m.stCands
+        : ((G.staffCands && (G.staffCands.role === m.stRole || !m.stRole)) ? (G.staffCands.cands || []) : []);
+      opts = `<div class="opts">${cands.map((c, i) =>
         `<button data-act="stfile" data-arg="${m.id}|${i}">İmzala: ${esc(c.name)}</button>`).join('')}</div>`;
     } else if (active && m.action === 'lfile') { // A3: kiralık gönderme
       opts = `<div class="opts">
@@ -93,6 +98,12 @@ function renderMsg(G, m) {
         <button data-act="board" data-arg="${m.id}|taraftar">Taraftar barışı sözü</button>
       </div>`;
     }
+    return opts;
+}
+
+function renderMsg(G, m) {
+    const active = m.action && !m.resolved;
+    const opts = itemActions(G, m);
     // GÖRSEL 4/5g: kart tipi ayrımı — karar/olay/tehlike; okunmamış sol nokta
     const tip = active ? 'card--decision' : m.action === 'event' || m.cat === 'olay' ? 'card--event' : m.cat === 'manset' && /BALYOZ|İFLAS|KRİZ/i.test(m.t || '') ? 'card--danger' : '';
     return `<div class="msg ${active ? 'action' : ''} ${tip}">
@@ -116,25 +127,18 @@ export function render(G) {
     if (wk !== lastWk) { akis += `<div class="micro inbox-grup">${wk ? `Hafta ${wk}` : 'Arşiv'}</div>`; lastWk = wk; }
     akis += renderMsg(G, m);
   }
-  return `<div class="ib-wrap">
-    <div class="tr-head">
-      <div><div class="overline">Gelen Kutusu</div><h2 style="margin:2px 0 0">Inbox</h2></div>
-      <div class="ib-stat">
-        <span class="tesis-kasa" style="border-color:${pinned.length ? 'var(--club-glow)' : 'var(--line)'}"><i>BEKLEYEN</i><b style="color:${pinned.length ? 'var(--club-2)' : 'var(--ink-1)'};font-size:15px">${pinned.length} karar</b></span>
-        <span class="tesis-kasa" style="border-color:var(--line)"><i>AKIŞ</i><b style="color:var(--ink-1);font-size:15px">${rest.length} haber</b></span>
-      </div>
+  const crumb = `GELEN KUTUSU · ${pinned.length} BEKLEYEN KARAR · ${rest.length} HABER`;
+  const body = `<div class="ib-grid">
+    <div class="sb-panel ib-col ib-kararlar">
+      <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">BEKLEYEN KARARLAR</span><span class="sb-panel-r">${pinned.length ? pinned.length + ' dosya' : 'sakin'}</span></div>
+      <div class="ib-scroll dh-fade">${kararlar}</div>
     </div>
-    <div class="ib-grid">
-      <div class="ib-col ib-kararlar">
-        <div class="ib-col-head"><span class="overline" style="color:var(--club)">Bekleyen Kararlar</span>${pinned.length ? `<span class="badge">${pinned.length}</span>` : '<span class="micro">sakin</span>'}</div>
-        <div class="ib-scroll dh-fade">${kararlar}</div>
-      </div>
-      <div class="ib-col">
-        <div class="ib-col-head"><span class="overline">Haber Akışı</span><span class="micro">yeni → eski</span></div>
-        <div class="ib-scroll dh-fade">${akis || '<div class="muted" style="font-size:12px;padding:10px 0">Akış sakin — henüz haber yok.</div>'}</div>
-      </div>
+    <div class="sb-panel ib-col">
+      <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">HABER AKIŞI</span><span class="sb-panel-r">yeni → eski</span></div>
+      <div class="ib-scroll dh-fade">${akis || '<div class="muted" style="font-size:12px;padding:10px 0">Akış sakin — henüz haber yok.</div>'}</div>
     </div>
   </div>`;
+  return sbShell(G, { crumb, title: 'Gelen Kutusu', body });
 }
 
 // KALICI SAĞ RAİL — kokpitte hep açık: bekleyen kararlar + son akış (inbox'a gitmeden)

@@ -17,7 +17,12 @@ export const TUNING = {
   STAR_THRESHOLD: 80, STAR_BONUS_MAX: 8, BALANCE_MIN: 0.85,
   KIMYA_WEEK: 1.5, KIMYA_TRANSFER: -4, KIMYA_TD: -10, TAKTIK_WEEK: 6,
   // — Maç —
-  BASE_GOALS: 2.6, SHARPNESS_K: 1.6, HOME_ADV: [0.03, 0.08], LUCK: [0.92, 1.08], // K: kaliteyi ayrıştır (1.3→1.6)
+  // GÜÇ ETKİSİ (2026-07, kullanıcı isteği): takım gücü galibiyeti daha güçlü belirlesin.
+  // K 1.6→3.0 (güç farkı → xG payı dikleşir), LUCK daraldı (şans gücü daha az boğar), gol sabit (2.6).
+  // Ölçüm: +8 güç fazlası %44→%49, +12 güç %46→%54 galibiyet. Gösterilen oran (SIGMOID_DIV 25) zaten
+  // bu dik eğriyi vaat ediyordu — artık gerçek sonuç ona UYUYOR (önce vaat fazla, sim yatıktı).
+  // NOT: k'yı daha yükseltmek (4.2) seçimleri idealde %97-99'a taşıyıp determinizmi bozuyordu → 3.0 tutuldu.
+  BASE_GOALS: 2.6, SHARPNESS_K: 3.0, HOME_ADV: [0.03, 0.08], LUCK: [0.95, 1.05],
   SIGMOID_DIV: 25, DRAW_BASE: 0.28, DRAW_WIDTH: 18,
   MOTIV_UNDERDOG: 0.04, BIGMATCH_HIDDEN: 0.05,
   // — Oyuncu —
@@ -38,7 +43,7 @@ export const TUNING = {
   MAX_PROMISES: 3, HOPE_MULT: 4, HOPE_DECAY: 0.20, P02_MIN_BORC: 20, // borç<20 ise P02 seçilemez
   KEPT: { soz: 3, taraftar: 5, guven: 3 }, BROKEN: { soz: 5, taraftar: 6, guven: 4, rakip: 4 },
   ELECT_W: { sportif: 0.30, taraftar: 0.20, mali: 0.20, itibar: 0.15, soz: 0.15 },
-  SEASON_W: [0.20, 0.30, 0.50], RIVAL_FACTOR: 0.5, WIN_LINE: 0.55, // eşik 0.50→0.55: iyi oynanan dönem %75-85 bandına (NaN düzeltmesi sonrası denge)
+  SEASON_W: [0.20, 0.30, 0.50], RIVAL_FACTOR: 0.5, WIN_LINE: 0.55, // eşik %55 · rakip cezası dengenin taşıyıcısı (bkz. election.js)
   CUP_PTS: { lig: 40, kupa: 20, avrupaZafer: 30, avrupaKatilim: 10, cap: 50 },
   CAMPAIGN: { kpPerTick: 2, maxSwing: 6, debateMaxSwing: 6, skipDebate: -2 },
   // — Olay/anlatı —
@@ -148,6 +153,9 @@ export const TUNING = {
     BAKIM_K: 0.02,             // tesisBakim = Σsv × 0.02
     IDARI_BASE: 0.15, IDARI_FAN_K: 0.00000005,
     MALI_DEFICIT_MULT: 3,      // maliHedef: açık cezası ×3
+    // BORÇSUZ KULÜP: borç sıfırlanınca mali disiplin uçar + o an diğer disiplinlere coşku dalgası
+    BORCSUZ_MALI_BONUS: 12,    // maliHedef: borçsuzken haftalık mali gauge hedefine flat +12 (mali "çok yükselir" ama güveni her hafta ezmesin)
+    BORCSUZ: { RIPPLE_TARAFTAR: 6, RIPPLE_ITIBAR: 5, RIPPLE_GUVEN: 8, RESET_ESIK: 1 }, // borçsuza geçiş anı: bir defalık gauge dalgası (sezonda 1×); RESET_ESIK üstünde yeniden borçlanınca tekrar kutlanabilir
   },
 
   // — Gauge hedef sürücüleri (Bible-12) —
@@ -320,8 +328,20 @@ export const TUNING = {
     OPP_SEASONS: 3,          // muhalefet süresi (sezon)
     OPP_LOSS_CAP: 2,         // üst üste seçim kaybı → kariyer kapanış
     // Dönüş seçimi: oy = 0.5 + (AI kötü yönetim cezası) + kampanya − görevdeki avantajı
-    COMEBACK: { BASE: 0.50, POS_K: 0.014, BORC_K: 0.0011, INCUMBENT: 0.12, CAMP_K: 0.010, NOISE: 0.03 }, // görevdeki avantajı sert: dönüş mümkün ama garanti değil
+    COMEBACK: { BASE: 0.50, POS_K: 0.014, BORC_K: 0.0011, INCUMBENT: 0.12, CAMP_K: 0.010, NOISE: 0.03, // görevdeki avantajı sert: dönüş mümkün ama garanti değil
+      // DÖNÜŞ MANDASI: kongre seni bir OYLA geri çağırdığında kurul güveni & taraftar taze mandaya oturur
+      // (3 sezon önce kaybettiğin andaki düşük değerde KALMAZ). Güç dönüş oy oranıyla ölçeklenir.
+      MANDATE: { GUVEN_BASE: 52, GUVEN_MANDA_K: 0.7, GUVEN_FLOOR: 50, TARAFTAR_BASE: 55, ITIBAR_MIN: 46 } },
     ENKAZ: { STAFF_DAGILIR: true, KIMYA: -10 }, // dönüşte staff koltukları boş + kimya şoku
+    // Rakip dönem borcu SINIRI: eskiden POPULIST + büyük kulüpte borç kadroDeger'e endeksli bileşik
+    // büyüyüp 370-470mn'ye (400mn kredi tavanını bile aşarak) fırlıyordu → ölüm sarmalı, oynanamaz.
+    // Artık: sezon başına en çok +PER_SEASON, toplam min(kadroDeger×RATIO_CAP, ABS_CAP) ile sınırlı.
+    // Sonuç ~kadro değerinin %40'ı: "krizde ama kurtarılabilir" (kriz eşiği %35, tenzil %100).
+    ENKAZ_BORC: { PER_SEASON: 50, RATIO_CAP: 0.42, ABS_CAP: 180 },
+    // Rakip tipinin SPORTİF sapması (lig sırası, hedefSira etrafında): eskiden sıra mutlak güce
+    // endeksliydi → güçlü kulüpte dört tip de tabana yapışıp 1. bitiyor, saha enkazı görünmüyordu.
+    // Artık hedef etrafında tipe göre sapıyor (her kulüp boyutunda ayrışır): + = beklentinin altı.
+    OPP_SPORTIF: { POPULIST: -3, AVCI: 2, INSAATCI: 3, MUHASEBECI: 6 },
     TIER: {
       UP_TERMS: 2,           // üst üste seçilmiş dönem sayısı
       UP_ITIBAR: 62,         // itibar eşiği
@@ -438,6 +458,7 @@ export const TUNING = {
   ELECTION: {
     MALI_GAUGE_W: 0.28,         // mali karne: (mali_gauge − 50) × 0.28 [nakit-biriktirme ezici olmasın]
     MALI_DEBT_CAP: 6,           // borç-kapatma delta katkısı ±6 ile sınırlı (finans ezici olmasın)
+    BORCSUZ_MALI_BONUS: 8,      // seçim mali karnesi: borçsuz kulüpte flat +8 (borçsuzluk sandıkta ödüllenir)
     RIVAL_W: { zayif: 0.4, ceza: 0.3, pozisyon: 0.3 }, // rakip çekiciliği ağırlıkları
     ATTR_W: 0.5,                // rival.attractiveness birikimi (kırık vaat/sızıntı/kampanya) çekiciliğe bu ağırlıkla biner
     RIVAL_ZAYIF_REF: 68,        // zayifHane = clamp(REF − enZayıfBileşen, 0, 100). 62→68: 64-68 taramasında hedefe (kazanma %75-85) EN YAKIN değer — knob bu aralıkta zayıf, bkz. tarama raporu

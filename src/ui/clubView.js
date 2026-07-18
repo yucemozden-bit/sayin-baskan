@@ -5,6 +5,7 @@
 import { esc, fmt } from './frame.js';
 import { describeStaff, ROLE_TR } from '../models/staff.js';
 import { promiseStatus } from '../actions.js';
+import { sbShell } from './cockpit.js';
 
 const TAG_TR = {
   SAMPIYONLUK_YARISI: '🏆 ŞAMPİYONLUK YARIŞI', KRIZ_KULUBU: '🔥 KRİZ KULÜBÜ', BORC_BATAGI: '💸 BORÇ BATAĞI',
@@ -40,10 +41,11 @@ export function render(G) {
       <div class="l"><span>Dönem / Sezon</span><b class="tnum">${G.meta.term} / ${c.seasons || 0}</b></div>
     </div></div>`;
 
-  return `<div class="klub-wrap">
+  // sbShell (ortak tam-ekran kabuk): topbar zaten kulüp armasını+adını gösterir,
+  // bu yüzden h1 → title'a taşındı. Kimlik kartının zengin içeriği (künye, anlatı
+  // etiketi, müze, sözler, kongre, defter, başarım) body içinde AYNEN korunur.
+  const body = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
     <div class="klub-head">
-      <div class="klub-head-l"><span class="klub-crest">${mono}</span>
-        <div><div class="overline">Kulüp Kimliği</div><h1>${esc(G.club.name)}</h1></div></div>
       <span class="badge klub-tag" data-tip="Kulübün anlatı iklimi: güven + kurul + taraftar + borç durumundan türeyen dönem etiketi">${tag}</span>
     </div>
     <div class="klub-grid">
@@ -52,6 +54,8 @@ export function render(G) {
       <div class="klub-col">${basarimOzet(G)}${kongreGuven(G)}${defterBlok(G)}</div>
     </div>
   </div>`;
+  const crumb = `KULÜP · ${tierTr.toUpperCase()} KULÜP · KURULUŞ ${G.club.founded || '—'} · ${G.meta.term}. DÖNEM`;
+  return sbShell(G, { crumb, title: 'Kulüp Kimliği', body });
 }
 
 // ── ORTA: MÜHÜRLÜ SÖZLER — vaat ekranında verilen sözlerin CANLI takibi (oyunun omurgası) ──

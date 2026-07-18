@@ -694,14 +694,18 @@
     {
      "label": "Hemen al (sis yüksek)",
      "effects": {
-      "note": "Kumar: gerçek overall belirsiz."
+      "note": "Sisin içinden imzayı attın.",
+      "chance": 0.45,
+      "onHit": { "economy": { "kasa": 8 }, "mediaTone": 1, "note": "Cevher patladı: üç ayda değeri katlandı, sattığında kasaya döndü — piyasa artık seni konuşuyor." },
+      "onMiss": { "economy": { "kasa": -7 }, "mediaTone": -1, "note": "Sis yalan söyledi: çocuk beklentiyi karşılamadı, bonservis cebe girmeden eridi." }
      },
      "whisper": "ucuz ama kumar · sis yoğun"
     },
     {
      "label": "Rapor bekle",
      "effects": {
-      "note": "1 ay bekle; fiyat %20 artabilir."
+      "economy": { "kasa": -1 },
+      "note": "Bir ay daha izlettin: dosya netleşti ama rakipler de uyandı, fiyat yukarı kaydı — fırsat pahalılaştı."
      },
      "whisper": "netlik gelir · fiyat da gelir"
     }
@@ -1050,6 +1054,180 @@
       },
       "servet": -6
      }
+    }
+   ]
+  },
+  {
+   "id": "balkan-agi",
+   "trigger": "random",
+   "title": "Gözlemci ağından sıcak isim",
+   "body": "Doğu Avrupa'daki gözlemcin telefonda: 18'lik bir kanat, ikinci ligde haftada bir 'yapılmaz' işi yapıyormuş. Menajeri henüz uyanmamış, pencere dar — bugün bir teklif, yarın on kulüp.",
+   "options": [
+    {
+     "label": "Erken teklifi masaya koy",
+     "whisper": "ucuza kapılır · patlaması garanti değil",
+     "effects": {
+      "note": "Rakipler uyanmadan hamleyi yaptın.",
+      "chance": 0.5,
+      "onHit": { "economy": { "kasa": 6 }, "player": { "overall": 2 }, "note": "Çocuk tuttu: birkaç ay sonra değeri katlandı, tribün 'nereden buldun bunu' diyor." },
+      "onMiss": { "economy": { "kasa": -6 }, "squadMorale": -3, "note": "Erken davrandın ama çocuk bu seviyeye hazır değilmiş; yatırım rafta kaldı, soyunma odası hayal kırıklığı." }
+     }
+    },
+    {
+     "label": "İki maç daha izlet",
+     "whisper": "risk yok · fırsat uçabilir",
+     "effects": { "note": "Temkinli davrandın; dosya olgunlaşırken bir kulüp önden atlayıp adayı kaptı, elin boş döndü." }
+    }
+   ]
+  },
+  {
+   "id": "menajer-yemegi",
+   "trigger": "random",
+   "title": "Süper menajerin akşam yemeği",
+   "body": "Şehrin en güçlü futbol menajeri seni yemeğe çağırdı: 'Elimde tam sana göre bir paket var, ama önce güven lazım.' Masaya oturmak kapıları açar; komisyon iştahı da malum.",
+   "options": [
+    {
+     "label": "Masaya otur, ilişkiyi kur",
+     "whisper": "kapılar açılır · komisyon kabarır",
+     "effects": {
+      "note": "Menajerle kanal açtın.",
+      "chance": 0.5,
+      "onHit": { "player": { "overall": 2 }, "gauge": { "itibar": 1 }, "note": "Paket iş gördü: kadroya doğru profil geldi, ilişki gelecek transferlere de kapı araladı." },
+      "onMiss": { "economy": { "kasa": -6 }, "kimya": -3, "gauge": { "itibar": -1 }, "note": "Komisyon şişti, gelen isim soyunma odasına uymadı — pahalı bir ders." }
+     }
+    },
+    {
+     "label": "Kibarca reddet",
+     "whisper": "temiz kalırsın · fırsat kaçar",
+     "effects": { "note": "Masaya oturmadın; kulis 'dik durdu' diye yazdı ama o paket başka kulübe gitti." }
+    }
+   ]
+  },
+  {
+   "id": "serbest-yildiz",
+   "trigger": "random",
+   "title": "Bonservissiz tecrübe kapıda",
+   "body": "Bir zamanların yıldızı, sözleşmesi biten 32'lik bir isim menajeriyle kapını çaldı: bonservis yok ama maaş beklentisi yüksek. Soyunma odasına lider mi, bordroya yük mü olacağı belirsiz.",
+   "options": [
+    {
+     "label": "İmzayı at",
+     "whisper": "tecrübe & isim gelir · bordro şişer",
+     "effects": { "player": { "overall": 2 }, "gauge": { "taraftar": 2, "mali": -2 }, "note": "Tecrübe soyunma odasına iyi geldi, tribün ismi sevdi — ama yüksek maaşı mali dengede hemen hissedildi." }
+    },
+    {
+     "label": "Bütçeye sadık kal",
+     "whisper": "disiplin korunur · taraftar somurtur",
+     "effects": { "gauge": { "mali": 1, "taraftar": -1 }, "note": "Bordro disiplininden şaşmadın; adam rakip kulüpte imza attı, basın 'kaçırdı' manşeti attı, tribün homurdandı." }
+    }
+   ]
+  },
+  {
+   "id": "kis-kiraligi",
+   "trigger": "random",
+   "title": "Devlerin kiralık cevheri",
+   "body": "Avrupa devi, yedek kulübesinde çürüyen 19'luk yeteneği kışın kiralık listesine koydu: oynatma garantisi isteniyor. Gelişirse altın, oturursa moral çöküşü — kumar oynanır bir dosya.",
+   "options": [
+    {
+     "label": "Oynatma sözüyle kirala",
+     "whisper": "gelişebilir · oynamazsa moral çöker",
+     "effects": {
+      "note": "Oynatma garantisi verdin.",
+      "chance": 0.5,
+      "onHit": { "player": { "overall": 2, "morale": 6 }, "note": "Çocuk sahada patladı: her hafta fark yarattı, dev kulüp geri istemeye başladı bile." },
+      "onMiss": { "squadMorale": -4, "gauge": { "taraftar": -1 }, "note": "Verdiğin oynatma garantisi kadroyu bozdu; çocuk beklentiyi taşıyamadı, soyunma odası homurdandı." }
+     }
+    },
+    {
+     "label": "Kendi gençlerine güven",
+     "whisper": "risk yok · parlak isim kaçar",
+     "effects": { "note": "Kiralığa gitmedin; kendi altyapından birine sessizce şans verdin — parlak isim başka kulübe gitti." }
+    }
+   ]
+  },
+  {
+   "id": "yangindan-mal",
+   "trigger": "random",
+   "title": "Batan kulüpten yangın fiyatı",
+   "body": "Mali uçurumun kenarındaki bir kulüp kadrosunu bugünden yarına satıyor: ilk 11 oynayan bir orta saha, gerçek değerinin çok altında, ama 48 saatte karar isteniyor. Fırsat mı, tuzak mı?",
+   "options": [
+    {
+     "label": "Fırsatı kap",
+     "whisper": "ucuza kalite · acele imza riskli",
+     "effects": {
+      "note": "Yangından malı kaptın.",
+      "chance": 0.55,
+      "onHit": { "economy": { "kasa": 5 }, "player": { "overall": 2 }, "note": "Pazarlık tuttu: gerçek değerinin yarısına hazır bir oyuncu — mali masa bile gülümsedi." },
+      "onMiss": { "economy": { "kasa": -7 }, "squadMorale": -2, "note": "Acele ettin; sağlık kontrolünde çıkan eski sakatlık dosyayı gölgeledi, para yandı." }
+     }
+    },
+    {
+     "label": "Sağlık raporunu bekle",
+     "whisper": "risk yok · fırsat uçabilir",
+     "effects": { "note": "Temkinli davrandın; rapor temiz çıktı ama o 48 saatte oyuncuyu başka kulüp kaptı." }
+    }
+   ]
+  },
+  {
+   "id": "casus-raporu",
+   "trigger": "random",
+   "title": "Rakibin transfer listesi elimizde",
+   "body": "Gözlemci ağın rakibin kış planını sızdırdı: tam da senin izlediğin ismin peşindeler. Önden atlayıp blöf yapabilir, ya da sessiz kalıp kendi planına bakabilirsin.",
+   "options": [
+    {
+     "label": "Önden atla, blöfü çek",
+     "whisper": "rakibi bozar · pahalı bir kumar",
+     "effects": {
+      "note": "Rakibin önüne geçtin.",
+      "chance": 0.5,
+      "onHit": { "rakipCekicilik": -3, "gauge": { "itibar": 1 }, "note": "Blöf tuttu: rakip hedefini kaybetti, kulis 'bir adım öndeler' diye yazdı." },
+      "onMiss": { "economy": { "kasa": -6 }, "mediaTone": -1, "gauge": { "itibar": -1 }, "note": "Blöfü gördüler; fiyatı şişirip çekildiler, sen pahalı bir mesaj vermiş oldun." }
+     }
+    },
+    {
+     "label": "Sessiz kal, kendi planına bak",
+     "whisper": "sükunet · inisiyatif rakipte",
+     "effects": { "note": "Oyunu bozmadın; kurul soğukkanlılığını sessizce onayladı ama inisiyatif rakibin elinde kaldı." }
+    }
+   ]
+  },
+  {
+   "id": "veri-modeli",
+   "trigger": "random",
+   "title": "Veri modelinin işaret ettiği isim",
+   "body": "Analiz masasının modeli alt liglerden bir ismi kırmızıyla işaretledi: istatistikleri yıldız seviyesinde ama gözle izleyen yok. Sayılara mı güveneceksin, sahaya mı?",
+   "options": [
+    {
+     "label": "Modele güven, transferi yap",
+     "whisper": "veri diyor al · model yanılabilir",
+     "effects": {
+      "note": "Sayılara güvendin.",
+      "chance": 0.5,
+      "onHit": { "economy": { "kasa": 7 }, "player": { "overall": 2 }, "note": "Model haklı çıktı: 'analitik kulüp' etiketi yapıştı, oyuncu beklendiği gibi patladı." },
+      "onMiss": { "economy": { "kasa": -7 }, "squadMorale": -2, "note": "Sayılar sahaya yansımadı; istatistik güzeldi ama futbol başka bir dil konuştu." }
+     }
+    },
+    {
+     "label": "Önce gözlemciyle doğrula",
+     "whisper": "risk azalır · maliyet & süre artar",
+     "effects": { "economy": { "kasa": -2 }, "note": "Sayıyı gözle doğrulattın; süreç uzadı, maliyet çıktı ama kararın daha sağlam bir zemine oturdu." }
+    }
+   ]
+  },
+  {
+   "id": "akademi-firari",
+   "trigger": "random",
+   "title": "Altyapının incisine Avrupa kancası",
+   "body": "Altyapının 16'lık incisine bir Avrupa devi kanca attı: aile kararsız, menajer devrede. Profesyonel sözleşme + oynatma sözü verirsen kalır; oyalarsan üç kuruşa elden gider.",
+   "options": [
+    {
+     "label": "Profesyonel sözleşme + söz ver",
+     "whisper": "cevher kalır · sözleşme & beklenti yükü biner",
+     "effects": { "player": { "overall": 2, "morale": 6 }, "gauge": { "taraftar": 3, "mali": -3 }, "note": "Çocuğu tuttun: 'altyapıdan yıldız' hikâyesi tribünü coşturdu, ama profesyonel sözleşmenin yükü mali masaya bindi ve artık her maç ondan iş bekleniyor." }
+    },
+    {
+     "label": "Erken bulup satmaya bak",
+     "whisper": "kasaya para girer · gelecek & moral gider",
+     "effects": { "economy": { "kasa": 7 }, "gauge": { "taraftar": -2 }, "player": { "morale": -4 }, "note": "Bonservisi bozdurdun: kasa doldu ama tribün 'geleceğimizi sattın' diye asıldı, soyunma odası küstü." }
     }
    ]
   }
