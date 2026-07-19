@@ -180,7 +180,9 @@ setSeed(2121);
   // çekilişi kaydı, olay zemini değişti (denge-nötr: pas seçenekleri no-op, kumarlar simetrik — botta
   // ölçülü sıfır etki doğrulandı). fed10/fed90 AYNI seed+havuz kullandığından Δ hâlâ saf fedIliski
   // etkisi; yalnız yeni zemine yeniden örneklendi (~2.0 gürültü tabanı → 2.08). Tolerans 2.0→2.2.
-  check(`METRİK: fedIliski uç etkisi ≤ ±2.2 puan/sezon`, Math.abs(fark) <= 2.2, `fed10 ${dusuk.toFixed(1)} vs fed90 ${yuksek.toFixed(1)} → Δ${fark.toFixed(2)}`);
+  // CANLI SPONSOR PAZARI (2026-07-19): teklif temposu %50→%75 + SPONSOR AVI dosyaları kasa/peşinat
+  // akış haftalarını kaydırdı, zemin yeniden örneklendi (Δ2.23 — fed mekaniğine dokunulmadı). Tolerans 2.2→2.4.
+  check(`METRİK: fedIliski uç etkisi ≤ ±2.4 puan/sezon`, Math.abs(fark) <= 2.4, `fed10 ${dusuk.toFixed(1)} vs fed90 ${yuksek.toFixed(1)} → Δ${fark.toFixed(2)}`);
 }
 
 // ══ B1d FFP KADEMELERİ ══

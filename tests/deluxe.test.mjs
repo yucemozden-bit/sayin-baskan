@@ -109,7 +109,12 @@ setSeed(1030);
   play(G, 20); // 17. hafta genç günü + milli aralar (7,13) + kupa (6,11,15) geçti
   check('milli ara haftası duyuruldu', G.inbox.some((m) => m.t.includes('Milli ara')) || true, '(inbox 30 kapasiteli — kalıcı iz: kupa/genç günü)');
   check('kupa koşusu işledi (tur/eleme mesajı)', G.inbox.some((m) => /Kupada|Kupadan|KUPA/.test(m.t)) || G.cup.round > 0, `round ${G.cup.round}, alive=${G.cup.alive}`);
-  check('GENÇ TAKIM GÜNÜ sahnesi (hafta 17, ☆ kartları)', G.inbox.some((m) => m.t.includes('GENÇ TAKIM GÜNÜ') && m.b.includes('☆')));
+  // CANLI PAZAR sonrası inbox (30 kap.) daha hızlı akar — kart hafta 17'de düşer, 20'ye kadar
+  // taze mali dosyalar onu itebilir; sahneyi düştüğü haftaya yakın yakala (18. haftada kontrol).
+  setSeed(1030);
+  const G17 = fresh();
+  play(G17, 18);
+  check('GENÇ TAKIM GÜNÜ sahnesi (hafta 17, ☆ kartları)', G17.inbox.some((m) => m.t.includes('GENÇ TAKIM GÜNÜ') && m.b.includes('☆')));
   // altın çocuk istatistiksel (%10/genç; akademi 3 → sezonda ~1 genç → E≈4/40)
   let golden = 0;
   for (let i = 0; i < 40; i++) { setSeed(4000 + i); const g = fresh(); play(g, 18); if (g.inbox.some((m) => m.t.includes('ALTIN ÇOCUK'))) golden++; }

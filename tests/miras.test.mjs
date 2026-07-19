@@ -128,7 +128,9 @@ setSeed(1201);
   G2.consecTerms = 0;
   A.startNewTerm(G2);
   check('küme + mali çöküş → TENZİL (orta→küçük)', G2.club.tier === 'kucuk' && (G2.tierHistory || []).some((t) => t.dir === 'down'), `tier=${G2.club.tier}`);
-  check('kulüp ekranı: tier yolculuğu çizgisi', clubView.render(G2).includes('Tier Yolculuğu'));
+  // 5 KADEME: panel "Kulüp Seviyesi" oldu — 5 nokta + sıradaki kapının canlı şart listesi
+  const tierH = clubView.render(G2);
+  check('kulüp ekranı: Kulüp Seviyesi çizgisi (5 kademe + şart listesi)', tierH.includes('Kulüp Seviyesi') && tierH.includes('Efsane') && tierH.includes('SIRADAKİ KAPI'));
 }
 
 // ══ M3 JÜBİLE & NESİL ══

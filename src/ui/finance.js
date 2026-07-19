@@ -2,7 +2,8 @@
 // Nakit akışı BARLI grafik (gelir yeşil / gider kırmızı / NET LED), FFP şeridi,
 // primler, borç masası. Panel dili tr-panel (3B yüzey) ile ortak.
 import { fmt, esc } from './frame.js';
-import { sponsorOffers } from '../actions.js';
+import { sponsorOffers, iflasEsigi as A_iflasEsigi } from '../actions.js';
+import { bilet as ecoBilet } from '../engines/economy.js';
 import { sbShell } from './cockpit.js';
 
 export function render(G) {
@@ -15,17 +16,19 @@ export function render(G) {
   const g = led ? { ...led.gelir, bilet: led.gelir.bilet * (1 + w), yayin: led.gelir.yayin * (1 + w), sponsor: led.gelir.sponsor * (1 + w), forma: led.gelir.forma * (1 + w), uyelik: led.gelir.uyelik * (1 + w), toplam: led.gelir.toplam * (1 + w) } : null;
   const gi = led ? { ...led.gider, toplam: led.gider.toplam * (1 - w * 0.5) } : null;
 
-  // ── Bilet fiyatı ──
+  // ── Bilet fiyatı — CANLI ÖNİZLEME: seçili çarpanın doluluk/gişe etkisi anında görünür (saf hesap, RNG yok) ──
   const price = e.ticketPrice;
+  const bOn = ecoBilet(G);
   const priceBtns = [0.6, 0.8, 1.0, 1.2, 1.6].map((p) =>
     `<button class="cx-btn ${Math.abs(price - p) < 0.001 ? 'on' : ''}" data-act="setTicket" data-arg="${p}">${p.toFixed(1)}×</button>`).join('');
   const biletPanel = `<div class="tr-panel">
     <div class="cx-panel-head"><span class="overline">Bilet Fiyatı</span><span class="cx-hint">çarpan</span></div>
+    <div class="fin-kpi"><b>${price.toFixed(1)}<i>×</i></b><span>doluluk ~<b class="tnum">%${Math.round(bOn.doluluk * 100)}</b> · gişe ~<b class="tnum">${fmt(bOn.gelir)}mn</b>/maç — çarpanı değiştir, rakam anında oynar</span></div>
     <div class="cx-seg" style="margin-top:2px">${priceBtns}</div>
     <div class="tr-not">Ucuz = dolu tribün, az gelir · Pahalı = boş koltuk, çok gelir. Taraftar algısı sosyal nabza yansır.</div>
   </div>`;
 
-  // ── Nakit akışı: BARLI grafik ──
+  // ── Nakit akışı: TAM GENİŞLİK YATAY BANT — gelir | gider | NET üç kolonda (vitrin başrol, akış dipnot)
   let akisPanel;
   if (led) {
     const rows = [
@@ -40,18 +43,27 @@ export function render(G) {
     </div>`;
     const net = g.toplam - gi.toplam;
     akisPanel = `<div class="tr-panel fin-akis">
-      <div class="cx-panel-head"><span class="overline">Haftalık Nakit Akışı</span><span class="cx-hint">CFO projeksiyonu</span></div>
-      <div class="fin-grup pos-c">GELİR · ${fmt(g.toplam)}mn</div>
-      ${rows.slice(0, 4).map((r) => satir(r[0], r[1], 1)).join('')}
-      <div class="fin-grup neg-c">GİDER · ${fmt(gi.toplam)}mn</div>
-      ${rows.slice(4).map((r) => satir(r[0], r[1], 0)).join('')}
-      <div class="fin-net"><i>NET / HAFTA</i><b class="led" style="color:${net >= 0 ? 'var(--pos)' : 'var(--neg)'}">${net >= 0 ? '+' : ''}${fmt(net)}<span>mn</span></b></div>
-      <div class="tr-not">⚠ ${guvenilirlik}</div>
+      <div class="cx-panel-head"><span class="overline">Haftalık Nakit Akışı</span><span class="cx-hint" data-tip="${esc(guvenilirlik)}">⚠ CFO projeksiyonu</span></div>
+      <div class="fin-akis-grid">
+        <div class="fin-akis-kol">
+          <div class="fin-grup pos-c">GELİR · ${fmt(g.toplam)}mn</div>
+          ${rows.slice(0, 4).map((r) => satir(r[0], r[1], 1)).join('')}
+        </div>
+        <div class="fin-akis-kol">
+          <div class="fin-grup neg-c">GİDER · ${fmt(gi.toplam)}mn</div>
+          ${rows.slice(4).map((r) => satir(r[0], r[1], 0)).join('')}
+        </div>
+        <div class="fin-net-kutu">
+          <i>NET / HAFTA</i>
+          <b class="led" style="color:${net >= 0 ? 'var(--pos)' : 'var(--neg)'}">${net >= 0 ? '+' : ''}${fmt(net)}<span>mn</span></b>
+          <span class="micro">${esc(guvenilirlik)}</span>
+        </div>
+      </div>
     </div>`;
   } else {
     akisPanel = `<div class="tr-panel fin-akis">
       <div class="cx-panel-head"><span class="overline">Haftalık Nakit Akışı</span><span class="cx-hint">CFO projeksiyonu</span></div>
-      <div class="bos-durum"><div class="iko">📊</div><div class="cml">İlk maçtan sonra rakamlar burada barlarla akacak.</div></div>
+      <div class="fin-akis-bos">📊 İlk maçtan sonra gelir-gider barları burada akacak.</div>
     </div>`;
   }
 
@@ -60,26 +72,19 @@ export function render(G) {
   const fPct = ffp.limit ? Math.min(120, Math.round((ffp.spent / ffp.limit) * 100)) : 0;
   const fColor = fPct >= 100 ? 'var(--neg)' : fPct >= 90 ? 'var(--warn)' : 'var(--pos)';
   const ffpPanel = `<div class="tr-panel">
-    <div class="cx-panel-head"><span class="overline">Harcama Limiti · FFP</span>${ffp.taahhut ? '<span class="badge" style="background:var(--neg);color:#fff">TAAHHÜTNAME</span>' : ''}</div>
-    <div class="tr-cells" style="margin-top:0">
-      <span class="tr-cell"><i>FEDERASYON TAVANI</i><b>${fmt(ffp.limit)}mn</b></span>
-      <span class="tr-cell"><i>HARCANAN</i><b>${fmt(ffp.spent)}mn</b></span>
-    </div>
-    <div class="tr-butce-bar" style="margin-top:10px"><div style="width:${Math.min(100, fPct)}%;background:${fColor}"></div></div>
+    <div class="cx-panel-head"><span class="overline">Harcama Limiti · FFP</span>${ffp.taahhut ? '<span class="badge" style="background:var(--neg);color:#fff">TAAHHÜTNAME</span>' : '<span class="cx-hint">federasyon takibi</span>'}</div>
+    <div class="fin-kpi"><b style="color:${fColor}">%${fPct}</b><span>tavan <b class="tnum">${fmt(ffp.limit)}mn</b> · harcanan <b class="tnum">${fmt(ffp.spent)}mn</b> — sınırı aşan başkan taahhütnameye imza atar</span></div>
+    <div class="tr-butce-bar" style="margin-top:4px"><div style="width:${Math.min(100, fPct)}%;background:${fColor}"></div></div>
     ${ffp.cutActive ? '<div class="tr-not" style="color:var(--warn);border:0;padding-top:6px">Bu sezon gelirlerden taahhüt kesintisi düşülüyor (−%5).</div>' : ''}
     <div class="cx-seg"><button class="cx-btn" data-act="ffpLobi" ${ffp.lobiUsed || (G.club.reputation <= 60) ? 'disabled' : ''} data-tip="İtibar>60 gerekir · %40 şans · başarıda tavan +%10">Federasyona lobi yap</button></div>
   </div>`;
 
   // ── Primler ──
   const pl = G.primLedger || {};
+  const primTop = (pl.mac || 0) + (pl.seri || 0) + (pl.ozel || 0) + (pl.sezon || 0);
   const primPanel = `<div class="tr-panel">
     <div class="cx-panel-head"><span class="overline">Prim Defteri</span><span class="cx-hint">bu sezon</span></div>
-    <div class="tr-cells" style="margin-top:0">
-      <span class="tr-cell"><i>MAÇ PRİMLERİ</i><b>${fmt(pl.mac || 0)}mn</b></span>
-      <span class="tr-cell"><i>SERİ PRİMLERİ</i><b>${fmt(pl.seri || 0)}mn</b></span>
-      <span class="tr-cell"><i>ÖZEL MAÇ</i><b>${fmt(pl.ozel || 0)}mn</b></span>
-      <span class="tr-cell"><i>SEZON HEDEFİ</i><b>${fmt(pl.sezon || 0)}mn</b></span>
-    </div>
+    <div class="fin-kpi"><b>${fmt(primTop)}<i>mn</i></b><span>maç <b class="tnum">${fmt(pl.mac || 0)}</b> · seri <b class="tnum">${fmt(pl.seri || 0)}</b> · özel <b class="tnum">${fmt(pl.ozel || 0)}</b> · hedef <b class="tnum">${fmt(pl.sezon || 0)}</b></span></div>
     <div class="cx-seg">
       <button class="cx-btn ${G.seriPrim ? 'on' : ''}" data-act="seriPrim">Seri Primi ${G.seriPrim ? 'AÇIK' : 'kapalı'}</button>
       <button class="cx-btn ${G.sezonHedefDeclared ? 'on' : ''}" data-act="sezonPrim" ${G.sezonHedefDeclared || G.meta.week > 2 ? 'disabled' : ''}>${G.sezonHedefDeclared ? 'Sezon Hedefi İLAN EDİLDİ' : 'Sezon Hedefi ilan et (hafta 1-2)'}</button>
@@ -89,8 +94,19 @@ export function render(G) {
 
   // ── Borç masası ──
   const aile = G.mode === 'aile';
+  // İFLAS ÇİZGİSİ — kayyum eşiği görünür olsun (büyük test kararı #5): bar + kırmızı çentik
+  const esik = A_iflasEsigi(G);
+  const borcPct = Math.min(100, Math.round((e.borc / esik) * 100));
+  const cizgiRenk = borcPct >= 80 ? 'var(--neg)' : borcPct >= 55 ? 'var(--warn)' : 'var(--club-2)';
+  const iflasBar = `<div class="fin-iflas" data-tip="Kayyum eşiği ${esik}mn — borç bu çizgiyi aşarsa federasyon yönetime el koyar (eşik, devraldığın borca göre hesaplanır)">
+    <div class="fin-iflas-ust"><span>Kayyum çizgisi</span><b style="color:${cizgiRenk}">${Math.round(e.borc)} / ${esik}mn</b></div>
+    <div class="fin-iflas-bar"><i style="width:${borcPct}%;background:${cizgiRenk}"></i><u style="left:${Math.round((esik - 100) / esik * 100)}%" data-tip="Uyarı bölgesi: ${esik - 100}mn'de KAYYUM KAPIDA manşeti düşer"></u></div>
+  </div>`;
+  const hFaiz = e.borc > 0 ? Math.round(e.borc * e.faizOrani / (G.SEASON_WEEKS || 34) * 10) / 10 : 0;
   const borcPanel = `<div class="tr-panel">
     <div class="cx-panel-head"><span class="overline">Borç Masası</span><span class="cx-hint">faiz %${Math.round(e.faizOrani * 100)}</span></div>
+    <div class="fin-kpi"><b class="${e.borc > 0 ? 'kpi-neg' : 'kpi-pos'}">${fmt(e.borc)}<i>mn</i></b><span>${e.borc > 0 ? `faiz kasadan haftada ~<b class="tnum">${fmt(hFaiz)}mn</b> yiyor — ödedikçe kayyum çizgisi uzaklaşır` : 'borç SIFIR — kongre mali disiplini alkışlıyor'}</span></div>
+    ${iflasBar}
     <div class="cx-seg" style="margin-top:2px">
       <button class="cx-btn" data-act="payDebt" data-arg="25" ${e.kasa < 25 || e.borc <= 0 ? 'disabled' : ''}>25mn Öde</button>
       <button class="cx-btn" data-act="payDebt" data-arg="all" ${e.kasa <= 0 || e.borc <= 0 ? 'disabled' : ''}>Tümünü Öde</button>
@@ -108,53 +124,97 @@ export function render(G) {
   // ── Sponsorluk (forma göğüs / stadyum ismi / forma kol) ──
   const deals = G.sponsorDeals || {};
   const SLT = { gogus: 'Forma Göğüs', naming: 'Stadyum İsmi', kol: 'Forma Kol' };
+  const SLT_IK = { gogus: '👕', naming: '🏟', kol: '🎽' };
   const namingLocked = (G.facilities.stadyum || 0) < 7;
   // Tip → marka logo aksan rengi (kurumsal altın, fintech mavi, bahis kırmızı, kripto turuncu, yerel yeşil)
   const SPO_ACCENT = { standart: 'var(--club)', fintech: 'var(--info)', bahis: 'var(--neg)', kripto: 'var(--warn)', yerel: 'var(--pos)', naming: 'var(--club-2)' };
   const sezonluk = (o) => Math.round((o.annual ?? o.weekly * 52) * 10) / 10;
-  // Sade satır — tıkla → DETAY kartı açılır (tüm şart/avantaj/dezavantaj + imza/red orada)
+  // MARKA VİTRİNİ — en güçlü teklif büyük plaka, kalanlar kompakt satır; imzalı anlaşma altın levha.
+  // Her teklifte ⏳ masada-kalma sayacı (2 hafta ve altı kırmızı — "beklemek de bir karar").
+  const avBekleyen = (G.inbox || []).filter((m) => m.action === 'spBuyout' && !m.resolved).map((m) => m.slot);
   const slotCell = (slot) => {
     const signed = deals[slot];
     if (signed) {
       const sv = Math.round((signed.weekly * 52) * 10) / 10;
+      const kalan = signed.remainingSeasons ?? signed.years;
+      const dots = '●'.repeat(Math.max(0, Math.min(5, kalan))) + '○'.repeat(Math.max(0, Math.min(5, (signed.years || kalan)) - Math.min(5, kalan)));
+      const avli = avBekleyen.includes(slot);
       return `<div class="spo-slot filled">
-        <div class="spo-slot-h">${SLT[slot]}<span class="spo-slot-tag on">✓ İmzalı</span></div>
-        <div class="spo-row signed" style="--sc:${SPO_ACCENT[signed.type] || 'var(--club)'}" data-act="spDetay" data-arg="${slot}|signed" data-tip="Anlaşma detayı + fesih">
-          <span class="spo-logo-sm">${signed.ik || '🤝'}</span>
-          <div class="spo-row-id"><b>${esc(signed.name)}</b><i>${esc(signed.sector)} · ${signed.remainingSeasons ?? signed.years} yıl kaldı</i></div>
-          <span class="spo-row-val"><b>${fmt(sv)}</b><em>mn/sezon</em></span>
-          <span class="spo-detay">Detay ›</span>
+        <div class="spo-slot-h"><span class="spo-slot-ik">${SLT_IK[slot]}</span>${SLT[slot]}<span class="spo-slot-tag on">✓ İMZALI</span></div>
+        <div class="spo-card signed ${avli ? 'avli' : ''}" style="--sc:${SPO_ACCENT[signed.type] || 'var(--club)'}" data-act="spDetay" data-arg="${slot}|signed" data-tip="Anlaşma detayı + fesih">
+          <div class="spo-c-top">
+            <span class="spo-logo">${signed.ik || '🤝'}</span>
+            <div class="spo-c-id"><div class="spo-c-nm">${esc(signed.name)}</div><div class="spo-c-sec">${esc(signed.sector)} · <span class="spo-dots" data-tip="Kalan sözleşme yılı">${dots}</span> ${kalan} yıl</div></div>
+            <div class="spo-c-val"><b>${fmt(sv)}</b><span>mn/sezon</span></div>
+          </div>
+          <div class="spo-c-terms">
+            <span><i>HAFTALIK</i><b class="pos">+${fmt(signed.weekly)}mn</b></span>
+            <span><i>FESİH CEZASI</i><b>${fmt(signed.fesihCeza)}mn</b></span>
+            <span><i>DURUM</i><b>${avli ? '🎯 AV TEKLİFİ' : 'Aktif'}</b></span>
+          </div>
+          ${avli ? '<div class="spo-av-not">🎯 Rakip marka fesih bedelini üstlenmeye talip — dosya karar masanda</div>' : ''}
         </div>
       </div>`;
     }
     if (slot === 'naming' && namingLocked) {
-      return `<div class="spo-slot locked"><div class="spo-slot-h">${SLT[slot]}<span class="spo-slot-tag">🔒 Kilitli</span></div>
-        <div class="spo-locked-box">🔒 Stadyum sv≥7 gerekir<span>Önce stadı büyüt — naming hakkı açılır.</span></div></div>`;
+      // Kilitli slot ORTA SAHNEYİ İŞGAL ETMEZ: dar "kasa dairesi" sütunu — stadyum ilerlemesi + kestirme
+      const sv = G.facilities.stadyum || 0;
+      const seg = Array.from({ length: 7 }, (_, i) => `<span class="spo-kasa-seg ${i < sv ? 'dolu' : ''}"></span>`).join('');
+      return `<div class="spo-slot locked dar"><div class="spo-slot-h"><span class="spo-slot-ik">${SLT_IK[slot]}</span>${SLT[slot]}<span class="spo-slot-tag">🔒</span></div>
+        <div class="spo-kasa">
+          <div class="spo-kasa-kilit">🔒</div>
+          <b>EN PAHALI SLOT</b>
+          <span>Stadın adı holdinglere satılır — kapı stadyum <b>sv.7</b>'de açılır.</span>
+          <div class="spo-kasa-sv" data-tip="Stadyum seviyesi ${sv}/7 — her kademe kapıyı biraz daha aralar">${seg}</div>
+          <span class="micro">stadyum sv.${sv}/7</span>
+          <button class="cx-btn cx-btn-sm" data-act="nav" data-arg="tesis" data-tip="Tesisler ekranına git — stadyum ihalesi aç">🏗 Stadı Büyüt ▸</button>
+        </div></div>`;
     }
     const offers = sponsorOffers(G, slot);
-    return `<div class="spo-slot"><div class="spo-slot-h">${SLT[slot]}<span class="spo-slot-tag">${offers.length} teklif</span></div>
-      ${offers.map((o) => `<div class="spo-row ${o.riskProfile ? 'risky' : ''}" style="--sc:${SPO_ACCENT[o.type] || 'var(--club)'}" data-act="spDetay" data-arg="${slot}|${o.id}" data-tip="Detayları aç — avantaj/dezavantaj, şartlar, imza">
-        <span class="spo-logo-sm">${o.ik || '🤝'}</span>
-        <div class="spo-row-id"><b>${esc(o.name)}${o.riskProfile || o.dezavantaj ? ' <span class="spo-warn">⚠</span>' : ''}</b><i>${esc(o.sektor || o.sector || '')} · ${o.years} yıl${o.dezavantaj ? ' · ⚠ riskli' : ' · ✓ temiz'}</i></div>
-        <span class="spo-row-val"><b>${fmt(sezonluk(o))}</b><em>mn/sezon</em></span>
-        <span class="spo-detay">Detay ›</span>
-      </div>`).join('') || '<div class="spo-empty">Masada teklif yok<span>Yeni markalar önümüzdeki haftalarda kapıyı çalacak.</span></div>'}
-    </div>`;
+    if (!offers.length) return `<div class="spo-slot"><div class="spo-slot-h"><span class="spo-slot-ik">${SLT_IK[slot]}</span>${SLT[slot]}<span class="spo-slot-tag">boş masa</span></div>
+      <div class="spo-empty">📡 Masada teklif yok<span>Piyasa canlı — yeni markalar her hafta kapıyı çalabilir.</span></div></div>`;
+    // KARE KARE (kullanıcı kuralı): en fazla 4 teklif, 2×2 eşit kart — üst üste binme yok,
+    // büyük kart/satır karması yok. En güçlü teklif aynı boyda kalır, altın çerçeveyle konuşur.
+    const sirali = [...offers].sort((a, b) => (b.annual ?? b.weekly * 52) - (a.annual ?? a.weekly * 52)).slice(0, 4);
+    const kare = (o, best) => `<div class="spo-mini ${best ? 'best' : ''} ${o.riskProfile ? 'risky' : ''}" style="--sc:${SPO_ACCENT[o.type] || 'var(--club)'}" data-act="spDetay" data-arg="${slot}|${o.id}" data-tip="Detayları aç — avantaj/dezavantaj, tüm şartlar">
+        ${best ? '<span class="spo-mini-star">★ EN GÜÇLÜ TEKLİF</span>' : ''}
+        <div class="spo-mini-ust">
+          <span class="spo-logo-sm">${o.ik || '🤝'}</span>
+          <div class="spo-mini-id"><b>${esc(o.name)}</b><i>${esc(o.sektor || o.sector || '')} · ${o.years} yıl</i></div>
+          <span class="spo-mini-val"><b>${fmt(sezonluk(o))}</b><em>mn/sezon</em></span>
+        </div>
+        <div class="spo-mini-alt">
+          <span class="spo-mini-chip ${o.kalanHafta <= 2 ? 'kritik' : ''}" data-tip="Teklif masada ${o.kalanHafta} hafta daha kalır">⏳${o.kalanHafta}h</span>
+          <span class="spo-mini-chip ${o.dezavantaj ? 'risk' : 'temiz'}" data-tip="${o.dezavantaj ? esc(o.dezavantaj) : 'Temiz anlaşma — bilinen risk yok'}">${o.dezavantaj ? '⚠' : '✓'}</span>
+          <button class="spo-mini-al" data-act="signSponsor" data-arg="${slot}|${o.id}" data-tip="Hızlı imza — ${fmt(o.pesinat)}mn peşinat anında kasaya">✍ İMZALA · ${fmt(o.pesinat)}mn</button>
+        </div>
+      </div>`;
+    return `<div class="spo-slot"><div class="spo-slot-h"><span class="spo-slot-ik">${SLT_IK[slot]}</span>${SLT[slot]}<span class="spo-slot-tag">${offers.length} teklif</span></div>
+      <div class="spo-mini-grid">${sirali.map((o, i) => kare(o, i === 0)).join('')}</div></div>`;
   };
   const yurtBtn = G.expansion && G.expansion.officeCount >= 1
     ? '<span class="cx-hint" style="color:var(--pos)">🌍 Yurt dışı ofisi AÇIK · +%6</span>'
     : `<button class="cx-btn cx-btn-sm" data-act="yurtOfis" ${G.economy.kasa < 25 || (G.club.reputation ?? 50) < 60 ? 'disabled' : ''} data-tip="25mn · itibar ≥60 ister. Sponsor geliri kalıcı +%6; 'Adımızı Sınırın Ötesine Taşıyacağım' sözünü tutar">🌍 Yurt Dışı Ofisi · 25mn</button>`;
+  const spToplam = Math.round(['gogus', 'naming', 'kol'].reduce((s, k) => s + (deals[k]?.weekly || 0), 0) * 10) / 10;
+  const spGelir = spToplam > 0
+    ? `sözleşmeli gelir <b class="spo-toplam">+${fmt(spToplam)}mn/hafta</b>`
+    : `<b class="spo-toplam">imzalı anlaşma yok</b> — peşinat kasaya, haftalık akışa yazar`;
+  // SABİT SAHNE (kullanıcı kuralı): sütun oranları duruma göre ASLA değişmez — imza/teklif/kilit
+  // fark etmeksizin orta (naming) dar-sabit, yanlar geniş-sabit. Zıplama, büyüyüp küçülme yok.
   const sponsorPanel = `<div class="tr-panel fin-sponsor">
-    <div class="cx-panel-head"><span class="overline">Sponsorluk Pazarı</span><span class="cx-hint" data-tip="Peşinat kasaya · haftalık gelir · bahis/kripto çok getirir ama taraftar/itibar riski. Süre dolunca cezasız biter; erken fesih ağır bedellidir.">peşinat kasaya · haftalık gelir</span>${yurtBtn}</div>
+    <div class="cx-panel-head"><span class="overline">Sponsorluk Pazarı</span><span class="spo-nabiz" data-tip="Teklifler her hafta yenilenir: eskiyen çekilir, yeni marka kapıyı çalar. İmzalı sponsorun varsa rakip markalar fesih bedelini üstlenip formanı isteyebilir (SPONSOR AVI)."><i></i>CANLI PİYASA</span><span class="cx-hint" data-tip="Peşinat kasaya · haftalık gelir · bahis/kripto çok getirir ama taraftar/itibar riski. Süre dolunca cezasız biter; erken fesih ağır bedellidir.">${spGelir}</span>${yurtBtn}</div>
     <div class="spo-grid">${['gogus', 'naming', 'kol'].map(slotCell).join('')}</div>
   </div>`;
 
   const faizPct = Math.round(e.faizOrani * 100);
   const ffpDurum = ffp.taahhut ? 'TAAHHÜT' : !ffp.limit ? 'BEKLEMEDE' : fPct >= 100 ? 'AŞILDI' : fPct >= 90 ? 'SINIRDA' : 'TAKİPTE';
   const crumb = `FİNANS · KASA ${fmt(e.kasa)}MN · BORÇ ${fmt(e.borc)}MN · FAİZ %${faizPct} · FFP ${ffpDurum}`;
+  // YENİ DÜZEN (kullanıcı: "sıkışık — gerekirse sayfa düzenini değiştir"): vitrin BAŞROL satırı
+  // (tam genişlik, 3 slot gerçek alan bulur), nakit akışı altta yatay dipnot bandı.
   const body = `<div class="fin-root">
     <div class="fin-strip">${biletPanel}${borcPanel}${ffpPanel}${primPanel}</div>
-    <div class="fin-main">${akisPanel}${sponsorPanel}</div>
+    ${sponsorPanel}
+    ${akisPanel}
   </div>`;
   return sbShell(G, { crumb, title: 'Kulübün Kasası', body });
 }

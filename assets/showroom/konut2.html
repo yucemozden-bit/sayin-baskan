@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lüks Villa · 3D</title>
+<style>
+  :root { --gold:#e7c063; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#0b1220; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  .hud { position:fixed; left:18px; top:16px; color:#fff; pointer-events:none; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .hud h1 { font-size:20px; letter-spacing:.5px; font-weight:800; }
+  .hud .sub { font-size:12px; opacity:.8; margin-top:2px; letter-spacing:.3px; }
+  .hint { position:fixed; left:18px; bottom:16px; color:#dfe6f0; font-size:12px; opacity:.7; text-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .panel { position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:8px; }
+  .btn {
+    pointer-events:auto; cursor:pointer; user-select:none;
+    background:rgba(18,26,42,.72); color:#eef2f8; border:1px solid rgba(231,192,99,.35);
+    padding:9px 14px; border-radius:10px; font-size:13px; font-weight:600; letter-spacing:.2px;
+    backdrop-filter:blur(6px); transition:all .15s ease; text-align:center; min-width:140px;
+  }
+  .btn:hover { border-color:var(--gold); background:rgba(28,38,58,.85); }
+  .btn.active { background:var(--gold); color:#1a1207; border-color:var(--gold); }
+  .loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; color:#cfe0ff; font-size:14px; letter-spacing:.5px; }
+</style>
+<style id="sb-sade">.hud .sub,.hint{display:none!important}</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud">
+  <h1>LÜKS VİLLA</h1>
+  <div class="sub">2 Katlı · Sonsuzluk Havuzu · İnteraktif 3D</div>
+</div>
+<div class="panel">
+  <div class="btn active" id="btnRotate">⟳ Otomatik dönüş</div>
+  <div class="btn" id="btnTime">☀️ Gündüz</div>
+  <div class="btn" id="btnReset">⤿ Görünümü sıfırla</div>
+</div>
+<div class="hint">Sürükle: döndür · Tekerlek / iki parmak: yakınlaş</div>
+<div class="loading" id="loading">3D sahne yükleniyor…</div>
+
+<script src="three.min.js"></script>
+<script>
+(function(){
+  const holder = document.getElementById('app');
+  const loading = document.getElementById('loading');
+  if (!window.THREE) { loading.textContent = "3D kütüphanesi yüklenemedi (internet gerekli)."; return; }
+
+  const renderer = new THREE.WebGLRenderer({ antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.98;
+  holder.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const DAY_BG = new THREE.Color(0x8fc0e6);
+  const NIGHT_BG = new THREE.Color(0x0a1220);
+  scene.background = DAY_BG.clone();
+  scene.fog = new THREE.Fog(DAY_BG.clone(), 80, 200);
+
+  const camera = new THREE.PerspectiveCamera(46, window.innerWidth/window.innerHeight, 0.1, 600);
+
+  // ---------- Lights ----------
+  const hemi = new THREE.HemisphereLight(0xc4d8ec, 0x46603b, 0.5);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xfff1d2, 1.55);
+  sun.position.set(30, 42, 24);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 180;
+  sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
+  sun.shadow.camera.top = 60; sun.shadow.camera.bottom = -60;
+  sun.shadow.bias = -0.0004;
+  sun.target.position.set(0, 0, 4);
+  scene.add(sun); scene.add(sun.target);
+  const moonFill = new THREE.DirectionalLight(0x9fb8ff, 0.0);
+  moonFill.position.set(-22, 26, -16);
+  scene.add(moonFill);
+
+  // warm point lights (night only)
+  const gardenLights = [];
+  function addPoint(x,y,z,color,dist){
+    const p = new THREE.PointLight(color, 0.0, dist||14, 2);
+    p.position.set(x,y,z); scene.add(p); gardenLights.push(p); return p;
+  }
+  addPoint(-4, 1.4, 12, 0x6fd0ff, 16);   // pool glow
+  addPoint(0, 2.2, 6.5, 0xffb867, 15);   // entrance
+  addPoint(1, 4.6, 4.5, 0xffc27a, 14);   // terrace
+  addPoint(12, 1.6, 8, 0xffb867, 12);    // driveway
+
+  // ---------- Helpers ----------
+  function box(w,h,d,color,o){
+    o = o||{};
+    const mat = new THREE.MeshStandardMaterial({
+      color:color,
+      metalness:o.metalness!=null?o.metalness:0.0,
+      roughness:o.roughness!=null?o.roughness:0.9,
+      transparent:!!o.transparent,
+      opacity:o.opacity!=null?o.opacity:1,
+      emissive:o.emissive!=null?o.emissive:0x000000,
+      emissiveIntensity:o.emissiveIntensity!=null?o.emissiveIntensity:1,
+      flatShading:!!o.flat
+    });
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+    m.position.set(o.x||0,o.y||0,o.z||0);
+    if(o.rotY) m.rotation.y=o.rotY;
+    m.castShadow = o.cast!==false; m.receiveShadow = o.receive!==false;
+    scene.add(m); return m;
+  }
+  function cyl(rt,rb,h,seg,color,o){
+    o=o||{};
+    const mat = new THREE.MeshStandardMaterial({color:color, roughness:o.roughness!=null?o.roughness:0.85,
+      metalness:o.metalness!=null?o.metalness:0, emissive:o.emissive!=null?o.emissive:0x000000,
+      emissiveIntensity:o.emissiveIntensity!=null?o.emissiveIntensity:1, flatShading:!!o.flat});
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg), mat);
+    m.position.set(o.x||0,o.y||0,o.z||0); if(o.rotY)m.rotation.y=o.rotY;
+    m.castShadow=o.cast!==false; m.receiveShadow=o.receive!==false; scene.add(m); return m;
+  }
+
+  const glassMats = [];
+  function glass(w,h,d,o){
+    o=o||{};
+    const mat = new THREE.MeshStandardMaterial({
+      color:0x9ccbe9, metalness:0.4, roughness:0.06,
+      transparent:true, opacity:0.4, emissive:0x0a1a26, emissiveIntensity:0.0
+    });
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+    m.position.set(o.x||0,o.y||0,o.z||0); if(o.rotY)m.rotation.y=o.rotY;
+    m.castShadow=false; m.receiveShadow=false; scene.add(m); glassMats.push(mat); return m;
+  }
+  // glass railing helper (transparent panel + thin posts)
+  function railing(x1,z1,x2,z2,y){
+    const dx=x2-x1, dz=z2-z1, len=Math.hypot(dx,dz), ang=Math.atan2(dz,dx);
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(len,1.0,0.06),
+      new THREE.MeshStandardMaterial({color:0xbfe0f2, metalness:0.3, roughness:0.05, transparent:true, opacity:0.28}));
+    panel.position.set((x1+x2)/2, y+0.5, (z1+z2)/2); panel.rotation.y=-ang; scene.add(panel);
+    // top rail
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(len,0.08,0.08),
+      new THREE.MeshStandardMaterial({color:0x2b2f34, metalness:0.6, roughness:0.4}));
+    rail.position.set((x1+x2)/2, y+1.02, (z1+z2)/2); rail.rotation.y=-ang; rail.castShadow=true; scene.add(rail);
+  }
+
+  function tree(x,z,s){
+    s=s||1; const g=new THREE.Group();
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.2*s,0.28*s,2.0*s,7),
+      new THREE.MeshStandardMaterial({color:0x6b4a2f, roughness:1}));
+    trunk.position.y=1.0*s; trunk.castShadow=true; g.add(trunk);
+    const f1=new THREE.MeshStandardMaterial({color:0x3c7a44, roughness:0.95, flatShading:true});
+    const f2=new THREE.MeshStandardMaterial({color:0x4f9354, roughness:0.95, flatShading:true});
+    [[1.25,2.4,0,0,f1],[0.9,3.2,0.55,0.35,f2],[0.85,3.05,-0.6,-0.25,f2],[0.72,3.7,0.06,-0.12,f1]]
+      .forEach(b=>{const m=new THREE.Mesh(new THREE.IcosahedronGeometry(b[0]*s,0),b[4]);
+        m.position.set(b[2]*s,b[1]*s,b[3]*s);m.castShadow=true;m.receiveShadow=true;g.add(m);});
+    g.position.set(x,0,z); scene.add(g); return g;
+  }
+  function hedge(x,z,w,d){
+    box(w,1.0,d,0x3f7a44,{x:x,y:0.5,z:z,flat:true,roughness:1});
+  }
+  function bollard(x,z){
+    cyl(0.12,0.14,0.75,10,0x2b2f34,{x:x,y:0.38,z:z});
+    const cap=cyl(0.16,0.16,0.12,10,0xfff0cf,{x:x,y:0.8,z:z,emissive:0x000000});
+    bollardCaps.push(cap.material);
+  }
+  const bollardCaps=[];
+
+  // ---------- Ground ----------
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(260,260),
+    new THREE.MeshStandardMaterial({color:0x4c7a37, roughness:1}));
+  grass.rotation.x=-Math.PI/2; grass.receiveShadow=true; scene.add(grass);
+
+  // Travertine deck / patio (big)
+  box(40, 0.16, 20, 0xe6dcc7, {x:-1, y:0.08, z:11, cast:false});
+  // entrance path
+  box(4.4, 0.14, 12, 0xd7cdb6, {x:-2, y:0.085, z:22, cast:false});
+
+  // ================= LUXURY 2-STOREY VILLA =================
+  const STONE = 0xece2cf, STONE2 = 0xd8cbb2, WOOD = 0x8a5a34, WOODDK = 0x5c4326, DARK = 0x33383e;
+
+  // --- Ground floor main mass ---
+  box(15, 3.5, 10, STONE, {x:0, y:1.75, z:0});
+  // stone feature volume (left, darker, full height accent)
+  box(3.2, 7.0, 10.2, STONE2, {x:-6.9, y:3.5, z:0});
+  // inter-floor band
+  box(15.3, 0.4, 10.3, WOODDK, {x:0, y:3.7, z:0});
+
+  // --- Upper floor (setback front -> terrace; cantilever right over garage) ---
+  box(12.5, 3.4, 8, STONE, {x:1.7, y:5.6, z:-0.7});
+  box(12.9, 0.45, 8.4, DARK, {x:1.7, y:7.45, z:-0.7});   // roof slab
+  // parapet
+  box(12.9,0.5,0.2,STONE,{x:1.7,y:7.75,z:-4.7});
+  box(12.9,0.5,0.2,STONE,{x:1.7,y:7.75,z:3.3});
+  box(0.2,0.5,8.4,STONE,{x:8.05,y:7.75,z:-0.7});
+  // wood-slat screen on upper facade (right)
+  for(let i=0;i<9;i++){ box(0.1,3.0,0.1,WOOD,{x:4.6+i*0.42,y:5.6,z:3.35}); }
+
+  // --- Right single-storey wing (garage) ---
+  box(7, 3.1, 8, STONE2, {x:11.5, y:1.55, z:0.2});
+  box(7.3, 0.35, 8.3, DARK, {x:11.5, y:3.25, z:0.2});
+  box(4.2, 2.2, 0.2, 0x3a3f46, {x:11.5, y:1.2, z:4.25});   // garage door
+  for(let i=0;i<5;i++){ box(4.2,0.05,0.06,0x2a2e33,{x:11.5,y:0.5+i*0.42,z:4.36,cast:false}); }
+
+  // ---------- Glazing ----------
+  // double-height entrance glass
+  glass(3.4, 6.2, 0.14, {x:-2.6, y:3.3, z:5.06});
+  box(0.12,6.4,0.18,DARK,{x:-4.35,y:3.3,z:5.1,cast:false});
+  box(0.12,6.4,0.18,DARK,{x:-0.85,y:3.3,z:5.1,cast:false});
+  // GF front glass panels
+  glass(4.2, 2.7, 0.12, {x:2.6, y:1.85, z:5.06});
+  glass(2.4, 2.7, 0.12, {x:6.2, y:1.85, z:5.06});
+  // UF front glass (set back at z≈3.3)
+  glass(4.6, 2.6, 0.12, {x:-0.4, y:5.6, z:3.36});
+  // left feature-wall slot window (glow accent)
+  const slot = box(0.15, 5.2, 0.6, 0x0a1a26, {x:-8.55, y:3.6, z:2.2, emissive:0x000000, cast:false});
+  glassMats.push(slot.material);
+  // side glazing right-rear
+  glass(0.12, 2.4, 3.4, {x:8.06, y:5.6, z:-2.0});
+
+  // ---------- Entrance portico ----------
+  cyl(0.28,0.28,4.4,16,STONE,{x:-4.3,y:2.2,z:6.4});
+  cyl(0.28,0.28,4.4,16,STONE,{x:-0.9,y:2.2,z:6.4});
+  box(4.6,0.3,1.4,STONE,{x:-2.6,y:4.5,z:6.4});          // portico beam
+  box(2.0,2.6,0.14,WOODDK,{x:-2.6,y:1.3,z:5.08});        // double door
+  box(0.1,2.6,0.16,0xc9a24a,{x:-2.6,y:1.3,z:5.13,cast:false});
+  box(4.0,0.24,1.8,0xd9d2c4,{x:-2.6,y:0.14,z:6.2,cast:false}); // steps
+
+  // ---------- Upper terrace deck + glass railing ----------
+  box(15,0.14,2.6,0x9a6b3f,{x:0,y:3.78,z:3.6,cast:false});   // terrace deck over GF front
+  railing(-7,5.0,7.4,5.0,3.85);                              // front rail
+  railing(-7,5.0,-7,2.6,3.85);                               // left return
+  railing(7.4,5.0,7.4,2.6,3.85);                             // right return
+  // terrace furniture
+  box(1.6,0.5,0.8,0x6a6f76,{x:-5,y:4.1,z:4.4}); box(1.6,0.5,0.8,0x6a6f76,{x:-5,y:4.1,z:3.5});
+  box(0.9,0.35,0.9,WOOD,{x:-3,y:4.0,z:4.0});
+
+  // ================= BIG POOL (infinity) =================
+  const poolX=-3.5, poolZ=12.5, poolW=15, poolD=8;
+  box(poolW+1.2, 0.5, poolD+1.2, 0xdfd6c2, {x:poolX, y:0.16, z:poolZ, cast:false}); // coping
+  const water = box(poolW, 0.3, poolD, 0x2f95cc, {x:poolX, y:0.30, z:poolZ, cast:false, receive:false,
+    metalness:0.2, roughness:0.1, transparent:true, opacity:0.85, emissive:0x0d4b6b, emissiveIntensity:0.35});
+  // infinity overflow lip (front)
+  box(poolW+1.2, 0.5, 0.5, 0xcfc5b0, {x:poolX, y:0.12, z:poolZ+poolD/2+0.6, cast:false});
+  box(poolW+1.2, 0.35, 0.3, 0x2f95cc, {x:poolX, y:0.22, z:poolZ+poolD/2+0.55, cast:false,
+    transparent:true, opacity:0.8, emissive:0x0d4b6b, emissiveIntensity:0.3});
+  // spa / hot tub
+  cyl(1.9,1.9,0.6,24,0xd8cdb6,{x:poolX+poolW/2+1.4,y:0.3,z:poolZ-2.2,cast:false});
+  const spa = cyl(1.55,1.55,0.4,24,0x2f95cc,{x:poolX+poolW/2+1.4,y:0.45,z:poolZ-2.2,cast:false,
+    transparent:true,opacity:0.85,emissive:0x0d4b6b,emissiveIntensity:0.4,metalness:0.2,roughness:0.1});
+
+  // loungers + umbrellas along pool
+  for(let i=0;i<3;i++){
+    const lz = poolZ-2.6 + i*2.4;
+    box(0.8,0.18,2.0,0xf4f0e7,{x:poolX-poolW/2-1.4,y:0.32,z:lz});
+    box(0.8,0.5,0.5,0xf4f0e7,{x:poolX-poolW/2-1.4,y:0.5,z:lz-0.9});
+  }
+  function umbrella(x,z){
+    cyl(0.07,0.07,2.6,8,0x6a6f76,{x:x,y:1.3,z:z});
+    cyl(0.02,1.9,0.5,8,0xd8654b,{x:x,y:2.75,z:z,cast:true}); // canopy (cone-ish)
+  }
+  umbrella(poolX-poolW/2-1.4, poolZ-3.2);
+  umbrella(poolX-poolW/2-1.4, poolZ+1.6);
+
+  // ---------- Driveway (car removed) ----------
+  box(11, 0.14, 18, 0xbdb6a7, {x:14.5, y:0.075, z:11, cast:false});
+
+  // ---------- Landscaping ----------
+  tree(-15,-3,1.35); tree(-16,14,1.5); tree(-13,22,1.1);
+  tree(19,-2,1.2); tree(20,16,1.35); tree(9,20,1.0);
+  // hedges lining path & driveway
+  hedge(-4.7,20,0.9,10); hedge(0.7,20,0.9,10);
+  hedge(8.8,12,0.9,14);
+  // bush/planters near facade
+  for(let i=0;i<4;i++){ box(1.2,0.55,0.8,0x8d8577,{x:1.5+i*3.0,y:0.27,z:5.7}); hedge(1.5+i*3.0,5.7,1.0,0.7); }
+  // bollard lights along path and pool deck
+  bollard(-4.6,10); bollard(0.6,10); bollard(-4.6,16); bollard(0.6,16);
+  bollard(poolX-poolW/2-1.4, poolZ-5); bollard(poolX+poolW/2+3.4, poolZ+2);
+
+  // ================= CAMERA CONTROLS =================
+  const target = new THREE.Vector3(0, 2.8, 4.5);
+  const HOME = { radius:46, theta:0.92, phi:1.0 };
+  let radius=HOME.radius, theta=HOME.theta, phi=HOME.phi;
+  let autoRotate=true, dragging=false, lastX=0, lastY=0;
+
+  function applyCamera(){
+    const s=Math.sin(phi);
+    camera.position.set(target.x+radius*s*Math.cos(theta), target.y+radius*Math.cos(phi), target.z+radius*s*Math.sin(theta));
+    camera.lookAt(target);
+  }
+  const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointerup',()=>dragging=false);
+  el.addEventListener('pointerleave',()=>dragging=false);
+  el.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+    theta-=dx*0.005; phi-=dy*0.005; phi=Math.max(0.16,Math.min(1.46,phi));
+  });
+  el.addEventListener('wheel',e=>{e.preventDefault(); radius*=(1+e.deltaY*0.0011); radius=Math.max(14,Math.min(90,radius));},{passive:false});
+
+  // ================= UI =================
+  const btnRotate=document.getElementById('btnRotate');
+  const btnTime=document.getElementById('btnTime');
+  const btnReset=document.getElementById('btnReset');
+  btnRotate.addEventListener('click',()=>{autoRotate=!autoRotate; btnRotate.classList.toggle('active',autoRotate);});
+  btnReset.addEventListener('click',()=>{radius=HOME.radius;theta=HOME.theta;phi=HOME.phi;});
+
+  let night=false;
+  function setTime(toNight){
+    night=toNight;
+    if(night){
+      btnTime.textContent="🌙 Gece";
+      scene.background.copy(NIGHT_BG); scene.fog.color.copy(NIGHT_BG);
+      hemi.intensity=0.22; hemi.color.setHex(0x2a3a5a); hemi.groundColor.setHex(0x0e1622);
+      sun.intensity=0.1; sun.color.setHex(0x7f93c8); moonFill.intensity=0.4;
+      glassMats.forEach(m=>{m.emissive.setHex(0xffcf7a);m.emissiveIntensity=0.95;m.opacity=0.62;});
+      water.material.emissive.setHex(0x0e5b82); water.material.emissiveIntensity=0.7;
+      spa.material.emissive.setHex(0x0e5b82); spa.material.emissiveIntensity=0.8;
+      bollardCaps.forEach(m=>{m.emissive.setHex(0xffe0a0);m.emissiveIntensity=1.2;});
+      gardenLights.forEach((p,i)=>{p.intensity = i===0?2.2:1.6;});
+      renderer.toneMappingExposure=1.12;
+    } else {
+      btnTime.textContent="☀️ Gündüz";
+      scene.background.copy(DAY_BG); scene.fog.color.copy(DAY_BG);
+      hemi.intensity=0.5; hemi.color.setHex(0xc4d8ec); hemi.groundColor.setHex(0x46603b);
+      sun.intensity=1.55; sun.color.setHex(0xfff1d2); moonFill.intensity=0.0;
+      glassMats.forEach(m=>{m.emissive.setHex(0x0a1a26);m.emissiveIntensity=0.0;m.opacity=0.4;});
+      water.material.emissive.setHex(0x0d4b6b); water.material.emissiveIntensity=0.35;
+      spa.material.emissive.setHex(0x0d4b6b); spa.material.emissiveIntensity=0.4;
+      bollardCaps.forEach(m=>{m.emissive.setHex(0x000000);m.emissiveIntensity=0.0;});
+      gardenLights.forEach(p=>p.intensity=0.0);
+      renderer.toneMappingExposure=0.98;
+    }
+  }
+  btnTime.addEventListener('click',()=>setTime(!night));
+
+  window.addEventListener('resize',()=>{
+    camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
+  });
+
+  let t=0;
+  function animate(){
+    requestAnimationFrame(animate);
+    t+=0.016;
+    if(autoRotate&&!dragging) theta+=0.0015;
+    water.position.y=0.30+Math.sin(t*1.5)*0.012;
+    water.material.emissiveIntensity=(night?0.7:0.32)+Math.sin(t*2.0)*0.06;
+    applyCamera();
+    renderer.render(scene,camera);
+  }
+  applyCamera(); animate();
+  if(loading) loading.style.display='none';
+})();
+</script>
+</body>
+</html>

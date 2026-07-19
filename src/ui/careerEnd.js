@@ -51,11 +51,29 @@ export function render(G) {
     </div>
     <div class="overline" style="margin-top:16px">En Unutulmaz ${(c.anlar || []).length || ''} An</div>
     <div class="inbox-list" style="margin-top:8px">${anlar}</div>
+    ${hanedanBlok(G)}
     <div class="sentence" style="margin-top:18px;font-size:18px">“Tarih onu <b style="color:var(--club-2)">${esc(c.tag)}</b> olarak hatırlayacak.”</div>
     ${c.yanNot ? `<div class="muted" style="margin-top:6px;font-style:italic">…ve kulislerde bir dipnot: <b>${esc(c.yanNot)}</b>.</div>` : ''}
     ${c.senaryoNotu ? `<div class="muted" style="margin-top:4px">🎯 ${esc(c.senaryoNotu)}</div>` : ''}
     ${prestijBlok(G, c)}
   </div>`;
+}
+
+// HANEDAN (2.8): kariyer biterken aile ne bırakıyor — halef kızı, formalı oğul, ya da sessiz veda.
+function hanedanBlok(G) {
+  const oz = G.ozel;
+  if (!oz) return '';
+  const satirlar = [];
+  if (oz.flags?.kizKulupte) satirlar.push(`👔 <b>${esc(oz.aile?.c1 || 'Kızın')}</b> kulüp masasında yetişti — koridorlarda "geleceğin başkanı" diye anılıyor. Koltuk aileye emanet.`);
+  if (oz.flags?.ogulKadroda) satirlar.push(`⚽ <b>${esc(oz.aile?.c2 || 'Oğlun')}</b> senin armanla sahada — tribün onun formasında senin hikâyeni okuyor.`);
+  else if (oz.flags?.ogulAkademide) satirlar.push(`🎓 <b>${esc(oz.aile?.c2 || 'Oğlun')}</b> akademide ter döküyor — hikâyesi daha yeni başlıyor.`);
+  const ort = oz.iliski ? Math.round((oz.iliski.es + oz.iliski.c1 + oz.iliski.c2) / 3) : 0;
+  satirlar.push(ort >= 70
+    ? `💗 Ev seni hiç yalnız bırakmadı — ${esc(oz.aile?.es || '')} Hanım son gün de ön sıradaydı.`
+    : ort < 45 ? '🕯 Koltuk çok şey aldı — evdeki sandalyeler uzun süre boş kaldı.'
+      : '🏠 Aile bu yolculuğu seninle taşıdı — bazen uzaktan, ama hep orada.');
+  return `<div class="card" style="margin-top:14px;text-align:left"><div class="overline">Hanedan — Aile Ne Bırakıyor</div>
+    <div style="margin-top:6px;display:grid;gap:6px;font-size:13px">${satirlar.map((s) => `<div>${s}</div>`).join('')}</div></div>`;
 }
 
 // RETENTION: kariyer PUANI (aşılacak rekor) + sıradaki meydan okuma + kaçan rozetler.

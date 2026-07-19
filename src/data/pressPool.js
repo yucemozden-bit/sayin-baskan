@@ -15,6 +15,16 @@ export const MUHABIRLER = [
 ];
 
 export const PRESS_POOL = {
+  // ═══════════════ ÖZEL HAYAT (2.8 köprüsü — her iki ligde, ~%11 hafta) ═══════════════
+  // %ES%/%C1%/%C2% isimleri media.js render'da başkanın gerçek ailesiyle doldurulur.
+  ozel: [
+    { t: 'AİLE CEPHESİ', q: 'Başkanım, eşiniz %ES% Hanım son maçlarda locada görünmüyor. Evde işler yolunda mı?', c: [['sakin', 'Ailem sağ olsun her zaman yanımda — locayı da özledi, gelecek.'], ['savunmaci', 'Özel hayatım kulüp gündemine malzeme olamaz.'], ['iddiali', 'Evimin huzuru yerinde; siz kadroyu sorun, o daha ilginç.']] },
+    { t: 'BAŞKANIN ÇOCUKLARI', q: 'Oğlunuz %C2% için "altyapıya yazılacak" deniyor. Başkan oğlu forma giyerse torpil tartışması çıkmaz mı?', c: [['iddiali', 'Bu kulüpte forma terle giyilir — soyadı kimseyi on birde tutamaz.'], ['sakin', 'Çocuğumun hayali kendi hayali; karar hocaların, benim değil.'], ['savunmaci', 'Ailemin gençlerini gündem yapmayalım; onlar daha çocuk.']] },
+    { t: 'YALIDA HAYAT', q: 'Cemiyet basını sizi sık sık davetlerde görüyor. Kulüp mü, sosyete mi Başkanım?', c: [['iddiali', 'O masalarda kulübe sponsor buluyorum — gezmiyorum, çalışıyorum.'], ['atesli', 'Ben bu kulüp için gece gündüz demeden her kapıyı çalarım!'], ['sakin', 'Dengeli hayat iyi yönetimin şartı; merak etmeyin.']] },
+    { t: 'SERVET SORUSU', q: 'Kişisel servetinizin büyüdüğü yazılıyor. Kulüp mü sizi büyütüyor, siz mi kulübü?', c: [['savunmaci', 'Malvarlığım beyannamede; kulüp kasasıyla aramda duvar var.'], ['iddiali', 'İşlerim iyi gidiyor ki kulübe cebimden koyabiliyorum — kaç başkan yapıyor bunu?'], ['sakin', 'İkisi ayrı defter; ikisinin de hesabı ortada.']] },
+    { t: 'EVDEKİ SKOR', q: 'Deplasman dönüşü ailenize vakit kalıyor mu, yoksa evde de hep maç mı konuşuluyor?', c: [['sakin', 'Evde top yasak — orada ben başkan değil babayım.'], ['iddiali', 'Ailem bu yolculuğun ortağı; loca onların, taktik benim.'], ['savunmaci', 'Özel dengemi kamuoyuyla tartışmam.']] },
+    { t: 'KIZININ DÜĞÜNÜ', q: 'Kızınız %C1%ʼin düğün fotoğrafları magazinde geniş yer buldu. Aile mutluluğu kulübe de yansır mı?', c: [['sakin', 'Mutlu ev, sakin başkan — kulüp de bundan kazanır.'], ['atesli', 'Kızımın gülüşü bana şampiyonluk gibi geldi, yazın bunu!'], ['savunmaci', 'Teşekkür ederim; ama düğün albümü basın toplantısı konusu değil.']] },
+  ],
   // ═══════════════ SÜPER LİG (200) ═══════════════
   derbi: [
     { t: 'DERBİ HAFTASI', q: 'Şehir derbiye kilitlendi. Rakip başkan "farkı görecekler" demiş — cevabınız?', c: [['atesli', 'Cuma sahada konuşuruz — bu şehrin rengi belli!'], ['iddiali', 'İddiaya girmem ama kaybetmeye de gelmedik.'], ['sakin', 'Derbi güzeldir; provokasyona gerek yok.']] },

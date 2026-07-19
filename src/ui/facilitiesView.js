@@ -4,6 +4,7 @@
 import { fmt } from './frame.js';
 import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES } from '../engines/facilities.js';
 import { sbShell } from './cockpit.js';
+import { MEGA } from '../actions.js';
 
 const AD = {
   stadyum: 'Stadyum', antrenman: 'Antrenman Tesisi', tibbi: 'Tıbbi Merkez',
@@ -95,6 +96,7 @@ export function render(G) {
     const offers = t.offers.map((o, i) => `<div class="ihale-kart ${o.type === 'B' ? 'vurgulu' : ''}">
       <div class="overline">Teklif ${o.type} · ${o.firm}</div>
       <div class="ihale-bedel led">${fmt(o.cost)}<i>mn</i></div>
+      <div class="ihale-sure ${o.type === 'B' ? 'hizli' : ''}" data-tip="Kazma vurulduktan sonra kademe bu sürede devreye girer">⏱ ${o.hafta} HAFTA</div>
       <div class="ihale-desc">${o.desc}</div>
       <button class="cx-btn ${o.type === 'B' ? 'on' : ''}" data-act="tender" data-arg="${i}" ${G.economy.kasa < o.cost ? 'disabled' : ''}>${G.economy.kasa < o.cost ? 'Kasa yetmiyor' : 'Bu firmayı seç'}</button>
     </div>`).join('');
@@ -106,20 +108,32 @@ export function render(G) {
     return sbShell(G, { crumb: ihaleCrumb, title: 'Firma Teklifleri', body: ihaleBody });
   }
 
-  // ── KAMPÜS PANOSU: 6 tesis, tam ekran ──
+  // ── KAMPÜS PANOSU: 6 tesis, tam ekran ── (şantiye sürerken o tesiste ilerleme, diğerlerinde kilit)
+  const sInsa = G.santiye;
   const cards = FACILITIES.map((f) => {
     const lvl = G.facilities[f];
     const disc = facilityDiscountMult(G, f);
     const cost = effectiveUpgradeCost(G, f);
-    const ok = canUpgrade(G, f);
+    const ok = canUpgrade(G, f) && !sInsa;
     const maks = lvl >= 10;
-    const segs = Array.from({ length: 10 }, (_, i) => `<span class="seg ${i < lvl ? 'dolu' : ''}"></span>`).join('');
+    const buradaSantiye = sInsa && sInsa.tesis === f;
+    const segs = Array.from({ length: 10 }, (_, i) => `<span class="seg ${i < lvl ? 'dolu' : ''}${buradaSantiye && i === lvl ? ' insaat' : ''}"></span>`).join('');
     const indirim = disc < 0.999
       ? `<span class="tesis-indirim">−%${Math.round((1 - disc) * 100)} <s>${fmt(upgradeCost(f, lvl))}mn</s></span>` : '';
-    return `<div class="tesis-kart">
+    const gecen = buradaSantiye ? sInsa.toplam - sInsa.kalan : 0;
+    const altBtn = buradaSantiye
+      ? `<div class="tesis-santiye" data-tip="${sInsa.firm} çalışıyor — kurdele ${sInsa.kalan} hafta sonra">
+          <span>🏗 ŞANTİYE · ${gecen}/${sInsa.toplam} hafta</span>
+          <span class="tesis-santiye-bar"><i style="width:${Math.round(gecen / sInsa.toplam * 100)}%"></i></span>
+        </div>`
+      : `<button class="cx-btn tesis-btn ${ok ? '' : 'kilit'}" data-act="upgrade" data-arg="${f}" ${ok ? '' : 'disabled'}
+          data-tip="${maks ? 'Maksimum seviye' : sInsa ? `Şantiye sürüyor (${AD[sInsa.tesis] || sInsa.tesis}) — aynı anda tek inşaat` : ok ? 'İhale aç — 3 firma süre ve fiyatla teklif getirir' : 'Kasa yetersiz'}">
+          ${maks ? 'TAMAMLANDI' : `İHALE AÇ · ~${fmt(cost)}mn`}
+        </button>`;
+    return `<div class="tesis-kart ${buradaSantiye ? 'insaatta' : ''}">
       <div class="tesis-kart-ust">
         <span class="tesis-ikon">${IKON[f] || ''}</span>
-        <div class="tesis-ad"><b>${AD[f] || f}</b><i>SEVİYE ${lvl}/10</i></div>
+        <div class="tesis-ad"><b>${AD[f] || f}</b><i>SEVİYE ${lvl}/10${buradaSantiye ? ' · 🏗' : ''}</i></div>
         <span class="tesis-lvl led">${lvl}</span>
       </div>
       <div class="tesis-seviye">${segs}</div>
@@ -127,10 +141,7 @@ export function render(G) {
       <div class="tesis-sahne-wrap">${sahne(f, lvl)}</div>
       <div class="tesis-alt">
         ${indirim}
-        <button class="cx-btn tesis-btn ${ok ? '' : 'kilit'}" data-act="upgrade" data-arg="${f}" ${ok ? '' : 'disabled'}
-          data-tip="${maks ? 'Maksimum seviye' : ok ? 'İhale aç — 3 firma teklif getirir' : 'Kasa yetersiz'}">
-          ${maks ? 'TAMAMLANDI' : `İHALE AÇ · ~${fmt(cost)}mn`}
-        </button>
+        ${altBtn}
       </div>
     </div>`;
   }).join('');
@@ -143,10 +154,24 @@ export function render(G) {
     ? '<span class="badge" style="margin-left:auto">aktif — camia gururlu</span>'
     : `<button class="cx-btn" data-act="kadinTakim" style="margin-left:auto" ${G.economy.kasa < 8 ? 'disabled' : ''} data-tip="Kuruluş 8mn + haftalık bakım. Taraftar +3, itibar +2; 'Kadın Takımını Kuracağım' sözünü tutar">Kur · 8mn</button>`}
   </div>`;
+  // #8 STADYUM MEGA PROJESİ — geç oyun hedefi: stadyum zirveye vurunca açılan tek seferlik dev şerit
+  const megaInsa = sInsa && sInsa.tesis === 'mega';
+  const megaUygun = (G.facilities.stadyum || 0) >= 10 || G.megaStad || megaInsa;
+  const megaGecen = megaInsa ? sInsa.toplam - sInsa.kalan : 0;
+  const megaSerit = !megaUygun ? '' : `<div class="tesis-mega ${G.megaStad ? 'aktif' : ''}">
+    <span class="tesis-ikon">🏟️</span>
+    <div class="tesis-ad"><b>Stadyum Kompleksi · MEGA PROJE</b><i>${G.megaStad ? 'AÇILDI · kapasite +%20 · şehrin simgesi' : megaInsa ? `ŞANTİYE · ${megaGecen}/${sInsa.toplam} hafta` : 'Müze · mağaza caddesi · loca katı · kapalı çatı — kapasite +%20 (KALICI)'}</i></div>
+    ${G.megaStad
+    ? '<span class="badge" style="margin-left:auto">tarihe geçtin</span>'
+    : megaInsa
+      ? `<span class="tesis-santiye" style="margin-left:auto" data-tip="Konsorsiyum çalışıyor — kurdele ${sInsa.kalan} hafta sonra"><span>🏗 ${megaGecen}/${sInsa.toplam}</span><span class="tesis-santiye-bar"><i style="width:${Math.round(megaGecen / sInsa.toplam * 100)}%"></i></span></span>`
+      : `<button class="cx-btn on" data-act="megaProje" style="margin-left:auto" ${G.economy.kasa < MEGA.maliyet || sInsa ? 'disabled' : ''} data-tip="${sInsa ? 'Şantiye dolu — önce mevcut iş bitsin' : G.economy.kasa < MEGA.maliyet ? `Kasa yetersiz (${MEGA.maliyet}mn gerek)` : `${MEGA.maliyet}mn peşin · ${MEGA.hafta} hafta şantiye · kurdelede itibar +5, taraftar +3`}">Temel At · ${MEGA.maliyet}mn</button>`}
+  </div>`;
   const ortLvl = FACILITIES.reduce((a, f) => a + (G.facilities[f] || 0), 0) / FACILITIES.length;
   const altyapi = ortLvl < 3.5 ? 'DÜŞÜK' : ortLvl < 6.5 ? 'ORTA' : 'YÜKSEK';
   const body = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
     <div class="tesis-grid">${cards}</div>
+    ${megaSerit}
     ${kadinSerit}
   </div>`;
   const crumb = `TESİSLER · STADYUM ${G.facilities.stadyum}. SEVİYE · ALTYAPI ${altyapi} · KASA ${fmt(G.economy.kasa)}MN`;

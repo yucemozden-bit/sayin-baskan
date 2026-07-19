@@ -4,7 +4,11 @@
 // Çalıştır: node tests/calibration.test.mjs
 
 import { TUNING, TIERS } from '../src/config.js';
+import { setSeed } from '../src/core/rng.js';
 import { generateSquad, squadMarketValue } from '../src/models/squadGen.js';
+// GİZLİ ÇAKILLIK GİDERİLDİ (2026-07-20): test seed'SİZDİ — her koşu farklı örneklem çekip
+// ±%20 bandının kenarında (%18-20) titriyordu, ayda bir kırmızıya düşüyordu. Seed → determinist.
+setSeed(20260720);
 import { createLeague, playWeek, standings } from '../src/engines/league.js';
 import { applyEconomy, payDebt } from '../src/engines/economy.js';
 import { computeTargets, applyInertia } from '../src/engines/gauges.js';

@@ -2,6 +2,7 @@
 // (ses testi, kontrast modu, tam ekran, kayıt aktar, veda). Boş alan yok, ekrana sığar.
 import { getSound } from '../core/sound.js';
 import { MODES } from '../engines/meta.js';
+import { sbShell } from './cockpit.js';
 
 export const SURUM = 'v1.0-adayı';
 
@@ -9,9 +10,8 @@ export function render(G) {
   const s = getSound();
   const zorlukTr = { kolay: 'Kolay', normal: 'Normal', zor: 'Zor', efsane: 'Efsane' }[G.difficulty] || G.difficulty;
   const c = G.career || {};
-  return `<div class="ayar-wrap">
-    <div class="overline">Ayarlar</div>
-    <h2 style="margin:4px 0 12px">Kontrol Odası</h2>
+  // sb- GÖRSEL KATMAN: diğer ekranlarla aynı tam-ekran kabuk (eski tema kalıntısıydı — kullanıcı bulgusu)
+  const body = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
     <div class="ayar-grid">
       <div class="tr-panel"><div class="cx-panel-head"><span class="overline">Ses</span><span class="cx-hint">efekt + ambiyans</span></div>
         <div class="btnrow" style="margin-top:6px">
@@ -58,6 +58,11 @@ export function render(G) {
         </div>
       </div>
     </div>
-    <div class="muted" style="font-size:11px;margin-top:12px">SAYIN BAŞKAN ${SURUM} · kayıt şeması v${G.stateVersion || 1} · ${(G.meta && G.meta.version) || ''}</div>
+    <div class="muted" style="font-size:11px">SAYIN BAŞKAN ${SURUM} · kayıt şeması v${G.stateVersion || 1} · ${(G.meta && G.meta.version) || ''}</div>
   </div>`;
+  return sbShell(G, {
+    crumb: `AYARLAR · ${String(zorlukTr).toLocaleUpperCase('tr')} · ${(MODES[G.mode] || MODES.klasik).ad.toLocaleUpperCase('tr')} · ${G.meta?.term || 1}. DÖNEM`,
+    title: 'Kontrol Odası',
+    body,
+  });
 }

@@ -31,7 +31,7 @@ export const TUNING = {
   DEV_U24_MAX: 1.15 /*×antrenman sv — gençler DAHA HIZLI gelişsin (kullanıcı isteği: 0.8→1.15)*/, AGE_DECAY_START: 31, DEV_DECAY_RATE: 0.6,
   // — Ekonomi —
   WAGE_RATIO_HEALTHY: 0.55, TIER_SCALE: { kucuk: 2, orta: 6, buyuk: 14 },
-  TV_BASE: { kucuk: 20, orta: 50, buyuk: 261 }, TICKET_K: 0.0001, // [kalibre: gelir ölçeği]
+  TV_BASE: { kucuk: 20, orta: 50, buyuk: 261, dev: 360, efsane: 480 }, TICKET_K: 0.0001, // [kalibre: gelir ölçeği; dev/efsane yalnız oyunla ulaşılır]
   ATTEND: { base: 0.45, taraftarDiv: 200, sportifDiv: 300, priceSlope: 0.25, min: 0.30 },
   AUTO_DEBT_PENALTY: 0.03, INFLATION: [0.06, 0.14], RATE_DRIFT: [-0.03, 0.06],
   FFP: { revenueMult: 0.85, appealRepMin: 60, appealChance: 0.4, appealBoost: 0.10 },
@@ -143,7 +143,7 @@ export const TUNING = {
   // — Ekonomi (Bible-8) — sponsor pazarlığı & FFP MVP dışı; gelir kalemi olarak var —
   ECONOMY: {
     WEEKS_PER_YEAR: 52,
-    SPONSOR_BASE: { kucuk: 6, orta: 22, buyuk: 45 }, // göğüs baz (sezonluk mn) — küçük/orta ×1.5 (daha ağır); büyük zaten devasa, net bandında kalsın
+    SPONSOR_BASE: { kucuk: 6, orta: 22, buyuk: 45, dev: 68, efsane: 95 }, // göğüs baz (sezonluk mn) — küçük/orta ×1.5 (daha ağır); büyük zaten devasa, net bandında kalsın
     SPONSOR_ITIBAR_BASE: 0.5, SPONSOR_ITIBAR_DIV: 100, // itibarFactor = 0.5 + itibar/100
     SPONSOR_KOL: 0.4, SPONSOR_NAMING: 0.6, NAMING_MIN_STAD: 7,
     SPONSOR_REP_DIV: 150,      // sponsor geliri ×(1 + itibar/150)
@@ -343,10 +343,18 @@ export const TUNING = {
     // Artık hedef etrafında tipe göre sapıyor (her kulüp boyutunda ayrışır): + = beklentinin altı.
     OPP_SPORTIF: { POPULIST: -3, AVCI: 2, INSAATCI: 3, MUHASEBECI: 6 },
     TIER: {
-      UP_TERMS: 2,           // üst üste seçilmiş dönem sayısı
+      UP_TERMS: 2,           // üst üste seçilmiş dönem sayısı (orta/büyük yükselişi — eski davranış birebir)
       UP_ITIBAR: 62,         // itibar eşiği
       UP_BORC_RATIO: 0.30,   // borç < kadroDeger × bu
-      DOWN_BORC_RATIO: 1.0,  // tenzil: borç > kadroDeger × bu (+ küme sezonu)
+      // 5 KADEME (Bible-20 genişleme): Küçük→Orta→Büyük→Dev→Efsane. Üst kademeler kariyer hedefi —
+      // şart seti hedef kademeye göre ağırlaşır (şampiyonluk da ister). orta/buyuk eski eşiklerle aynı.
+      UP: {
+        orta: { terms: 2, itibar: 62, borc: 0.30, titles: 0 },
+        buyuk: { terms: 2, itibar: 62, borc: 0.30, titles: 0 },
+        dev: { terms: 3, itibar: 72, borc: 0.20, titles: 1 },
+        efsane: { terms: 4, itibar: 82, borc: 0.10, titles: 3 },
+      },
+      DOWN_BORC_RATIO: 1.0,  // tenzil: borç > kadroDeger × bu (+ küme sezonu) — her kademeden 1 basamak
       BLEND: 0.5,            // 1 sezonluk geçiş: ilk adım %50 harman (şok yok)
       LADDER_BOOST: 10,       // terfi eden kulübün yeni ligi: rakip kalitesi de yükselir (Bible-20 — ödül cezasız değil)
     },
@@ -428,17 +436,22 @@ export const TUNING = {
 
   // — Primler (v4.1-3) — hepsi kasadan, Finans'ta görünür —
   PRIM: {
-    MAC: { normal: { power: 1.01, cost: 0.3 }, yuksek: { power: 1.03, cost: 1.0 } },
+    // PRİM GÜÇLENDİRME (kullanıcı isteği: "gerçekten etki etsin, etkisi fazla olsun"): power ~derbi
+    // salınımı ölçeğine çıktı; galibiyette İZ kalır (moral/form/kimya kalıcı işler — izMoral/izForm/izKimya).
+    MAC: {
+      normal: { power: 1.025, cost: 0.3, moral: 4, form: 3, kimya: 2, izMoral: 2, izForm: 1, izKimya: 0 },
+      yuksek: { power: 1.05, cost: 1.0, moral: 8, form: 6, kimya: 4, izMoral: 3, izForm: 2, izKimya: 1 },
+    },
     SERI: { streak: 3, firstCost: 1.2, nextCost: 0.4, moraleBoost: 3, formBoost: 3, nextPower: 1.02, nextWeeks: 2 },
     SEZON: { floorMorale: 66, floorGain: 1, achieveCost: 4, achieveMorale: 4, failMorale: -3 },
     OZEL: { power: 1.06, cost: 2.5 },
   },
 
   // — Tesis ihalesi (v4.1-4) —
-  TENDER: {
-    A: { costMult: 0.75, riskP: 0.25 },                          // ucuz+hızlı: %25 iş sezon sonuna sarkar
-    B: { costMult: 1.35, bonusP: 0.20 },                         // premium: %20 +1 ekstra kademe
-    C: { costMult: 0.80, leakP: 0.20, leakItibar: -4, leakRival: 2 }, // tanıdık firma: %20 medya sızıntısı
+  TENDER: { // ŞANTİYE sistemi: her teklifin SÜRESİ var (hafta) — ucuz=yavaş+riskli, pahalı=hızlı+bonuslu
+    A: { costMult: 0.75, riskP: 0.25, hafta: 5, sarkma: 3 },     // yerel: ucuz ama 5 hafta; %25 yarı yolda +3 hafta sarkar
+    B: { costMult: 1.35, bonusP: 0.20, hafta: 2 },               // premium: 2 haftada teslim; %20 +1 ekstra kademe
+    C: { costMult: 0.80, leakP: 0.20, leakItibar: -4, leakRival: 2, hafta: 3 }, // tanıdık: 3 hafta; %20 şantiye ortasında medyaya sızar
   },
 
   // — Vaat ara-ilerleme (v4.1-5) —
@@ -491,11 +504,21 @@ export const TIERS = {
     gauges: { guven: 50, taraftar: 45, mali: 55, sportif: 35, itibar: 25 }, beklenti: 'kumede_kal', stad: 24000,
   },
   orta: {
-    kasa: 50, borc: 60, kadroDeger: 250, reputation: 45, fan: 800000, temelGuc: 55,
+    kasa: 50, borc: 60, kadroDeger: 210, reputation: 45, fan: 800000, temelGuc: 55, // kadroDeger 250→210: üretim gerçeği (200 sezon ort ~199; Bible-3 orijinali 250 — motor bu alanı OKUMAZ, salt kalibrasyon referansı)
     gauges: { guven: 55, taraftar: 60, mali: 50, sportif: 50, itibar: 45 }, beklenti: 'ust_yari', stad: 32000,
   },
   buyuk: {
     kasa: 120, borc: 400, kadroDeger: 1200, reputation: 75, fan: 3500000, temelGuc: 78,
     gauges: { guven: 60, taraftar: 75, mali: 35, sportif: 70, itibar: 75 }, beklenti: 'sampiyonluk', stad: 52000,
+  },
+  // 5 KADEME: Dev ve Efsane — kariyer BAŞLANGICI DEĞİL, yalnız oyun içi yükselişle ulaşılır
+  // (applyTier fan/reputation/stad/beklenti okur; diğer alanlar tablo bütünlüğü için).
+  dev: {
+    kasa: 250, borc: 700, kadroDeger: 2400, reputation: 88, fan: 7000000, temelGuc: 86,
+    gauges: { guven: 62, taraftar: 80, mali: 32, sportif: 78, itibar: 85 }, beklenti: 'sampiyonluk', stad: 68000,
+  },
+  efsane: {
+    kasa: 400, borc: 1000, kadroDeger: 4000, reputation: 96, fan: 12000000, temelGuc: 92,
+    gauges: { guven: 65, taraftar: 85, mali: 30, sportif: 84, itibar: 92 }, beklenti: 'sampiyonluk', stad: 84000,
   },
 };

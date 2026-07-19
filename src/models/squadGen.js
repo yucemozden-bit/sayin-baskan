@@ -5,7 +5,7 @@
 
 import { TUNING, TIERS } from '../config.js';
 import { SQUAD_TARGET, POSITIONS } from './squad.js';
-import { Player } from './player.js';
+import { Player, marketValue } from './player.js';
 import { rand, randint } from '../core/rng.js';
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
@@ -90,6 +90,7 @@ export function squadMarketValue(squad) {
 export function developSquad(squad, facilities, rng = rand) {
   const antrenman = facilities.antrenman || 0;
   for (const p of squad) {
+    const once = p.overall; // ▲/▼ oku: sezon sonu değişimi de kadroda 3 hafta görünür
     p.age += 1;
     if (p.age < TUNING.SQUADGEN.YOUTH_AGE && p.overall < p.potential) {
       p.overall = Math.min(p.potential, p.overall + Math.round(rng(0, antrenman * TUNING.DEV_U24_MAX)));
@@ -97,7 +98,11 @@ export function developSquad(squad, facilities, rng = rand) {
     if (p.age > TUNING.AGE_DECAY_START) {
       p.overall = Math.max(30, p.overall - Math.round(rng(0, (p.age - TUNING.AGE_DECAY_START) * TUNING.DEV_DECAY_RATE)));
     }
-    p.refreshValue();
+    if (p.overall !== once) { p.okYon = p.overall > once ? 'up' : 'down'; p.okHafta = 3; }
+    // ZIRH: kayıttan yüklenen / hanedan-oğlu gibi PLAIN oyuncularda metod yok — değer saf
+    // fonksiyonla tazelenir (maraton D4 çökmesi: "p.refreshValue is not a function")
+    if (p.refreshValue) p.refreshValue();
+    else p.marketValue = marketValue(p.overall, p.age, p.potential ?? p.overall);
   }
   return squad;
 }

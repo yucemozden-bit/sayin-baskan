@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ultra Lüks Malikâne · 3D</title>
+<style>
+  :root { --gold:#e7c063; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#0b1220; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  .hud { position:fixed; left:18px; top:16px; color:#fff; pointer-events:none; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .hud h1 { font-size:20px; letter-spacing:.5px; font-weight:800; }
+  .hud .sub { font-size:12px; opacity:.8; margin-top:2px; letter-spacing:.3px; }
+  .hint { position:fixed; left:18px; bottom:16px; color:#dfe6f0; font-size:12px; opacity:.7; text-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .panel { position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:8px; }
+  .btn {
+    pointer-events:auto; cursor:pointer; user-select:none;
+    background:rgba(18,26,42,.72); color:#eef2f8; border:1px solid rgba(231,192,99,.35);
+    padding:9px 14px; border-radius:10px; font-size:13px; font-weight:600; letter-spacing:.2px;
+    backdrop-filter:blur(6px); transition:all .15s ease; text-align:center; min-width:150px;
+  }
+  .btn:hover { border-color:var(--gold); background:rgba(28,38,58,.85); }
+  .btn.active { background:var(--gold); color:#1a1207; border-color:var(--gold); }
+  .loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; color:#cfe0ff; font-size:14px; letter-spacing:.5px; }
+</style>
+<style id="sb-sade">.hud .sub,.hint{display:none!important}</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud">
+  <h1>ULTRA LÜKS MALİKÂNE</h1>
+  <div class="sub">3 Katlı · Çatı Terası · Dev Sonsuzluk Havuzu · 3D</div>
+</div>
+<div class="panel">
+  <div class="btn active" id="btnRotate">⟳ Otomatik dönüş</div>
+  <div class="btn" id="btnTime">☀️ Gündüz</div>
+  <div class="btn" id="btnReset">⤿ Görünümü sıfırla</div>
+</div>
+<div class="hint">Sürükle: döndür · Tekerlek / iki parmak: yakınlaş</div>
+<div class="loading" id="loading">3D sahne yükleniyor…</div>
+
+<script src="three.min.js"></script>
+<script>
+(function(){
+  const holder=document.getElementById('app'), loading=document.getElementById('loading');
+  if(!window.THREE){ loading.textContent="3D kütüphanesi yüklenemedi (internet gerekli)."; return; }
+
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=0.98;
+  holder.appendChild(renderer.domElement);
+
+  const scene=new THREE.Scene();
+  const DAY_BG=new THREE.Color(0x8fc0e6), NIGHT_BG=new THREE.Color(0x0a1220);
+  scene.background=DAY_BG.clone();
+  scene.fog=new THREE.Fog(DAY_BG.clone(),95,240);
+
+  const camera=new THREE.PerspectiveCamera(46,window.innerWidth/window.innerHeight,0.1,700);
+
+  const hemi=new THREE.HemisphereLight(0xc4d8ec,0x46603b,0.5); scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xfff1d2,1.55);
+  sun.position.set(38,54,30); sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.camera.near=1; sun.shadow.camera.far=240;
+  sun.shadow.camera.left=-80; sun.shadow.camera.right=80; sun.shadow.camera.top=80; sun.shadow.camera.bottom=-80;
+  sun.shadow.bias=-0.0004; sun.target.position.set(0,0,4);
+  scene.add(sun); scene.add(sun.target);
+  const moonFill=new THREE.DirectionalLight(0x9fb8ff,0.0); moonFill.position.set(-26,30,-20); scene.add(moonFill);
+
+  const gardenLights=[];
+  function addPoint(x,y,z,color,dist){const p=new THREE.PointLight(color,0.0,dist||16,2);p.position.set(x,y,z);scene.add(p);gardenLights.push(p);return p;}
+  addPoint(-6,1.6,17,0x6fd0ff,22);   // pool
+  addPoint(-2,2.6,8,0xffb867,18);    // entrance
+  addPoint(-7,7.4,4,0xffc27a,16);    // 2F terrace
+  addPoint(3,11,-1,0xffc27a,16);     // rooftop
+  addPoint(9,1.2,20,0x8fe0ff,12);    // fountain
+
+  // ---------- helpers ----------
+  function box(w,h,d,color,o){o=o||{};
+    const mat=new THREE.MeshStandardMaterial({color:color,metalness:o.metalness||0,roughness:o.roughness!=null?o.roughness:0.9,
+      transparent:!!o.transparent,opacity:o.opacity!=null?o.opacity:1,emissive:o.emissive!=null?o.emissive:0x000000,
+      emissiveIntensity:o.emissiveIntensity!=null?o.emissiveIntensity:1,flatShading:!!o.flat});
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(o.x||0,o.y||0,o.z||0); if(o.rotY)m.rotation.y=o.rotY;
+    m.castShadow=o.cast!==false; m.receiveShadow=o.receive!==false; scene.add(m); return m;}
+  function cyl(rt,rb,h,seg,color,o){o=o||{};
+    const mat=new THREE.MeshStandardMaterial({color:color,roughness:o.roughness!=null?o.roughness:0.85,metalness:o.metalness||0,
+      emissive:o.emissive!=null?o.emissive:0x000000,emissiveIntensity:o.emissiveIntensity!=null?o.emissiveIntensity:1,
+      transparent:!!o.transparent,opacity:o.opacity!=null?o.opacity:1,flatShading:!!o.flat});
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);
+    m.position.set(o.x||0,o.y||0,o.z||0); if(o.rotY)m.rotation.y=o.rotY;
+    m.castShadow=o.cast!==false; m.receiveShadow=o.receive!==false; scene.add(m); return m;}
+
+  const glassMats=[];
+  function glass(w,h,d,o){o=o||{};
+    const mat=new THREE.MeshStandardMaterial({color:0x9ccbe9,metalness:0.4,roughness:0.06,transparent:true,opacity:0.4,emissive:0x0a1a26,emissiveIntensity:0.0});
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(o.x||0,o.y||0,o.z||0); if(o.rotY)m.rotation.y=o.rotY;
+    m.castShadow=false;m.receiveShadow=false; scene.add(m); glassMats.push(mat); return m;}
+  function railing(x1,z1,x2,z2,y){
+    const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),ang=Math.atan2(dz,dx);
+    const panel=new THREE.Mesh(new THREE.BoxGeometry(len,1.0,0.06),new THREE.MeshStandardMaterial({color:0xbfe0f2,metalness:0.3,roughness:0.05,transparent:true,opacity:0.26}));
+    panel.position.set((x1+x2)/2,y+0.5,(z1+z2)/2); panel.rotation.y=-ang; scene.add(panel);
+    const rail=new THREE.Mesh(new THREE.BoxGeometry(len,0.08,0.08),new THREE.MeshStandardMaterial({color:0x2b2f34,metalness:0.6,roughness:0.4}));
+    rail.position.set((x1+x2)/2,y+1.02,(z1+z2)/2); rail.rotation.y=-ang; rail.castShadow=true; scene.add(rail);}
+  const bollardCaps=[];
+  function bollard(x,z){ cyl(0.12,0.14,0.8,10,0x2b2f34,{x:x,y:0.4,z:z}); const c=cyl(0.16,0.16,0.12,10,0xfff0cf,{x:x,y:0.86,z:z}); bollardCaps.push(c.material);}
+  function tree(x,z,s){s=s||1;const g=new THREE.Group();
+    const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.2*s,0.3*s,2.1*s,7),new THREE.MeshStandardMaterial({color:0x6b4a2f,roughness:1}));
+    tr.position.y=1.05*s;tr.castShadow=true;g.add(tr);
+    const f1=new THREE.MeshStandardMaterial({color:0x3c7a44,roughness:.95,flatShading:true}),f2=new THREE.MeshStandardMaterial({color:0x4f9354,roughness:.95,flatShading:true});
+    [[1.35,2.6,0,0,f1],[0.95,3.4,0.6,0.35,f2],[0.9,3.25,-0.62,-0.25,f2],[0.75,3.9,0.05,-0.12,f1]].forEach(b=>{const m=new THREE.Mesh(new THREE.IcosahedronGeometry(b[0]*s,0),b[4]);m.position.set(b[2]*s,b[1]*s,b[3]*s);m.castShadow=true;g.add(m);});
+    g.position.set(x,0,z);scene.add(g);return g;}
+  function cypress(x,z,s){s=s||1;
+    cyl(0.09*s,0.16*s,0.6*s,6,0x5a3f28,{x:x,y:0.3*s,z:z});
+    const c=new THREE.Mesh(new THREE.ConeGeometry(0.85*s,5.4*s,8),new THREE.MeshStandardMaterial({color:0x2f5f3a,roughness:1,flatShading:true}));
+    c.position.set(x,3.1*s,z);c.castShadow=true;scene.add(c);}
+  function hedge(x,z,w,d){ box(w,1.0,d,0x3f7a44,{x:x,y:0.5,z:z,flat:true,roughness:1}); }
+  function pergola(cx,baseY,cz,w,d,postH,cP,cS){
+    const hw=w/2,hd=d/2;
+    [[-hw,-hd],[hw,-hd],[-hw,hd],[hw,hd]].forEach(p=>box(0.2,postH,0.2,cP,{x:cx+p[0],y:baseY+postH/2,z:cz+p[1]}));
+    box(w+0.3,0.16,0.18,cP,{x:cx,y:baseY+postH,z:cz-hd});
+    box(w+0.3,0.16,0.18,cP,{x:cx,y:baseY+postH,z:cz+hd});
+    for(let i=0;i<=8;i++) box(0.1,0.13,d+0.3,cS,{x:cx-hw+i*(w/8),y:baseY+postH+0.1,z:cz,cast:true});
+  }
+  function lounger(x,z,rotY){ box(0.85,0.18,2.1,0xf4f0e7,{x:x,y:0.32,z:z,rotY:rotY||0}); box(0.85,0.5,0.5,0xf4f0e7,{x:x,y:0.5,z:(z||0)-0.95,rotY:rotY||0}); }
+  function umbrella(x,z,col){ cyl(0.07,0.07,2.8,8,0x6a6f76,{x:x,y:1.4,z:z}); cyl(0.02,2.0,0.55,8,col||0xd8654b,{x:x,y:2.95,z:z}); }
+
+  // ---------- ground ----------
+  const grass=new THREE.Mesh(new THREE.PlaneGeometry(320,320),new THREE.MeshStandardMaterial({color:0x4c7a37,roughness:1}));
+  grass.rotation.x=-Math.PI/2; grass.receiveShadow=true; scene.add(grass);
+  box(56,0.16,30,0xe6dcc7,{x:-2,y:0.08,z:14,cast:false});   // grand deck
+  box(5,0.14,16,0xd7cdb6,{x:-2,y:0.085,z:28,cast:false});   // entrance path
+
+  const STONE=0xece2cf,STONE2=0xd7c9af,WOOD=0x8a5a34,WOODDK=0x5c4326,DARK=0x33383e;
+
+  // ================= 3-STOREY MANSION =================
+  // Ground floor
+  box(24,3.4,13,STONE,{x:0,y:1.7,z:0});
+  // full-height stone tower (left accent)
+  box(3.6,11.6,13.2,STONE2,{x:-10.6,y:5.8,z:0});
+  // slot windows on tower (night glow)
+  [3.2,6.6,9.4].forEach(yy=>{const s=box(0.16,1.9,0.7,0x0a1a26,{x:-12.42,y:yy,z:3.0,cast:false});glassMats.push(s.material);});
+  box(24.3,0.42,13.3,WOODDK,{x:0,y:3.62,z:0});             // band GF/2F
+  // Second floor (setback front -> GF-roof terrace)
+  box(21,3.3,11.5,STONE,{x:0.5,y:5.35,z:-0.75});
+  box(21.3,0.42,11.8,WOODDK,{x:0.5,y:7.15,z:-0.75});       // band 2F/3F
+  // wood-slat screen 2F right
+  for(let i=0;i<11;i++) box(0.1,3.0,0.1,WOOD,{x:3.5+i*0.5,y:5.35,z:4.4});
+  // Third floor penthouse (setback more, shifted right -> 2F terrace on left)
+  box(13.5,3.3,8.5,STONE,{x:3.5,y:8.75,z:-1.75});
+  box(13.9,0.45,8.9,DARK,{x:3.5,y:10.6,z:-1.75});          // roof slab
+  // rooftop parapet
+  box(13.9,0.5,0.2,STONE,{x:3.5,y:10.95,z:-6.0});
+  box(13.9,0.5,0.2,STONE,{x:3.5,y:10.95,z:2.5});
+  box(0.2,0.5,8.9,STONE,{x:10.35,y:10.95,z:-1.75});
+
+  // ---------- glazing ----------
+  glass(6.0,7.0,0.14,{x:-3,y:3.7,z:6.56});                 // double-height entry glass
+  box(0.12,7.2,0.18,DARK,{x:-6.05,y:3.7,z:6.6,cast:false});
+  box(0.12,7.2,0.18,DARK,{x:0.05,y:3.7,z:6.6,cast:false});
+  glass(5.0,2.8,0.12,{x:4.5,y:1.8,z:6.56});                // GF front glass
+  glass(3.0,2.8,0.12,{x:9.0,y:1.8,z:6.56});
+  glass(6.5,2.7,0.12,{x:-1.5,y:5.35,z:5.02});              // 2F front glass
+  glass(5.5,2.7,0.12,{x:3.5,y:8.75,z:2.52});               // penthouse front glass
+  glass(0.12,2.6,3.6,{x:10.55,y:8.75,z:-3.2});             // penthouse side glass
+
+  // ---------- grand portico (double height) ----------
+  [-8,-4,0].forEach(cx=>cyl(0.34,0.34,7.0,18,STONE,{x:cx,y:3.5,z:7.0}));
+  box(9.0,0.4,1.6,STONE,{x:-4,y:7.1,z:7.0});               // portico beam
+  box(2.4,3.0,0.16,WOODDK,{x:-3,y:1.5,z:6.58});            // grand double door
+  box(0.12,3.0,0.18,0xc9a24a,{x:-4.25,y:1.5,z:6.63,cast:false});
+  box(0.12,3.0,0.18,0xc9a24a,{x:-1.75,y:1.5,z:6.63,cast:false});
+  box(6.0,0.28,2.2,0xd9d2c4,{x:-3,y:0.15,z:7.6,cast:false}); // grand steps
+
+  // ---------- terraces ----------
+  // GF-roof terrace (front strip over GF, in front of 2F)
+  box(24,0.14,1.8,WOOD,{x:0,y:3.72,z:5.6,cast:false});
+  railing(-11.5,6.5,11.5,6.5,3.8);
+  // 2F-roof terrace (left, over 2F where penthouse setback)
+  box(7,0.14,10,WOOD,{x:-7.5,y:7.32,z:-0.75,cast:false});
+  railing(-11,4.2,-4,4.2,7.38);
+  railing(-11,4.2,-11,-5.5,7.38);
+  pergola(-7.5,7.4,-3.0,5.5,4.0,2.6,WOOD,WOODDK);
+  lounger(-9.5,-2.0); lounger(-9.5,0.4); box(1.0,0.35,1.0,WOOD,{x:-6.5,y:7.6,z:-1});
+  // rooftop terrace (on penthouse roof)
+  box(11,0.14,6,WOOD,{x:3.5,y:10.85,z:-1.75,cast:false});
+  railing(-1.8,1.0,9,1.0,10.9);
+  railing(-1.8,1.0,-1.8,-4.5,10.9);
+  railing(9,1.0,9,-4.5,10.9);
+  pergola(3.5,10.95,-3.2,6,3.2,2.4,WOOD,WOODDK);
+  lounger(1.0,0.0); lounger(2.4,0.0); umbrella(6.5,0.2,0xcfcabd);
+
+  // ================= GIANT INFINITY POOL =================
+  const px=-5, pz=17, pw=22, pd=10;
+  box(pw+1.4,0.5,pd+1.4,0xdfd6c2,{x:px,y:0.16,z:pz,cast:false});   // coping
+  const water=box(pw,0.3,pd,0x2f95cc,{x:px,y:0.30,z:pz,cast:false,receive:false,metalness:0.2,roughness:0.1,transparent:true,opacity:0.85,emissive:0x0d4b6b,emissiveIntensity:0.35});
+  box(pw+1.4,0.5,0.55,0xcfc5b0,{x:px,y:0.12,z:pz+pd/2+0.7,cast:false});                 // infinity lip
+  box(pw+1.4,0.35,0.3,0x2f95cc,{x:px,y:0.22,z:pz+pd/2+0.62,cast:false,transparent:true,opacity:0.8,emissive:0x0d4b6b,emissiveIntensity:0.3});
+  // spa
+  cyl(2.1,2.1,0.6,24,0xd8cdb6,{x:px+pw/2+1.8,y:0.3,z:pz-2.6,cast:false});
+  const spa=cyl(1.7,1.7,0.42,24,0x2f95cc,{x:px+pw/2+1.8,y:0.46,z:pz-2.6,cast:false,transparent:true,opacity:0.85,emissive:0x0d4b6b,emissiveIntensity:0.4,metalness:0.2,roughness:0.1});
+  // loungers + umbrellas along pool front-left
+  for(let i=0;i<5;i++){ lounger(px-pw/2-1.6, pz-4+i*2.0); }
+  umbrella(px-pw/2-1.6,pz-4.6); umbrella(px-pw/2-1.6,pz-0.2); umbrella(px-pw/2-1.6,pz+3.6);
+  // poolside cabana (right end)
+  pergola(px+pw/2+1.6,0,pz+3.2,4.5,4,3.0,WOOD,WOODDK);
+  box(3.4,0.4,2.0,0xece7da,{x:px+pw/2+1.6,y:0.5,z:pz+3.2}); // daybed
+  // pool bar counter
+  box(4,1.1,1.0,STONE2,{x:px-2,y:0.55,z:pz+pd/2+2.2});
+
+  // ---------- fountain ----------
+  cyl(2.0,2.2,0.5,24,0xd8cdb6,{x:9,y:0.25,z:22,cast:false});
+  const fw=cyl(1.7,1.7,0.3,24,0x2f95cc,{x:9,y:0.42,z:22,cast:false,transparent:true,opacity:0.85,emissive:0x0d4b6b,emissiveIntensity:0.4});
+  cyl(0.25,0.35,1.1,12,STONE,{x:9,y:0.9,z:22});
+  cyl(0.9,0.9,0.18,20,0xd8cdb6,{x:9,y:1.5,z:22,cast:false});
+
+  // ---------- landscaping ----------
+  tree(-17,-4,1.5); tree(-18,16,1.6); tree(20,-3,1.4); tree(22,18,1.5); tree(12,26,1.2);
+  cypress(-15,26,1.1); cypress(-11,28,1.1); cypress(5,28,1.0); cypress(16,10,1.2); cypress(18,4,1.2);
+  hedge(-5.5,26,1.0,12); hedge(1.5,26,1.0,12);
+  for(let i=0;i<5;i++){ box(1.3,0.6,0.9,0x8d8577,{x:2.5+i*3.2,y:0.3,z:6.4}); hedge(2.5+i*3.2,6.4,1.1,0.8); }
+  bollard(-5.4,12); bollard(1.4,12); bollard(-5.4,20); bollard(1.4,20);
+  bollard(px-pw/2-1.6,pz-6); bollard(px+pw/2+4,pz);
+
+  // ================= CAMERA =================
+  const target=new THREE.Vector3(-0.5,3.6,6);
+  const HOME={radius:60,theta:0.94,phi:0.98};
+  let radius=HOME.radius,theta=HOME.theta,phi=HOME.phi,autoRotate=true,dragging=false,lastX=0,lastY=0;
+  function applyCamera(){const s=Math.sin(phi);camera.position.set(target.x+radius*s*Math.cos(theta),target.y+radius*Math.cos(phi),target.z+radius*s*Math.sin(theta));camera.lookAt(target);}
+  const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointerup',()=>dragging=false); el.addEventListener('pointerleave',()=>dragging=false);
+  el.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;theta-=dx*0.005;phi-=dy*0.005;phi=Math.max(0.14,Math.min(1.47,phi));});
+  el.addEventListener('wheel',e=>{e.preventDefault();radius*=(1+e.deltaY*0.0011);radius=Math.max(18,Math.min(110,radius));},{passive:false});
+
+  const btnRotate=document.getElementById('btnRotate'),btnTime=document.getElementById('btnTime'),btnReset=document.getElementById('btnReset');
+  btnRotate.addEventListener('click',()=>{autoRotate=!autoRotate;btnRotate.classList.toggle('active',autoRotate);});
+  btnReset.addEventListener('click',()=>{radius=HOME.radius;theta=HOME.theta;phi=HOME.phi;});
+
+  let night=false;
+  function setTime(toNight){night=toNight;
+    if(night){
+      btnTime.textContent="🌙 Gece";
+      scene.background.copy(NIGHT_BG);scene.fog.color.copy(NIGHT_BG);
+      hemi.intensity=0.2;hemi.color.setHex(0x2a3a5a);hemi.groundColor.setHex(0x0e1622);
+      sun.intensity=0.08;sun.color.setHex(0x7f93c8);moonFill.intensity=0.42;
+      glassMats.forEach(m=>{m.emissive.setHex(0xffcf7a);m.emissiveIntensity=0.95;m.opacity=0.62;});
+      [water,spa,fw].forEach(o=>{o.material.emissive.setHex(0x0e5b82);o.material.emissiveIntensity=0.72;});
+      bollardCaps.forEach(m=>{m.emissive.setHex(0xffe0a0);m.emissiveIntensity=1.2;});
+      gardenLights.forEach((p,i)=>p.intensity=i===0?2.4:1.7);
+      renderer.toneMappingExposure=1.12;
+    }else{
+      btnTime.textContent="☀️ Gündüz";
+      scene.background.copy(DAY_BG);scene.fog.color.copy(DAY_BG);
+      hemi.intensity=0.5;hemi.color.setHex(0xc4d8ec);hemi.groundColor.setHex(0x46603b);
+      sun.intensity=1.55;sun.color.setHex(0xfff1d2);moonFill.intensity=0.0;
+      glassMats.forEach(m=>{m.emissive.setHex(0x0a1a26);m.emissiveIntensity=0.0;m.opacity=0.4;});
+      [water,spa,fw].forEach(o=>{o.material.emissive.setHex(0x0d4b6b);o.material.emissiveIntensity=0.35;});
+      bollardCaps.forEach(m=>{m.emissive.setHex(0x000000);m.emissiveIntensity=0.0;});
+      gardenLights.forEach(p=>p.intensity=0.0);
+      renderer.toneMappingExposure=0.98;
+    }
+  }
+  btnTime.addEventListener('click',()=>setTime(!night));
+
+  window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+
+  let t=0;
+  function animate(){requestAnimationFrame(animate);t+=0.016;
+    if(autoRotate&&!dragging)theta+=0.0014;
+    water.position.y=0.30+Math.sin(t*1.4)*0.012;
+    water.material.emissiveIntensity=(night?0.72:0.32)+Math.sin(t*2.0)*0.06;
+    applyCamera();renderer.render(scene,camera);}
+  applyCamera();animate();
+  if(loading)loading.style.display='none';
+})();
+</script>
+</body>
+</html>

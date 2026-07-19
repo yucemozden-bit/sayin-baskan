@@ -122,18 +122,20 @@ console.log('\n── (4) Tesis ihalesi ──');
   check('yükseltme kararı ihale açar (3 teklif)', r.tender === true && G.tender.offers.length === 3, G.tender.offers.map((o) => o.type).join(','));
   const cheap = Math.min(...G.tender.offers.map((o) => o.cost));
   check('A/C teklifleri baz maliyetten ucuz, B pahalı', G.tender.offers.find((o) => o.type === 'B').cost > G.tender.offers.find((o) => o.type === 'A').cost, `en ucuz ${cheap.toFixed(1)}mn`);
-  // İstatistiksel: A %25 sarkma, B %20 bonus, C %20 sızıntı
+  // İstatistiksel (ŞANTİYE sistemi): zarlar seçim anında plana yazılır — A %25 sarkma,
+  // B %20 bonus, C %20 sızıntı; sonuçlar süre dolarken sahnelenir (santiyeTick).
+  const bitir = (g) => { let gg = 0; while (g.santiye && gg++ < 20) A.santiyeTick(g); }; // şantiyeyi sonuna kadar sar
   let defects = 0, bonuses = 0, leaks = 0; const N = 300;
   for (let i = 0; i < N; i++) {
     setSeed(5000 + i);
     const g = freshGame(); g.economy.kasa = 500;
-    A.upgradeFacility(g, 'akademi'); const lvl = g.facilities.akademi;
-    A.chooseTender(g, 0); if ((g.pendingFacilities || []).length) defects++;
+    A.upgradeFacility(g, 'akademi');
+    A.chooseTender(g, 0); if (g.santiye?.sarkmaHafta) defects++; bitir(g);
     A.upgradeFacility(g, 'tibbi'); const t0 = g.facilities.tibbi;
-    A.chooseTender(g, 1); if (g.facilities.tibbi === t0 + 2) bonuses++;
+    A.chooseTender(g, 1); bitir(g); if (g.facilities.tibbi === t0 + 2) bonuses++;
     const i0 = g.gauges.itibar;
     A.upgradeFacility(g, 'scout');
-    A.chooseTender(g, 2); if (g.gauges.itibar < i0) leaks++;
+    A.chooseTender(g, 2); bitir(g); if (g.gauges.itibar < i0) leaks++;
   }
   const pct = (x) => ((x / N) * 100).toFixed(0);
   check('A firması ~%25 iş sarkıtır', defects / N > 0.15 && defects / N < 0.35, `%${pct(defects)}`);

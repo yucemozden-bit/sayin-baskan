@@ -5,8 +5,9 @@ import { TUNING } from '../config.js';
 import { esc } from './frame.js';
 import { muhalif } from '../engines/world.js';
 
-const NAMES = { sportif: 'Sportif', taraftar: 'Taraftar', mali: 'Mali', itibar: 'İtibar', soz: 'Söz Tutma' };
-const KEYS = ['sportif', 'taraftar', 'mali', 'itibar', 'soz'];
+const NAMES = { sportif: 'Sportif', taraftar: 'Taraftar', mali: 'Mali', itibar: 'İtibar', soz: 'Söz Tutma', aile: 'Aile' };
+const KEYS = ['sportif', 'taraftar', 'mali', 'itibar', 'soz'];          // oy ağırlıklı 5 bileşen (ELECT_W)
+const KART_KEYS = [...KEYS, 'aile'];                                     // karnede 6. kart: Aile (eşikli +2 oy bonusu)
 
 export function render(G) {
   const e = G.election;
@@ -14,13 +15,13 @@ export function render(G) {
   const b = e.breakdown;
   const step = e.revealStep ?? 0;
 
-  const cards = KEYS.map((k, i) =>
+  const cards = KART_KEYS.map((k, i) =>
     `<div class="ec" style="opacity:${e.counting || e.done || i < step ? 1 : 0.18};transition:opacity .3s">
-      <div class="k">${NAMES[k]}</div><div class="v tnum">${i < step || e.counting || e.done ? Math.round(b[k]) : '?'}</div>
+      <div class="k">${NAMES[k]}</div><div class="v tnum">${i < step || e.counting || e.done ? Math.round(b[k] ?? 0) : '?'}</div>
     </div>`).join('');
 
   // Faz 2: rakip son konuşması (kartlar açıldıktan sonra)
-  const rivalBlock = step > KEYS.length - 1 && !e.done
+  const rivalBlock = step > KART_KEYS.length - 1 && !e.done
     ? `<div class="card" style="max-width:560px;margin:10px auto;border-color:var(--neg)">
         <div class="overline" style="color:var(--neg)">Rakip adayın son sözü</div>
         <div style="margin-top:6px;font-style:italic">${esc(e.rivalSpeech || '')}</div>
@@ -51,6 +52,7 @@ export function render(G) {
       <div class="overline">Analiz — seni ne ${e.kazandi ? 'seçtirdi' : 'kaybettirdi'}?</div>
       <div class="fin-lines" style="margin-top:6px">
         ${contribs.map((x) => `<div class="l"><span>${NAMES[x.k]}</span><b class="tnum">+${x.c.toFixed(1)}</b></div>`).join('')}
+        <div class="l"><span>Aile desteği</span><b class="tnum ${b.aileBonus ? 'pos' : ''}">${b.aileBonus ? '+2 oy — salonda ön sıradaydılar' : 'sandığa uzak kaldılar (+0)'}</b></div>
         <div class="l"><span class="neg">Rakip çekiciliği</span><b class="tnum neg">−${(b.rival * TUNING.RIVAL_FACTOR).toFixed(1)}</b></div>
         ${e.debateSwing ? `<div class="l"><span>Münazara/kampanya</span><b class="tnum">${e.debateSwing > 0 ? '+' : ''}${e.debateSwing}</b></div>` : ''}
       </div>

@@ -200,6 +200,7 @@ const NAV_SB = [
   ['kongre', 'Kongre', '<path d="M3 7l7-4 7 4"/><path d="M4.5 7.5v7M8 7.5v7M12 7.5v7M15.5 7.5v7"/><path d="M3 16.5h14"/>'],
   ['veri', 'Veri', '<rect x="3" y="10" width="3" height="7" rx=".6"/><rect x="8.5" y="4.5" width="3" height="12.5" rx=".6"/><rect x="14" y="8" width="3" height="9" rx=".6"/>'],
   ['kulup', 'Kulüp', '<path d="M10 3l6 2v5c0 4-3 6.2-6 7-3-.8-6-3-6-7V5z"/>'],
+  ['ozel', 'Özel Hayat', '<path d="M10 16.6s-5.6-3.5-7.4-6.9C1.3 7.2 3 4.6 5.6 4.6c1.8 0 3 1 4.4 2.5 1.4-1.5 2.6-2.5 4.4-2.5 2.6 0 4.3 2.6 3 5.1-1.8 3.4-7.4 6.9-7.4 6.9z"/>'],
   ['inbox', 'Inbox', '<rect x="3" y="4" width="14" height="12" rx="1.6"/><path d="M3 7l7 4 7-4"/>'],
 ];
 const SVG_IC = (inner) => `<svg class="sb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
@@ -224,7 +225,7 @@ export function sbTopbar(G, { phaseChip = null, back = null } = {}) {
   return `<header class="sb-topbar">
     ${backBtn}
     ${crestSvg(G.club?.arma, 'md', 'var(--club)', (G.club?.name || 'S')[0])}
-    <div class="sb-brand"><span class="sb-brand-name">${esc(G.club?.name || 'SAYIN BAŞKAN')}</span><span class="sb-brand-sub">${lig}${G.club?.city ? ' · ' + esc(G.club.city) : ''}</span></div>
+    <div class="sb-brand"><span class="sb-brand-name">${esc(G.club?.name || 'SAYIN BAŞKAN')}${(G.career?.titles || 0) > 0 ? `<span class="sb-yildizlar" data-tip="Senin dönemindeki şampiyonluklar: ${G.career.titles}">${'⭐'.repeat(Math.min(3, G.career.titles))}${G.career.titles > 3 ? '×' + G.career.titles : ''}</span>` : ''}</span><span class="sb-brand-sub">${lig}${G.club?.city ? ' · ' + esc(G.club.city) : ''}</span></div>
     <span class="sb-divider"></span>
     <span class="sb-chip sb-chip-club"><i class="sb-dot-live"></i>${chip}</span>
     <span class="sb-spacer"></span>
@@ -240,10 +241,14 @@ export function sbTopbar(G, { phaseChip = null, back = null } = {}) {
 export function sbShell(G, { crumb, title, body }) {
   const hazir = (G.hazirlik || 0) > 0;
   const inboxN = (G.inbox || []).filter((x) => x.action && !x.resolved).length;
+  // ÖZEL HAYAT sinyali: ikilem bekliyor VEYA bir davetin takvimi BU HAFTA açıldı (cd tam bitti)
+  const ozAbs = ((G.meta?.season || 1) * 100 + (G.meta?.week || 1));
+  const ozSinyal = !!(G.ozel?.olay || Object.values(G.ozel?.davetCd || {}).some((v) => v === ozAbs));
   const navItems = NAV_SB.map(([id, label, ic]) => {
     const active = (G.nav || 'cockpit') === id;
     const badge = id === 'inbox' && inboxN ? `<span class="sb-nav-badge">${inboxN}</span>`
-      : id === 'transfer' && G.transferWindow ? '<span class="sb-nav-dot"></span>' : '';
+      : id === 'transfer' && G.transferWindow ? '<span class="sb-nav-dot"></span>'
+        : id === 'ozel' && ozSinyal ? '<span class="sb-nav-dot"></span>' : ''; // ikilem bekliyor / davet takvimi açıldı
     return `<button class="sb-nav ${active ? 'is-active' : ''}" data-act="nav" data-arg="${id}">${SVG_IC(ic)}<span>${label}</span>${badge}</button>`;
   }).join('');
   const io = G.mode === 'ironman'
@@ -376,7 +381,7 @@ function sbFixtureCard(G, next, meRow, myC, oc) {
     </div>
     <div class="sb-odds"><span class="g" style="width:${next.pW}%"></span><span class="b" style="width:${next.pD}%"></span><span class="m" style="width:${next.pL}%"></span></div>
     <div class="sb-odds-lbl"><span class="pos">Galibiyet %${next.pW}</span><span>Berabere %${next.pD}</span><span class="neg">Mağlubiyet %${next.pL}</span></div>
-    <div class="sb-fixture-foot">Lig sırası <b>${meRow.rank}.</b> · ${G.season.W}G ${G.season.D}B ${G.season.L}M · hedef <b>${G.club.hedefSira}.</b></div>
+    <div class="sb-fixture-foot">Lig sırası <b>${meRow.rank}.</b> · ${G.season.W}G ${G.season.D}B ${G.season.L}M · hedef <b>${G.club.hedefSira}.</b>${(G.winStreak || 0) >= 2 ? ` · <b class="sb-seri" data-tip="Galibiyet serisi — kariyer rekorun: ${G.rekor?.seri || G.winStreak} maç">🔥 ${G.winStreak} maç seri${(G.winStreak >= 4 && G.winStreak === (G.rekor?.seri || 0)) ? ' — REKOR' : ''}</b>` : ''}</div>
   </div>`;
 }
 
@@ -387,10 +392,17 @@ function sbTalk(G, p, next, injured) {
   const oppWord = next ? (next.pW - next.pL >= 15 ? 'zayıf' : next.pL - next.pW >= 35 ? 'dev gibi' : next.pL - next.pW >= 15 ? 'güçlü' : 'denk') : '—';
   const kondW = wordOf(p.kond, N.kond, ['bitkin', 'yorgun', 'zinde']);
   const tb = (id, ic, lbl) => { const on = id === 'off' ? !G.telkin : G.telkin === id; return `<button class="sb-talk-btn ${on ? 'on' : ''}" data-act="telkin" data-arg="${id}"><span class="sb-talk-ic">${ic}</span>${lbl}</button>`; };
-  const pb = (id, lbl, cls = '') => `<button class="sb-prim-btn ${cls} ${G.matchPrim === id ? 'on' : ''}" data-act="prim" data-arg="${id}">${lbl}</button>`;
+  const PM = TUNING.PRIM.MAC;
+  const primTip = { yok: 'Prim yok — kasa korunur', normal: `Bu maç: moral +${PM.normal.moral} · form +${PM.normal.form} · kimya +${PM.normal.kimya} (−${PM.normal.cost}mn) — kazanırsan izi kalır`, yuksek: `Bu maç: moral +${PM.yuksek.moral} · form +${PM.yuksek.form} · kimya +${PM.yuksek.kimya} (−${PM.yuksek.cost}mn) — kazanırsan izi BÜYÜK kalır` };
+  const pb = (id, lbl, cls = '') => `<button class="sb-prim-btn ${cls} ${G.matchPrim === id ? 'on' : ''}" data-act="prim" data-arg="${id}" data-tip="${primTip[id] || ''}">${lbl}</button>`;
   const ozel = G.ozelUsed ? '<button class="sb-prim-btn" disabled>⚡ kullanıldı</button>'
     : critical ? `<button class="sb-prim-btn ozel ${G.ozelArmed ? 'on' : ''}" data-act="ozelPrim">⚡ Özel</button>`
       : '<button class="sb-prim-btn" disabled title="Yalnız kritik/derbi">⚡ Özel</button>';
+  const MPsec = PM[G.matchPrim];
+  const aliskan = (G.primMacSeri || 0) > 0;
+  const primEtki = MPsec
+    ? `<div class="micro sb-prim-etki">💰 Prim masada: bu maç moral +${MPsec.moral} · form +${MPsec.form} · kimya +${MPsec.kimya} — galibiyette kalıcı işler${aliskan ? ' · <b style="color:var(--warn)">⚠ alışkanlık: üst üste prim etkiyi yarılıyor, arada dinlendir</b>' : ''}</div>`
+    : '';
   return `<div class="sb-panel sb-talk">
     <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">MAÇ ÖNCESİ · SOYUNMA ODASI</span><span class="sb-panel-r">TD: ${relWord(G.tdRelation)}</span></div>
     <div class="sb-talk-lead">${critical ? '<b>⚡ Kritik maç.</b> ' : ''}Rakip <b>${oppWord}</b>, revir <b>${injured === 0 ? 'boş' : injured + ' kişi'}</b>, bacaklar <b>${kondW}</b>. Ne diyorsun?</div>
@@ -398,6 +410,7 @@ function sbTalk(G, p, next, injured) {
       ${tb('tamkadro', '💪', 'Tam Kadro')}${tb('rotasyon', '🔄', 'Rotasyon')}${tb('gencler', '🌱', 'Gençler')}${tb('kale', '🛡️', 'Kaleyi Koru')}${tb('off', '🎯', 'Karışma')}
     </div>
     <div class="sb-prim-row">${pb('yok', 'Prim Yok')}${pb('normal', 'Normal')}${pb('yuksek', 'Yüksek')}${ozel}</div>
+    ${primEtki}
   </div>`;
 }
 
@@ -420,10 +433,44 @@ function sbAgenda(G, next, meRow, injured) {
     const iyi = vs.filter((v) => v.pct >= 55);
     if (iyi.length) items.push(['pos', `${iyi.length} vaat yolunda`]);
   }
+  if (G.ozel?.olay) items.push(['warn', 'Özel gündem bekliyor — ailede bir karar var (Özel Hayat)']); // 💗 köprü: ikilem kaçmadan
+  else { // davet takvimi bu hafta açıldıysa hatırlat (nokta + gündem çifti — geri çağırma döngüsü)
+    const _abs = ((G.meta?.season || 1) * 100 + (G.meta?.week || 1));
+    if (Object.values(G.ozel?.davetCd || {}).some((v) => v === _abs)) items.push(['club', 'Davet takvimi açıldı — yeni bir gece düzenlenebilir (Özel Hayat)']);
+  }
   if (!next && (G.hazirlik || 0) === 0) items.push(['club', 'Sezon tamam — kongre defterini kapat']);
   while (items.length < 3) items.push(['club', 'Kulüp sakin — ibre senin elinde']);
+  // #4 GELECEK 5 MAÇ ŞERİDİ — fikstür önden görünür; DERBİ haftası işaretli (hazırlık anlam kazanır)
+  const besMac = (() => {
+    if (!G.league?.fixtures || (G.hazirlik || 0) > 0) return '';
+    const oppAd = (id) => (G.opponents || []).find((o) => o.id === id)?.name || '?';
+    const seritler = [];
+    for (let w = G.meta.week; w < Math.min(G.meta.week + 5, G.SEASON_WEEKS + 1); w++) {
+      const round = G.league.fixtures[w - 1]; if (!round) break;
+      const pair = round.find((p2) => p2.home === 'ME' || p2.away === 'ME'); if (!pair) continue;
+      const ev = pair.home === 'ME', rakip = ev ? pair.away : pair.home;
+      seritler.push(`<span class="sb-fx ${rakip === 'o0' ? 'derbi' : ''}" data-tip="Hafta ${w} · ${esc(oppAd(rakip))} · ${ev ? 'İÇ SAHA' : 'DEPLASMAN'}${rakip === 'o0' ? ' · DERBİ HAFTASI!' : ''}">${ev ? '🏠' : '✈'} ${esc(oppAd(rakip).split(' ')[0])}${rakip === 'o0' ? ' ⚔' : ''}</span>`);
+    }
+    return seritler.length ? `<div class="sb-fx-serit" data-tip="Önündeki 5 maç — ⚔ derbi">${seritler.join('<i>›</i>')}</div>` : '';
+  })();
+  // #7 TERFİ YARIŞI (2. Lig) — ilk 3 çizgisine uzaklık canlı
+  let terfiSatir = '';
+  if ((G.lig || 1) === 2 && G.league) {
+    const tb = standings(G.league);
+    const ben = tb.findIndex((r) => r.id === 'ME') + 1;
+    const benP = tb.find((r) => r.id === 'ME')?.pts ?? 0;
+    const ucP = tb[2]?.pts ?? 0;
+    terfiSatir = `<div class="sb-terfi" data-tip="2. Lig tek hedef: ilk 3 = TERFİ. Çizgideki takım: ${esc(tb[2]?.name || '?')}">⬆ TERFİ YARIŞI · ${ben}. sıradasın · çizgiye ${ben <= 3 ? `<b class="pos">+${benP - (tb[3]?.pts ?? 0)} puan önde</b>` : `<b class="neg">${Math.max(0, ucP - benP)} puan</b>`}</div>`;
+  }
+  // 🎯 SIRADAKİ HEDEF (motivasyon): en yakın kilitli başarım hep gözde — tıkla → başarım duvarı
+  let hedefSatir = '';
+  const achDefs = (G.data?.achievements && (G.data.achievements.achievements || G.data.achievements)) || [];
+  const achU = G.achUnlocked || {};
+  const siradaki = achDefs.find((d) => !achU[d.id]);
+  if (siradaki) hedefSatir = `<div class="sb-agenda-i sb-hedef" data-act="nav" data-arg="kulup" data-tip="Başarım duvarına git — ${achDefs.filter((d) => achU[d.id]).length}/${achDefs.length} açık">🎯 SIRADAKİ HEDEF: <b>${esc(siradaki.name)}</b></div>`;
   return `<div class="sb-panel sb-agenda">
     <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">GÜNDEM</span></div>
+    ${besMac}${terfiSatir}${hedefSatir}
     ${items.slice(0, 5).map(([c, t]) => `<div class="sb-agenda-i"><span class="sb-adot sb-adot-${c}"></span>${esc(t)}</div>`).join('')}
   </div>`;
 }

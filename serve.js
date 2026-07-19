@@ -35,7 +35,12 @@ http.createServer((req, res) => {
     const ext = path.extname(filePath).toLowerCase();
     res.writeHead(200, {
       'Content-Type': TYPES[ext] || 'application/octet-stream',
-      'Cache-Control': 'no-cache',
+      // no-store: tarayıcı dosyayı HİÇ saklamaz — her yüklemede taze CSS/JS gelir.
+      // (no-cache yetmiyordu: validator yokken Chrome eski dosyayı önbellekten veriyor,
+      //  yapılan düzeltmeler ekrana yansımıyordu.)
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
     });
     res.end(data);
   });

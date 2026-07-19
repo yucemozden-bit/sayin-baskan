@@ -69,19 +69,48 @@ export function comebackVote(devir, st, campSwing) {
   return clamp(oy, 0.05, 0.95);
 }
 
-// ── Tier terfi/tenzil kararı (Bible-20) ──
+// ── Tier terfi/tenzil kararı (Bible-20 · 5 KADEME genişleme) ──
+// Küçük → Orta → Büyük → Dev → Efsane. Şartlar hedef kademeye göre ağırlaşır (config UP tablosu);
+// orta/buyuk eşikleri ESKİ davranışla birebir. Tenzil her kademeden 1 basamak (küme + borç sarmalı).
+export const TIER_SIRA = ['kucuk', 'orta', 'buyuk', 'dev', 'efsane'];
+export const TIER_TR = { kucuk: 'Küçük', orta: 'Orta', buyuk: 'Büyük', dev: 'Dev', efsane: 'Efsane' };
+function tierUpReq(hedef) {
+  const T = TUNING.MIRAS.TIER;
+  return (T.UP && T.UP[hedef]) || { terms: T.UP_TERMS, itibar: T.UP_ITIBAR, borc: T.UP_BORC_RATIO, titles: 0 };
+}
 export function tierCheck(G) {
   const T = TUNING.MIRAS.TIER;
-  const tier = G.club.tier;
+  const idx = TIER_SIRA.indexOf(G.club.tier);
   const kd = Math.max(G.club.kadroDeger, 1);
   const kume = (G.history.seasons || []).some((s) => s.pos >= TUNING.LEAGUE.RELEGATION_FROM);
-  if (tier !== 'buyuk'
-    && (G.consecTerms || 0) >= T.UP_TERMS
-    && G.gauges.itibar >= T.UP_ITIBAR
-    && G.economy.borc < kd * T.UP_BORC_RATIO
-    && (G.tierShift == null)) return { dir: 'up', to: tier === 'kucuk' ? 'orta' : 'buyuk' };
-  if (tier !== 'kucuk' && kume && G.economy.borc > kd * T.DOWN_BORC_RATIO) return { dir: 'down', to: tier === 'buyuk' ? 'orta' : 'kucuk' };
+  if (idx >= 0 && idx < TIER_SIRA.length - 1 && G.tierShift == null) {
+    const hedef = TIER_SIRA[idx + 1];
+    const R = tierUpReq(hedef);
+    if ((G.consecTerms || 0) >= R.terms
+      && G.gauges.itibar >= R.itibar
+      && G.economy.borc < kd * R.borc
+      && (G.career?.titles || 0) >= (R.titles || 0)) return { dir: 'up', to: hedef };
+  }
+  if (idx > 0 && kume && G.economy.borc > kd * T.DOWN_BORC_RATIO) return { dir: 'down', to: TIER_SIRA[idx - 1] };
   return null;
+}
+
+// Sonraki kademenin CANLI şart listesi — UI "Kulüp Seviyesi" paneli tek kaynaktan okur.
+// null → zirvedesin (Efsane). ters:true → değer eşiğin ALTINDA kalmalı (borç oranı).
+export function tierGorev(G) {
+  const idx = TIER_SIRA.indexOf(G.club.tier);
+  if (idx < 0 || idx >= TIER_SIRA.length - 1) return null;
+  const hedef = TIER_SIRA[idx + 1];
+  const R = tierUpReq(hedef);
+  const kd = Math.max(G.club.kadroDeger, 1);
+  const borcPct = Math.round((G.economy.borc / kd) * 100);
+  const reqs = [
+    { ad: 'Üst üste dönem', val: G.consecTerms || 0, esik: R.terms, ok: (G.consecTerms || 0) >= R.terms },
+    { ad: 'İtibar', val: Math.round(G.gauges.itibar), esik: R.itibar, ok: G.gauges.itibar >= R.itibar },
+    { ad: 'Borç / kadro değeri', val: borcPct, esik: Math.round(R.borc * 100), ok: G.economy.borc < kd * R.borc, ters: true, yuzde: true },
+  ];
+  if (R.titles) reqs.push({ ad: 'Şampiyonluk', val: G.career?.titles || 0, esik: R.titles, ok: (G.career?.titles || 0) >= R.titles });
+  return { hedef, hedefTr: TIER_TR[hedef], reqs, hazir: reqs.every((r) => r.ok) };
 }
 
 // ── Kariyer kapanış etiketi — HER karnede bir etiket çıkar (boş etiket = 0) ──

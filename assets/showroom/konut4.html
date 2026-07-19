@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Büyük Malikâne · 3D</title>
+<style>
+  :root { --gold:#e7c063; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#0b1220; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  .hud { position:fixed; left:18px; top:16px; color:#fff; pointer-events:none; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .hud h1 { font-size:20px; letter-spacing:.5px; font-weight:800; }
+  .hud .sub { font-size:12px; opacity:.8; margin-top:2px; letter-spacing:.3px; }
+  .hint { position:fixed; left:18px; bottom:16px; color:#dfe6f0; font-size:12px; opacity:.7; text-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .panel { position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:8px; }
+  .btn {
+    pointer-events:auto; cursor:pointer; user-select:none;
+    background:rgba(18,26,42,.72); color:#eef2f8; border:1px solid rgba(231,192,99,.35);
+    padding:9px 14px; border-radius:10px; font-size:13px; font-weight:600; letter-spacing:.2px;
+    backdrop-filter:blur(6px); transition:all .15s ease; text-align:center; min-width:150px;
+  }
+  .btn:hover { border-color:var(--gold); background:rgba(28,38,58,.85); }
+  .btn.active { background:var(--gold); color:#1a1207; border-color:var(--gold); }
+  .loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; color:#cfe0ff; font-size:14px; letter-spacing:.5px; }
+</style>
+<style id="sb-sade">.hud .sub,.hint{display:none!important}</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud">
+  <h1>BÜYÜK MALİKÂNE</h1>
+  <div class="sub">Simetrik Saray · Köşe Kuleleri · Fransız Bahçesi · 3D</div>
+</div>
+<div class="panel">
+  <div class="btn active" id="btnRotate">⟳ Otomatik dönüş</div>
+  <div class="btn" id="btnTime">☀️ Gündüz</div>
+  <div class="btn" id="btnReset">⤿ Görünümü sıfırla</div>
+</div>
+<div class="hint">Sürükle: döndür · Tekerlek / iki parmak: yakınlaş</div>
+<div class="loading" id="loading">3D sahne yükleniyor…</div>
+
+<script src="three.min.js"></script>
+<script>
+(function(){
+  const holder=document.getElementById('app'), loading=document.getElementById('loading');
+  if(!window.THREE){ loading.textContent="3D kütüphanesi yüklenemedi (internet gerekli)."; return; }
+
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=0.98;
+  holder.appendChild(renderer.domElement);
+
+  const scene=new THREE.Scene();
+  const DAY_BG=new THREE.Color(0x93c2e6), NIGHT_BG=new THREE.Color(0x0a1220);
+  scene.background=DAY_BG.clone();
+  scene.fog=new THREE.Fog(DAY_BG.clone(),150,460);
+
+  const camera=new THREE.PerspectiveCamera(46,window.innerWidth/window.innerHeight,0.1,1500);
+
+  const hemi=new THREE.HemisphereLight(0xc4d8ec,0x46603b,0.5); scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xfff1d2,1.55);
+  sun.position.set(48,66,40); sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.camera.near=1; sun.shadow.camera.far=320;
+  sun.shadow.camera.left=-110; sun.shadow.camera.right=110; sun.shadow.camera.top=110; sun.shadow.camera.bottom=-110;
+  sun.shadow.bias=-0.0004; sun.target.position.set(0,0,8);
+  scene.add(sun); scene.add(sun.target);
+  const moonFill=new THREE.DirectionalLight(0x9fb8ff,0.0); moonFill.position.set(-30,34,-24); scene.add(moonFill);
+
+  const gardenLights=[];
+  function addPoint(x,y,z,color,dist){const p=new THREE.PointLight(color,0.0,dist||18,2);p.position.set(x,y,z);scene.add(p);gardenLights.push(p);return p;}
+  addPoint(0,2.4,10,0xffb867,22);   // portico
+  addPoint(0,2.0,18,0x8fe0ff,20);   // fountain
+  addPoint(0,1.4,38,0x8fe0ff,26);   // canal
+  addPoint(-18,2,3,0xffb867,18);    // left wing
+  addPoint(18,2,3,0xffb867,18);     // right wing
+
+  // ---------- palette ----------
+  const LIME=0xece1c9, LIME2=0xdccdae, SLATE=0x3c4650, PATINA=0x5f8f88, GOLD=0xcaa64a, WOODDK=0x4a3320, RECESS=0x22303a;
+
+  // ---------- helpers ----------
+  function box(w,h,d,color,o){o=o||{};
+    const mat=new THREE.MeshStandardMaterial({color:color,metalness:o.metalness||0,roughness:o.roughness!=null?o.roughness:0.9,
+      transparent:!!o.transparent,opacity:o.opacity!=null?o.opacity:1,emissive:o.emissive!=null?o.emissive:0x000000,
+      emissiveIntensity:o.emissiveIntensity!=null?o.emissiveIntensity:1,flatShading:!!o.flat});
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(o.x||0,o.y||0,o.z||0); if(o.rotY)m.rotation.y=o.rotY;
+    m.castShadow=o.cast!==false; m.receiveShadow=o.receive!==false; scene.add(m); return m;}
+  function cyl(rt,rb,h,seg,color,o){o=o||{};
+    const mat=new THREE.MeshStandardMaterial({color:color,roughness:o.roughness!=null?o.roughness:0.85,metalness:o.metalness||0,
+      emissive:o.emissive!=null?o.emissive:0x000000,emissiveIntensity:o.emissiveIntensity!=null?o.emissiveIntensity:1,
+      transparent:!!o.transparent,opacity:o.opacity!=null?o.opacity:1,flatShading:!!o.flat});
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);
+    m.position.set(o.x||0,o.y||0,o.z||0); if(o.rotY)m.rotation.y=o.rotY;
+    m.castShadow=o.cast!==false; m.receiveShadow=o.receive!==false; scene.add(m); return m;}
+  const glassMats=[];
+  function glass(w,h,d,o){o=o||{};
+    const mat=new THREE.MeshStandardMaterial({color:0x9ccbe9,metalness:0.4,roughness:0.06,transparent:true,opacity:0.42,emissive:0x0a1a26,emissiveIntensity:0.0});
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(o.x||0,o.y||0,o.z||0); if(o.rotY)m.rotation.y=o.rotY;
+    m.castShadow=false;m.receiveShadow=false; scene.add(m); glassMats.push(mat); return m;}
+
+  function pediment(cx,baseY,z,w,h,depth,color){
+    const shape=new THREE.Shape();
+    shape.moveTo(-w/2,0); shape.lineTo(w/2,0); shape.lineTo(0,h); shape.lineTo(-w/2,0);
+    const geo=new THREE.ExtrudeGeometry(shape,{depth:depth,bevelEnabled:false});
+    const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:color,roughness:0.9}));
+    m.position.set(cx,baseY,z-depth); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m;}
+  function pyramidRoof(x,y,z,r,h,color){
+    const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,4),new THREE.MeshStandardMaterial({color:color,roughness:0.95,flatShading:true}));
+    m.position.set(x,y,z); m.rotation.y=Math.PI/4; m.castShadow=true; scene.add(m); return m;}
+  function finial(x,y,z){ cyl(0.12,0.12,0.6,10,GOLD,{x:x,y:y,z:z}); const b=new THREE.Mesh(new THREE.SphereGeometry(0.22,12,12),new THREE.MeshStandardMaterial({color:GOLD,metalness:0.5,roughness:0.35})); b.position.set(x,y+0.4,z); scene.add(b); }
+  function column(x,z,h,y){ cyl(0.42,0.46,h,18,LIME,{x:x,y:y,z:z}); cyl(0.55,0.55,0.3,18,LIME2,{x:x,y:y-h/2+0.15,z:z}); cyl(0.55,0.55,0.3,18,LIME2,{x:x,y:y+h/2-0.15,z:z}); }
+  function balustrade(x1,z1,x2,z2,y){
+    const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),ang=Math.atan2(dz,dx),mx=(x1+x2)/2,mz=(z1+z2)/2;
+    const railMat=new THREE.MeshStandardMaterial({color:LIME,roughness:0.9});
+    const rb=new THREE.Mesh(new THREE.BoxGeometry(len,0.22,0.4),railMat); rb.position.set(mx,y+0.11,mz); rb.rotation.y=-ang; rb.castShadow=true; scene.add(rb);
+    const rt=new THREE.Mesh(new THREE.BoxGeometry(len,0.22,0.4),railMat); rt.position.set(mx,y+0.95,mz); rt.rotation.y=-ang; rt.castShadow=true; scene.add(rt);
+    const n=Math.max(2,Math.round(len/0.75)), bm=new THREE.MeshStandardMaterial({color:LIME2,roughness:0.95});
+    for(let i=0;i<=n;i++){const f=i/n,bx=x1+dx*f,bz=z1+dz*f;const b=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.72,0.14),bm);b.position.set(bx,y+0.5,bz);b.castShadow=true;scene.add(b);}
+  }
+  function windowUnit(x,y,z,w,h){
+    box(w+0.36,h+0.5,0.16,LIME2,{x:x,y:y,z:z-0.02,cast:false});
+    box(w,h,0.12,RECESS,{x:x,y:y,z:z+0.02,cast:false});
+    glass(w-0.16,h-0.16,0.08,{x:x,y:y,z:z+0.06});
+    box(w+0.5,0.16,0.22,LIME,{x:x,y:y+h/2+0.28,z:z+0.04,cast:false});
+  }
+  function cypress(x,z,s){s=s||1; cyl(0.1*s,0.18*s,0.7*s,6,0x5a3f28,{x:x,y:0.35*s,z:z});
+    const c=new THREE.Mesh(new THREE.ConeGeometry(0.9*s,6.0*s,8),new THREE.MeshStandardMaterial({color:0x2f5f3a,roughness:1,flatShading:true}));
+    c.position.set(x,3.5*s,z);c.castShadow=true;scene.add(c);}
+  function topiary(x,z){ cyl(0.12,0.16,0.5,8,0x5a3f28,{x:x,y:0.25,z:z}); const b=new THREE.Mesh(new THREE.IcosahedronGeometry(0.8,0),new THREE.MeshStandardMaterial({color:0x3f7a44,roughness:1,flatShading:true})); b.position.set(x,1.2,z); b.castShadow=true; scene.add(b);}
+  function hedge(x,z,w,d){ box(w,0.9,d,0x3f7a44,{x:x,y:0.45,z:z,flat:true,roughness:1}); }
+  const bollardCaps=[];
+  function bollard(x,z){ cyl(0.13,0.15,0.85,10,0x2b2f34,{x:x,y:0.42,z:z}); const c=cyl(0.17,0.17,0.12,10,0xfff0cf,{x:x,y:0.9,z:z}); bollardCaps.push(c.material); }
+
+  // ---------- ground & forecourt ----------
+  const grass=new THREE.Mesh(new THREE.PlaneGeometry(400,400),new THREE.MeshStandardMaterial({color:0x4c7a37,roughness:1}));
+  grass.rotation.x=-Math.PI/2; grass.receiveShadow=true; scene.add(grass);
+  box(80,0.16,26,0xe9e2d2,{x:0,y:0.08,z:16,cast:false});   // grand forecourt
+  box(10,0.14,44,0xdcd3bf,{x:0,y:0.085,z:34,cast:false});  // central axis path
+
+  // ================= SYMMETRIC PALATIAL MANSION =================
+  // central block, 3 stacked storeys
+  box(22,4.0,15,LIME2,{x:0,y:2.0,z:0});      // rusticated ground
+  box(21.6,4.0,14.6,LIME,{x:0,y:6.0,z:0});   // piano nobile
+  box(21.2,3.2,14.2,LIME,{x:0,y:9.6,z:0});   // attic storey
+  box(22.6,0.4,15.6,LIME2,{x:0,y:4.05,z:0}); // cornice 1
+  box(22.2,0.4,15.2,LIME2,{x:0,y:8.05,z:0}); // cornice 2
+  box(22.0,0.5,15.0,LIME2,{x:0,y:11.3,z:0}); // top cornice
+  // roof balustrade (central, front + sides)
+  balustrade(-11,7.5,11,7.5,11.55);
+  balustrade(-11,7.5,-11,-7.5,11.55);
+  balustrade(11,7.5,11,-7.5,11.55);
+
+  // projecting central bay (avant-corps)
+  box(10,11.4,1.6,LIME,{x:0,y:5.7,z:7.4});
+  // giant order columns (double height)
+  [-5,-3,-1,1,3,5].forEach(cx=>column(cx,8.9,8.6,4.4));
+  box(11,0.8,1.8,LIME2,{x:0,y:9.0,z:8.9});           // entablature
+  pediment(0,9.4,9.7,11.5,2.6,1.7,LIME);             // pediment
+  finial(0,12.2,8.9);
+  // grand entry glazing + door under portico
+  glass(7.4,7.6,0.14,{x:0,y:4.4,z:7.46});
+  box(3.2,5.0,0.24,WOODDK,{x:0,y:2.5,z:7.5});
+  box(0.14,5.0,0.26,GOLD,{x:-1.6,y:2.5,z:7.56,cast:false});
+  box(0.14,5.0,0.26,GOLD,{x:1.6,y:2.5,z:7.56,cast:false});
+  // grand staircase
+  box(14,0.3,3.2,0xe4ddcc,{x:0,y:0.15,z:9.2,cast:false});
+  box(12,0.3,2.2,0xe9e2d2,{x:0,y:0.45,z:8.6,cast:false});
+  balustrade(-6.6,10.7,-6.6,8.0,0.3); balustrade(6.6,10.7,6.6,8.0,0.3);
+
+  // central cupola / dome tower
+  box(6,3.2,6,LIME,{x:0,y:13.1,z:0});
+  box(6.4,0.4,6.4,LIME2,{x:0,y:14.9,z:0});
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(3.0,28,18,0,Math.PI*2,0,Math.PI/2),
+    new THREE.MeshStandardMaterial({color:PATINA,roughness:0.6,metalness:0.15}));
+  dome.position.set(0,15.1,0); dome.castShadow=true; scene.add(dome);
+  finial(0,18.1,0);
+
+  // central-block front windows (symmetric)
+  [-1,1].forEach(s=>{ [5.6,8.6].forEach(xi=>{
+    windowUnit(s*xi,2.2,7.55,1.5,2.6);   // ground
+    windowUnit(s*xi,6.0,7.35,1.6,3.0);   // piano nobile
+    windowUnit(s*xi,9.6,7.15,1.3,1.9);   // attic
+  });});
+
+  // ---------- WINGS (symmetric) ----------
+  [-1,1].forEach(s=>{
+    const wx=s*17;
+    box(14,8.0,12,LIME,{x:wx,y:4.0,z:-0.5});
+    box(14.4,0.4,12.4,LIME2,{x:wx,y:8.05,z:-0.5});    // cornice
+    box(14.2,0.6,12.2,LIME2,{x:wx,y:8.5,z:-0.5});     // parapet band
+    // wing front windows two floors
+    [10.5,14.5,18.5].forEach(xi=>{ const X=s*xi;
+      windowUnit(X,2.4,5.55,1.5,2.7);
+      windowUnit(X,5.9,5.55,1.5,2.7);
+    });
+    // corner turrets (front & rear outer corners)
+    [ [s*23, 4.5], [s*23, -5.5] ].forEach(t=>{
+      box(5.4,11.5,5.4,LIME2,{x:t[0],y:5.75,z:t[1]});
+      box(5.8,0.4,5.8,LIME,{x:t[0],y:11.5,z:t[1]});
+      pyramidRoof(t[0],13.4,t[1],4.0,4.4,SLATE);
+      finial(t[0],15.9,t[1]);
+      windowUnit(t[0],4.0,t[1]+2.72,1.2,2.2);
+      windowUnit(t[0],8.0,t[1]+2.72,1.2,2.2);
+    });
+  });
+
+  // ================= FORMAL GARDEN =================
+  // grand tiered fountain (on axis)
+  cyl(5.4,5.8,0.7,32,LIME2,{x:0,y:0.35,z:18,cast:false});
+  const fw1=cyl(5.0,5.0,0.4,32,0x2f95cc,{x:0,y:0.52,z:18,cast:false,transparent:true,opacity:0.85,emissive:0x0d4b6b,emissiveIntensity:0.4,metalness:0.2,roughness:0.1});
+  cyl(0.6,0.9,1.8,16,LIME,{x:0,y:1.4,z:18});
+  cyl(2.0,2.0,0.35,24,LIME2,{x:0,y:2.35,z:18,cast:false});
+  const fw2=cyl(1.7,1.7,0.22,24,0x2f95cc,{x:0,y:2.55,z:18,cast:false,transparent:true,opacity:0.85,emissive:0x0d4b6b,emissiveIntensity:0.4});
+  cyl(0.35,0.5,1.2,12,LIME,{x:0,y:3.2,z:18}); finial(0,4.0,18);
+
+  // symmetric parterre beds (French garden)
+  [-1,1].forEach(s=>{ [ [s*15,14], [s*15,25] ].forEach(b=>{
+    const bx=b[0],bz=b[1],w=7,d=8;
+    hedge(bx,bz-d/2,w,0.7); hedge(bx,bz+d/2,w,0.7);
+    hedge(bx-w/2,bz,0.7,d); hedge(bx+w/2,bz,0.7,d);
+    topiary(bx,bz);
+    box(w-1.4,0.05,d-1.4,0xcfc4a6,{x:bx,y:0.12,z:bz,cast:false}); // gravel
+  });});
+
+  // cypress allée + long reflecting pool on axis
+  for(let i=0;i<7;i++){ const zz=30+i*4.5; cypress(-6.5,zz,1.1); cypress(6.5,zz,1.1); }
+  box(8.4,0.4,26,LIME2,{x:0,y:0.16,z:44,cast:false});           // pool coping
+  const canal=box(7,0.3,25,0x2f95cc,{x:0,y:0.30,z:44,cast:false,receive:false,transparent:true,opacity:0.86,emissive:0x0d4b6b,emissiveIntensity:0.35,metalness:0.2,roughness:0.1});
+
+  // gate piers + low wall at far end
+  [-1,1].forEach(s=>{ box(1.8,5.4,1.8,LIME2,{x:s*6,y:2.7,z:58}); const b=new THREE.Mesh(new THREE.SphereGeometry(0.7,14,14),new THREE.MeshStandardMaterial({color:LIME,roughness:0.8})); b.position.set(s*6,5.6,58); b.castShadow=true; scene.add(b);
+    box(10,2.4,0.5,LIME2,{x:s*13,y:1.2,z:58}); });
+
+  // bollard lights & perimeter trees
+  bollard(-6,12); bollard(6,12); bollard(-6,30); bollard(6,30); bollard(-6,50); bollard(6,50);
+  cypress(-26,10,1.2); cypress(26,10,1.2); cypress(-30,26,1.1); cypress(30,26,1.1);
+  cypress(-30,-6,1.1); cypress(30,-6,1.1);
+
+  // ================= CAMERA =================
+  const target=new THREE.Vector3(0,5.5,13);
+  const HOME={radius:82,theta:0.86,phi:0.95};
+  let radius=HOME.radius,theta=HOME.theta,phi=HOME.phi,autoRotate=true,dragging=false,lastX=0,lastY=0;
+  function applyCamera(){const s=Math.sin(phi);camera.position.set(target.x+radius*s*Math.cos(theta),target.y+radius*Math.cos(phi),target.z+radius*s*Math.sin(theta));camera.lookAt(target);}
+  const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointerup',()=>dragging=false); el.addEventListener('pointerleave',()=>dragging=false);
+  el.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;theta-=dx*0.005;phi-=dy*0.005;phi=Math.max(0.12,Math.min(1.47,phi));});
+  el.addEventListener('wheel',e=>{e.preventDefault();radius*=(1+e.deltaY*0.0011);radius=Math.max(24,Math.min(150,radius));},{passive:false});
+
+  const btnRotate=document.getElementById('btnRotate'),btnTime=document.getElementById('btnTime'),btnReset=document.getElementById('btnReset');
+  btnRotate.addEventListener('click',()=>{autoRotate=!autoRotate;btnRotate.classList.toggle('active',autoRotate);});
+  btnReset.addEventListener('click',()=>{radius=HOME.radius;theta=HOME.theta;phi=HOME.phi;});
+
+  let night=false;
+  function setTime(toNight){night=toNight;
+    if(night){
+      btnTime.textContent="🌙 Gece";
+      scene.background.copy(NIGHT_BG);scene.fog.color.copy(NIGHT_BG);
+      hemi.intensity=0.2;hemi.color.setHex(0x2a3a5a);hemi.groundColor.setHex(0x0e1622);
+      sun.intensity=0.08;sun.color.setHex(0x7f93c8);moonFill.intensity=0.44;
+      glassMats.forEach(m=>{m.emissive.setHex(0xffcf7a);m.emissiveIntensity=0.95;m.opacity=0.64;});
+      [fw1,fw2,canal].forEach(o=>{o.material.emissive.setHex(0x0e5b82);o.material.emissiveIntensity=0.72;});
+      bollardCaps.forEach(m=>{m.emissive.setHex(0xffe0a0);m.emissiveIntensity=1.2;});
+      gardenLights.forEach((p,i)=>p.intensity=(i===1||i===2)?2.0:1.7);
+      renderer.toneMappingExposure=1.12;
+    }else{
+      btnTime.textContent="☀️ Gündüz";
+      scene.background.copy(DAY_BG);scene.fog.color.copy(DAY_BG);
+      hemi.intensity=0.5;hemi.color.setHex(0xc4d8ec);hemi.groundColor.setHex(0x46603b);
+      sun.intensity=1.55;sun.color.setHex(0xfff1d2);moonFill.intensity=0.0;
+      glassMats.forEach(m=>{m.emissive.setHex(0x0a1a26);m.emissiveIntensity=0.0;m.opacity=0.42;});
+      [fw1,fw2,canal].forEach(o=>{o.material.emissive.setHex(0x0d4b6b);o.material.emissiveIntensity=0.35;});
+      bollardCaps.forEach(m=>{m.emissive.setHex(0x000000);m.emissiveIntensity=0.0;});
+      gardenLights.forEach(p=>p.intensity=0.0);
+      renderer.toneMappingExposure=0.98;
+    }
+  }
+  btnTime.addEventListener('click',()=>setTime(!night));
+
+  window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+
+  let t=0;
+  function animate(){requestAnimationFrame(animate);t+=0.016;
+    if(autoRotate&&!dragging)theta+=0.0012;
+    canal.position.y=0.30+Math.sin(t*1.3)*0.01;
+    fw1.material.emissiveIntensity=(night?0.72:0.4)+Math.sin(t*2.0)*0.06;
+    applyCamera();renderer.render(scene,camera);}
+  applyCamera();animate();
+  if(loading)loading.style.display='none';
+})();
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@
 // Kadroda OLMAYAN (teklif/piyasa) oyuncu sisli/lite gösterilir: gerçek güç imzadan önce sızmaz.
 import { esc, fmt } from './frame.js';
 import { shownRating } from '../engines/market.js';
+import { KISILIKLER, kisilikOf, klikOf, KLIK_TR } from '../engines/iliski.js';
 
 const POS_TR = { GK: 'Kaleci', DEF: 'Stoper', MID: 'Orta saha', FWD: 'Forvet' };
 const POS_COL = { GK: 'var(--club)', DEF: 'var(--info)', MID: 'var(--pos)', FWD: 'var(--warn)' };
@@ -199,6 +200,7 @@ export function render(G) {
   const uyum = tdUyum(p, G.coach);
   const aid = aidiyet(p, G);
   const guven = Math.round(p.baskanaGuven ?? 50);
+  const kis = p.relx?.kisilik || kisilikOf(p.id + '#' + (p.name || '')); // salt-okur: relx yoksa aynı hash'ten türet
   const bedel = Math.round(p.marketValue * 1.12 * 10) / 10;
   const krk = karakterOf(p);
 
@@ -208,6 +210,7 @@ export function render(G) {
     <span class="pc-chip">${p.age} yaş</span>
     <span class="pc-chip">${ayakOf(p)}</span>
     ${p.age <= 21 ? '<span class="pc-chip g">GENÇ</span>' : ''}
+    ${p.ocak ? '<span class="pc-chip alt" data-tip="Altyapıdan yetişti">ALTYAPI</span>' : (p.yeniHafta > 0 ? '<span class="pc-chip yeni" data-tip="Yeni transfer — 3 hafta sonra kalkar">YENİ</span>' : '')}
     ${p.id === G.captainId ? '<span class="pc-chip c" data-tip="Kaptan">C</span>' : ''}
     ${p.loanIn ? '<span class="pc-chip i">KİRALIK</span>' : ''}
     ${p.vitrin ? '<span class="pc-chip i">SATIŞTA</span>' : ''}
@@ -215,7 +218,9 @@ export function render(G) {
     ${p.injuryWeeks > 0 ? `<span class="pc-chip i">🩹 ${p.injuryWeeks} HAFTA</span>` : ''}
     ${p.suspensionWeeks > 0 ? '<span class="pc-chip i">🟥 CEZALI</span>' : ''}
     <span class="pc-chip krk" data-tip="Karakter — ${esc(KARAKTER_NOT[krk] || '')}">${esc(krk)}</span>`;
-  const head = `<div class="pc-head">
+  // BAŞKANLIK DOSYASI kimliği: üstte altın tick'li dosya şeridi — kart "modal" değil, masaya konan evrak
+  const head = `<div class="pc-dosya"><span class="sb-tick"></span>${sisli ? 'SKAUT DOSYASI · İMZASIZ' : 'OYUNCU DOSYASI · KULÜP ARŞİVİ'}</div>
+  <div class="pc-head">
     ${playerAvatar(p, 84)}
     <div class="pc-kim">
       <div class="pc-nm">${esc(p.name)}</div>
@@ -255,10 +260,17 @@ export function render(G) {
   const talip = p._ilgi ?? (p.overall >= 70 ? (h32(p.id + '#tlp') % 3) : 0);
   const endYil = 2025 + (G.worldSeason ?? G.meta?.season ?? 1) + (p.contractYears ?? 1);
   const renewKilit = (p.contractYears ?? 0) >= 5 || p._renewTerm === (G.meta?.term ?? 1);
+  // İLİŞKİ (2.1): jest haftada 1 (tüm kadro), söz oyuncu başına 1 aktif
+  const absW = (G.meta?.season || 1) * 100 + (G.meta?.week || 1);
+  const jestHak = (G.ozel?.seviye ?? 1) >= 5 ? 2 : 1; // Halkın Adamı (sv.5+): haftada 2 jest
+  const jestDolu = G.jestH?.hafta === absW && G.jestH.n >= jestHak;
+  const sozVar = !!p.relx?.soz;
   const aksiyon = p.loanIn
     ? `<span class="pc-hint">🔒 Kiralık oyuncu — sezon sonu asıl kulübüne döner; satılamaz, listelenemez.</span>
        <button class="pc-btn" data-act="pcardClose">Kapat</button>`
-    : `<button class="pc-btn ${p.vitrin ? 'on' : ''}" data-act="vitrin" data-arg="${p.id}" data-tip="${p.vitrin ? 'Satış listesinden geri çek' : 'Menajerlere sinyal gider; teklifler 2-4 haftada gelir'}">${p.vitrin ? '🏷 Satıştan çek' : 'Satış listesi'}</button>
+    : `<button class="pc-btn" data-act="pJest" data-arg="${p.id}" ${jestDolu ? 'disabled' : ''} data-tip="${jestDolu ? 'Bu hafta bir jest yapıldı — haftada bir' : (p.injuryWeeks > 0 ? 'Hastane ziyareti: güven + moral, kliği de ısıtır' : 'Başkanla yemek: güven + moral, kliği de ısıtır')}">${p.injuryWeeks > 0 ? '💐 Ziyaret Et' : '🤝 Jest Yap'}</button>
+       <button class="pc-btn" data-act="pSoz" data-arg="${p.id}" ${sozVar || p.vitrin ? 'disabled' : ''} data-tip="${sozVar ? 'Söz zaten defterde — sezon sonu tutulursa güven büyür' : p.vitrin ? 'Satış listesindeyken söz verilmez' : '“Seni satmayacağım” — güven sıçrar; bozarsan manşet olur'}">${sozVar ? '📜 Söz Verildi' : '📜 Satmam Sözü'}</button>
+       <button class="pc-btn ${p.vitrin ? 'on' : ''}" data-act="vitrin" data-arg="${p.id}" data-tip="${p.vitrin ? 'Satış listesinden geri çek' : 'Menajerlere sinyal gider; teklifler 2-4 haftada gelir'}">${p.vitrin ? '🏷 Satıştan çek' : 'Satış listesi'}</button>
        <button class="pc-btn ${p.kiralikListe ? 'on' : ''}" data-act="kiralikListe" data-arg="${p.id}" data-tip="${p.kiralikListe ? 'Kiralık listesinden çek' : 'Pencere açıkken alt sıralardan kiralık dosyası gelebilir'}">${p.kiralikListe ? '↩ Kiralıktan çek' : 'Kiralık'}</button>
        <button class="pc-btn pri" data-act="renewContract" data-arg="${p.id}" ${renewKilit ? 'disabled' : ''} data-tip="${renewKilit ? 'Sözleşmesi zaten uzun / bu dönem yenilendi' : 'Sözleşmeyi uzat: moral ve aidiyet yükselir, maaş biraz artar'}">Sözleşme Yenile</button>
        <button class="pc-btn" data-act="pcardClose">Kapat</button>`;
@@ -286,6 +298,9 @@ export function render(G) {
       <div class="pc-s5-box"><div class="pc-sec-s">SON 5 MAÇ</div><div class="pc-s5">${son5(p, G)}</div></div>
     </div>
     <div class="pc-krk-note"><span class="pc-krk-tag">${esc(krk)}</span> karakter: ${esc(KARAKTER_NOT[krk] || '')}</div>
+    <div class="pc-krk-note pc-rel-note" data-tip="İlişki: jest/söz ile büyür, kırık söz ve vetoyla kırılır. Güven ≥70 → haftalık moral + yenilemede indirimli zam; <30 → huzursuzluk">
+      <span class="pc-krk-tag">${esc(KISILIKLER[kis]?.ad || kis)}</span> ilişki: ${esc(KISILIKLER[kis]?.not || '')} · <b>${esc(KLIK_TR[klikOf(p)] || '')}</b>${(p.relx?.iyilik || 0) > 0 ? ` · sana borçlu: <b class="pos">${p.relx.iyilik}</b>` : ''}${p.relx?.soz ? ' · <b style="color:var(--club-2)">SÖZ DEFTERDE</b>' : ''}${guven < 30 ? ' · <b class="neg">HUZURSUZ</b>' : ''}
+    </div>
     <div class="pc-stats">
       <span class="pc-cell"><i>MAÇ</i><b>${st.mac}</b></span>
       <span class="pc-cell"><i>GOL</i><b>${st.gol}</b></span>

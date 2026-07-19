@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hava Aracı · 3D</title>
+<style>
+  :root { --gold:#e7c063; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#05070a; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  .hud { position:fixed; left:18px; top:16px; color:#fff; pointer-events:none; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+  .hud h1 { font-size:20px; letter-spacing:.5px; font-weight:800; }
+  .hud .sub { font-size:12px; opacity:.75; margin-top:2px; letter-spacing:.3px; }
+  .hint { position:fixed; left:18px; bottom:16px; color:#dfe6f0; font-size:12px; opacity:.65; text-shadow:0 1px 4px rgba(0,0,0,.6); }
+  .panel { position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:8px; }
+  .btn {
+    pointer-events:auto; cursor:pointer; user-select:none;
+    background:rgba(18,20,26,.72); color:#eef2f8; border:1px solid rgba(231,192,99,.35);
+    padding:9px 14px; border-radius:10px; font-size:13px; font-weight:600; letter-spacing:.2px;
+    backdrop-filter:blur(6px); transition:all .15s ease; text-align:center; min-width:150px;
+  }
+  .btn:hover { border-color:var(--gold); background:rgba(30,33,42,.88); }
+  .btn.active { background:var(--gold); color:#1a1207; border-color:var(--gold); }
+  .loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; color:#cfe0ff; font-size:14px; letter-spacing:.5px; }
+</style>
+<style id="sb-sade">.hud .sub,.hint{display:none!important}</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud"><h1 id="ttl"></h1><div class="sub" id="sub"></div></div>
+<div class="panel">
+  <div class="btn active" id="btnRotate">⟳ Otomatik dönüş</div>
+  <div class="btn" id="btnColor">🎨 Renk değiştir</div>
+  <div class="btn" id="btnReset">⤿ Görünümü sıfırla</div>
+</div>
+<div class="hint">Sürükle: döndür · Tekerlek / iki parmak: yakınlaş</div>
+<div class="loading" id="loading">3D sahne yükleniyor…</div>
+
+<script src="three.min.js"></script>
+<script>
+(function(){
+  const CFG = {"title":"UÇAK","sub":"Turboprop · Pist · 3D","type":"prop","camRadius":9.8,"camPhi":1.16,"tgtY":0.95,"blob":8,"accent":2056150,"palette":[15659508,12172480,1319226,789776,10818335,14272911]};
+  const holder=document.getElementById('app'), loading=document.getElementById('loading');
+  document.getElementById('ttl').textContent=CFG.title; document.getElementById('sub').textContent=CFG.sub; document.title=CFG.title;
+  if(!window.THREE){ loading.textContent="3D kütüphanesi yüklenemedi (internet gerekli)."; return; }
+
+  // ============ inline Reflector (ayna zemin) ============
+  (function(){
+    const {Color,LinearFilter,MathUtils,Matrix4,Mesh,PerspectiveCamera,Plane,RGBFormat,ShaderMaterial,UniformsUtils,Vector3,Vector4,WebGLRenderTarget}=THREE;
+    class Reflector extends Mesh{
+      constructor(geometry,options={}){
+        super(geometry); this.type='Reflector'; const scope=this;
+        const color=(options.color!==undefined)?new Color(options.color):new Color(0x7F7F7F);
+        const textureWidth=options.textureWidth||512, textureHeight=options.textureHeight||512;
+        const clipBias=options.clipBias||0; const shader=options.shader||Reflector.ReflectorShader;
+        const reflectorPlane=new Plane(), normal=new Vector3(), reflectorWorldPosition=new Vector3(), cameraWorldPosition=new Vector3();
+        const rotationMatrix=new Matrix4(), lookAtPosition=new Vector3(0,0,-1), clipPlane=new Vector4();
+        const view=new Vector3(), target=new Vector3(), q=new Vector4(), textureMatrix=new Matrix4(), virtualCamera=new PerspectiveCamera();
+        const parameters={minFilter:LinearFilter,magFilter:LinearFilter,format:RGBFormat};
+        const renderTarget=new WebGLRenderTarget(textureWidth,textureHeight,parameters);
+        if(!MathUtils.isPowerOfTwo(textureWidth)||!MathUtils.isPowerOfTwo(textureHeight)) renderTarget.texture.generateMipmaps=false;
+        const material=new ShaderMaterial({uniforms:UniformsUtils.clone(shader.uniforms),fragmentShader:shader.fragmentShader,vertexShader:shader.vertexShader});
+        material.uniforms['tDiffuse'].value=renderTarget.texture; material.uniforms['color'].value=color; material.uniforms['textureMatrix'].value=textureMatrix;
+        this.material=material;
+        this.onBeforeRender=function(renderer,scene,camera){
+          reflectorWorldPosition.setFromMatrixPosition(scope.matrixWorld); cameraWorldPosition.setFromMatrixPosition(camera.matrixWorld);
+          rotationMatrix.extractRotation(scope.matrixWorld); normal.set(0,0,1); normal.applyMatrix4(rotationMatrix);
+          view.subVectors(reflectorWorldPosition,cameraWorldPosition); if(view.dot(normal)>0)return;
+          view.reflect(normal).negate(); view.add(reflectorWorldPosition);
+          rotationMatrix.extractRotation(camera.matrixWorld); lookAtPosition.set(0,0,-1); lookAtPosition.applyMatrix4(rotationMatrix); lookAtPosition.add(cameraWorldPosition);
+          target.subVectors(reflectorWorldPosition,lookAtPosition); target.reflect(normal).negate(); target.add(reflectorWorldPosition);
+          virtualCamera.position.copy(view); virtualCamera.up.set(0,1,0); virtualCamera.up.applyMatrix4(rotationMatrix); virtualCamera.up.reflect(normal); virtualCamera.lookAt(target);
+          virtualCamera.far=camera.far; virtualCamera.updateMatrixWorld(); virtualCamera.projectionMatrix.copy(camera.projectionMatrix);
+          textureMatrix.set(0.5,0,0,0.5, 0,0.5,0,0.5, 0,0,0.5,0.5, 0,0,0,1);
+          textureMatrix.multiply(virtualCamera.projectionMatrix); textureMatrix.multiply(virtualCamera.matrixWorldInverse); textureMatrix.multiply(scope.matrixWorld);
+          reflectorPlane.setFromNormalAndCoplanarPoint(normal,reflectorWorldPosition); reflectorPlane.applyMatrix4(virtualCamera.matrixWorldInverse);
+          clipPlane.set(reflectorPlane.normal.x,reflectorPlane.normal.y,reflectorPlane.normal.z,reflectorPlane.constant);
+          const pm=virtualCamera.projectionMatrix;
+          q.x=(Math.sign(clipPlane.x)+pm.elements[8])/pm.elements[0]; q.y=(Math.sign(clipPlane.y)+pm.elements[9])/pm.elements[5]; q.z=-1.0; q.w=(1.0+pm.elements[10])/pm.elements[14];
+          clipPlane.multiplyScalar(2.0/clipPlane.dot(q));
+          pm.elements[2]=clipPlane.x; pm.elements[6]=clipPlane.y; pm.elements[10]=clipPlane.z+1.0-clipBias; pm.elements[14]=clipPlane.w;
+          renderTarget.texture.encoding=renderer.outputEncoding; scope.visible=false;
+          const crt=renderer.getRenderTarget(), cxr=renderer.xr.enabled, csa=renderer.shadowMap.autoUpdate;
+          renderer.xr.enabled=false; renderer.shadowMap.autoUpdate=false;
+          renderer.setRenderTarget(renderTarget); renderer.state.buffers.depth.setMask(true);
+          if(renderer.autoClear===false)renderer.clear(); renderer.render(scene,virtualCamera);
+          renderer.xr.enabled=cxr; renderer.shadowMap.autoUpdate=csa; renderer.setRenderTarget(crt); scope.visible=true;
+        };
+      }
+    }
+    Reflector.ReflectorShader={uniforms:{color:{value:null},tDiffuse:{value:null},textureMatrix:{value:null}},
+      vertexShader:`uniform mat4 textureMatrix; varying vec4 vUv; void main(){ vUv=textureMatrix*vec4(position,1.0); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+      fragmentShader:`uniform vec3 color; uniform sampler2D tDiffuse; varying vec4 vUv;
+        float bo(float b,float s){return(b<0.5?(2.0*b*s):(1.0-2.0*(1.0-b)*(1.0-s)));}
+        vec3 bo(vec3 b,vec3 s){return vec3(bo(b.r,s.r),bo(b.g,s.g),bo(b.b,s.b));}
+        void main(){ vec4 base=texture2DProj(tDiffuse,vUv); gl_FragColor=vec4(bo(base.rgb,color),1.0);}`};
+    THREE.Reflector=Reflector;
+  })();
+
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=0.9;
+  holder.appendChild(renderer.domElement);
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(42,window.innerWidth/window.innerHeight,0.1,300);
+
+  (function(){
+    const c=document.createElement('canvas'); c.width=16; c.height=256; const g=c.getContext('2d');
+    const grd=g.createLinearGradient(0,0,0,256); grd.addColorStop(0,'#233141'); grd.addColorStop(0.55,'#3b4757'); grd.addColorStop(1,'#5a6572');
+    g.fillStyle=grd; g.fillRect(0,0,16,256);
+    const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; scene.background=tex;
+  })();
+  (function(){
+    const es=new THREE.Scene(); es.background=new THREE.Color(0x2c3037);
+    es.add(new THREE.Mesh(new THREE.BoxGeometry(60,30,60),new THREE.MeshStandardMaterial({side:THREE.BackSide,color:0x262a30,roughness:1})));
+    function card(w,h,x,y,z,i){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({color:0x000000,emissive:0xffffff,emissiveIntensity:i}));m.position.set(x,y,z);m.lookAt(0,0,0);es.add(m);}
+    card(26,8,0,14,2,2.4); card(14,10,-16,5,8,1.8); card(14,10,16,5,-6,1.8); card(10,6,3,4,17,1.0);
+    const pmrem=new THREE.PMREMGenerator(renderer); pmrem.compileEquirectangularShader();
+    scene.environment=pmrem.fromScene(es,0.02).texture;
+  })();
+
+  scene.add(new THREE.HemisphereLight(0x9fb4cc,0x141619,0.28));
+  const key=new THREE.DirectionalLight(0xffffff,1.15); key.position.set(7,12,8); key.castShadow=true;
+  key.shadow.mapSize.set(2048,2048); key.shadow.camera.near=1; key.shadow.camera.far=50;
+  key.shadow.camera.left=-10;key.shadow.camera.right=10;key.shadow.camera.top=10;key.shadow.camera.bottom=-10; key.shadow.bias=-0.0005; scene.add(key);
+  const fillL=new THREE.DirectionalLight(0xbfd3ff,0.4); fillL.position.set(-8,5,-4); scene.add(fillL);
+  const rimL=new THREE.DirectionalLight(0xfff0d0,0.7); rimL.position.set(-6,4,-9); scene.add(rimL);
+
+  // ---------- runway (pist) ----------
+  (function(){
+    const c=document.createElement('canvas'); c.width=2048; c.height=512; const g=c.getContext('2d');
+    g.fillStyle='#34383e'; g.fillRect(0,0,2048,512);
+    for(let i=0;i<6000;i++){ const v=42+Math.random()*24|0; g.fillStyle='rgba('+v+','+(v+2)+','+(v+6)+',0.45)'; g.fillRect(Math.random()*2048,Math.random()*512,2,2); }
+    g.fillStyle='#dfe4e9'; g.fillRect(0,46,2048,9); g.fillRect(0,457,2048,9);              // edge lines
+    for(let x=90;x<2048;x+=200){ g.fillStyle='#eef1f4'; g.fillRect(x,249,120,14); }          // centerline dashes
+    for(let i=0;i<8;i++){ g.fillStyle='#eef1f4'; g.fillRect(40,72+i*46,52,30); }              // threshold bars
+    g.save(); g.translate(320,256); g.fillStyle='#eef1f4'; g.font='bold 150px Arial'; g.textAlign='center'; g.textBaseline='middle'; g.fillText('27',0,0); g.restore();
+    const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=4;
+    const rw=new THREE.Mesh(new THREE.PlaneGeometry(64,16), new THREE.MeshStandardMaterial({map:tex,roughness:0.72,metalness:0.08,envMapIntensity:0.28}));
+    rw.rotation.x=-Math.PI/2; rw.position.y=0.001; rw.receiveShadow=true; scene.add(rw);
+    const gr=new THREE.Mesh(new THREE.PlaneGeometry(320,320), new THREE.MeshStandardMaterial({color:0x23272c,roughness:0.92,metalness:0.0,envMapIntensity:0.12}));
+    gr.rotation.x=-Math.PI/2; gr.position.y=0; gr.receiveShadow=true; scene.add(gr);
+  })();
+  // soft contact shadow
+  (function(){
+    const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d');
+    const rad=g.createRadialGradient(128,128,10,128,128,128); rad.addColorStop(0,'rgba(0,0,0,0.42)'); rad.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=rad; g.fillRect(0,0,256,256);
+    const tex=new THREE.CanvasTexture(c);
+    const blob=new THREE.Mesh(new THREE.PlaneGeometry((CFG.blob||8),(CFG.blob||8)*0.62),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
+    blob.rotation.x=-Math.PI/2; blob.position.set(0,0.006,0); scene.add(blob);
+  })();
+
+  // ---------- materials ----------
+  const PALETTE = CFG.palette || [0xeef1f4,0xb9bcc0,0x1a355e,0x0c0d10,0xb01722];
+  let colIdx=0;
+  const bodyMat=new THREE.MeshPhysicalMaterial({color:PALETTE[0],metalness:0.5,roughness:0.24,clearcoat:1.0,clearcoatRoughness:0.05,envMapIntensity:1.05});
+  const metalMat=new THREE.MeshStandardMaterial({color:0xc7ccd2,metalness:0.95,roughness:0.22,envMapIntensity:1.4});
+  const glassMat=new THREE.MeshPhysicalMaterial({color:0x0a1622,metalness:0.2,roughness:0.06,clearcoat:1,envMapIntensity:1.4});
+  const accentMat=new THREE.MeshStandardMaterial({color:CFG.accent||0x1f5fd6,roughness:0.4,metalness:0.2,envMapIntensity:0.6});
+  const darkMat=new THREE.MeshStandardMaterial({color:0x14171b,metalness:0.4,roughness:0.5});
+  const tireMat=new THREE.MeshStandardMaterial({color:0x141516,metalness:0.0,roughness:0.85});
+  const bladeMat=new THREE.MeshStandardMaterial({color:0x1a1d22,metalness:0.3,roughness:0.5});
+  const navR=new THREE.MeshStandardMaterial({color:0xff2a2a,emissive:0xff1010,emissiveIntensity:1.3,roughness:0.4});
+  const navG=new THREE.MeshStandardMaterial({color:0x2aff44,emissive:0x10ff20,emissiveIntensity:1.3,roughness:0.4});
+  const navW=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:0.9,roughness:0.4});
+  function navlight(x,y,z,mat){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8),mat); m.position.set(x,y,z); craft.add(m); }
+
+  const craft=new THREE.Group(); scene.add(craft);
+  const spinners=[];
+  function bx(w,h,d,mat,x,y,z,rot){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);if(rot){m.rotation.set(rot.x||0,rot.y||0,rot.z||0);}m.castShadow=true;m.receiveShadow=true;craft.add(m);return m;}
+  function cyl(rt,rb,h,seg,mat,x,y,z,rot){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);m.position.set(x,y,z);if(rot){m.rotation.set(rot.x||0,rot.y||0,rot.z||0);}m.castShadow=true;m.receiveShadow=true;craft.add(m);return m;}
+  function cylX(rt,rb,len,mat,x,y,z){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,len,22),mat);m.rotation.z=-Math.PI/2;m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;craft.add(m);return m;}
+  function sph(sx,sy,sz,mat,x,y,z){const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,16),mat);m.scale.set(sx,sy,sz);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;craft.add(m);return m;}
+  function wheel(x,z,r){const t=new THREE.Mesh(new THREE.CylinderGeometry(r,r,r*0.5,16),tireMat);t.rotation.x=Math.PI/2;t.position.set(x,r,z);t.castShadow=true;craft.add(t);
+    cyl(0.03,0.03,z===0?0.0:0.0,6,metalMat,x,r,z); return t; }
+  function strut(x,y1,z,y2){ const len=Math.abs(y2-y1); const m=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,len,8),metalMat); m.position.set(x,(y1+y2)/2,z); m.castShadow=true; craft.add(m); }
+
+  // =============== HELICOPTER ===============
+  function buildHeli(){
+    // skids
+    [0.62,-0.62].forEach(z=>{ const s=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,1.9,10),metalMat); s.rotation.z=Math.PI/2; s.position.set(0.1,0.09,z); s.castShadow=true; craft.add(s); });
+    strut(0.7,0.09,0.62,0.75); strut(0.7,0.09,-0.62,0.75); strut(-0.5,0.09,0.62,0.75); strut(-0.5,0.09,-0.62,0.75);
+    // cabin pod
+    sph(1.05,0.72,0.72, bodyMat, 0.25,1.0,0);
+    sph(0.62,0.52,0.6, glassMat, 0.95,1.02,0);            // nose bubble
+    bx(2.1,0.05,1.0, accentMat, 0.2,0.72,0);              // belly accent hint
+    // engine deck
+    bx(0.7,0.32,0.7, bodyMat, -0.15,1.5,0);
+    // tail boom
+    cylX(0.16,0.07,2.1, bodyMat, -1.55,1.15,0);
+    // tail fin + stab
+    bx(0.5,0.6,0.06, bodyMat, -2.5,1.45,0);
+    bx(0.35,0.05,1.1, bodyMat, -2.35,1.2,0);
+    // tail rotor (spins about Z)
+    const tr=new THREE.Group();
+    for(let i=0;i<2;i++){ const b=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.5,0.05),bladeMat); b.rotation.z=i*Math.PI/2; tr.add(b); }
+    tr.position.set(-2.55,1.55,0.12); craft.add(tr); spinners.push({o:tr,ax:'z',s:0.9});
+    // main rotor
+    const mast=cyl(0.06,0.06,0.35,10,metalMat,-0.1,1.72,0);
+    const rotor=new THREE.Group();
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,0.1,12),darkMat); rotor.add(hub);
+    for(let i=0;i<2;i++){ const b=new THREE.Mesh(new THREE.BoxGeometry(5.0,0.04,0.16),bladeMat); b.rotation.y=i*Math.PI/2; b.castShadow=true; rotor.add(b); }
+    rotor.position.set(-0.1,1.9,0); craft.add(rotor); spinners.push({o:rotor,ax:'y',s:1.4});
+    // nav lights
+    navlight(0.35,1.05,0.7,navG); navlight(0.35,1.05,-0.7,navR); navlight(-2.62,1.5,0,navW);
+  }
+
+  // =============== TURBOPROP ===============
+  function buildProp(){
+    // fuselage
+    cylX(0.05,0.34,0.8, bodyMat, 1.7,0.95,0);            // nose
+    cylX(0.34,0.34,1.9, bodyMat, 0.35,0.95,0);           // mid
+    cylX(0.34,0.05,1.7, bodyMat, -1.65,1.06,0);          // upswept tail
+    sph(0.55,0.28,0.34, glassMat, 1.2,1.12,0);           // cockpit glass
+    // cabin windows
+    for(let i=0;i<4;i++){ bx(0.12,0.1,0.03, glassMat, 0.9-i*0.4,1.02,0.35); bx(0.12,0.1,0.03, glassMat, 0.9-i*0.4,1.02,-0.35); }
+    // cheatline (side stripe)
+    for(const s of [0.34,-0.34]){ bx(3.7,0.06,0.02, accentMat, 0.3,0.98,s); }
+    // spinner + prop
+    const prop=new THREE.Group();
+    const spin=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.4,16),metalMat); spin.rotation.z=-Math.PI/2; spin.position.set(0.2,0,0); prop.add(spin);
+    for(let i=0;i<3;i++){ const b=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.5,0.14),bladeMat); b.rotation.x=i*(Math.PI*2/3); prop.add(b); }
+    prop.position.set(2.15,0.95,0); prop.rotation.z=0; craft.add(prop); spinners.push({o:prop,ax:'x',s:2.2});
+    // wings (low, thin, dihedral, tapered tip)
+    [1,-1].forEach(s=>{ bx(1.0,0.06,2.4, bodyMat, 0.35,0.8,s*1.35,{x:-s*0.07});
+      bx(0.62,0.05,0.95, bodyMat, 0.3,0.87,s*2.35,{x:-s*0.07});
+      navlight(0.32,0.9,s*2.78, s>0?navG:navR); });
+    // tail
+    bx(0.7,0.75,0.06, bodyMat, -2.3,1.35,0);             // vertical fin
+    bx(0.5,0.06,2.0, bodyMat, -2.25,1.06,0);             // horizontal stab
+    // gear
+    wheel(1.35,0,0.13); strut(1.35,0.13,0,0.7);
+    wheel(0.1,0.9,0.15); strut(0.1,0.15,0.9,0.72);
+    wheel(0.1,-0.9,0.15); strut(0.1,0.15,-0.9,0.72);
+  }
+
+  // =============== BUSINESS JET ===============
+  function buildJet(){
+    // fuselage (long sleek)
+    cylX(0.05,0.4,1.0, bodyMat, 2.3,1.1,0);              // nose
+    cylX(0.4,0.4,2.8, bodyMat, 0.5,1.1,0);               // mid
+    cylX(0.4,0.06,2.1, bodyMat, -2.1,1.28,0);            // upswept tail
+    // cockpit windows
+    bx(0.55,0.16,0.55, glassMat, 2.0,1.22,0);
+    sph(0.3,0.18,0.3, glassMat, 2.25,1.2,0);
+    // cabin windows
+    for(let i=0;i<7;i++){ bx(0.09,0.09,0.03, glassMat, 1.4-i*0.4,1.18,0.4); bx(0.09,0.09,0.03, glassMat, 1.4-i*0.4,1.18,-0.4); }
+    // door + cheatline accent (a thin box stripe along side)
+    for(const s of [0.41,-0.41]){ bx(4.6,0.06,0.02, accentMat, 0.3,1.02,s); }
+    // swept low wings (thin, slight dihedral)
+    [1,-1].forEach(s=>{ bx(1.35,0.07,2.7, bodyMat, 0.15,0.9,s*1.75,{y:s*0.34,x:-s*0.05});
+      navlight(-0.35,0.98,s*3.0, s>0?navG:navR); });
+    // winglets (angled up)
+    [1,-1].forEach(s=>{ bx(0.45,0.42,0.05, bodyMat, -0.5,1.14,s*2.98,{x:s*0.38,y:s*0.34}); });
+    // rear engines: nacelle + chrome intake + dark inlet + exhaust + pylon
+    [1,-1].forEach(s=>{ cylX(0.23,0.25,0.95, bodyMat, -1.5,1.4,s*0.66);
+      const intake=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.05,20),metalMat); intake.rotation.z=-Math.PI/2; intake.position.set(-1.01,1.4,s*0.66); craft.add(intake);
+      const inlet=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.05,18),darkMat); inlet.rotation.z=-Math.PI/2; inlet.position.set(-1.04,1.4,s*0.66); craft.add(inlet);
+      const exh=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.19,0.2,18),darkMat); exh.rotation.z=-Math.PI/2; exh.position.set(-2.02,1.4,s*0.66); craft.add(exh);
+      bx(0.45,0.12,0.1, bodyMat, -1.4,1.3,s*0.5); });
+    navlight(0.4,1.52,0, navR); // top beacon
+    // T-tail: tall vertical fin + horizontal stab on top
+    bx(0.7,1.1,0.09, bodyMat, -2.55,1.9,0,{z:-0.14});
+    bx(0.5,0.07,2.0, bodyMat, -2.85,2.42,0);
+    // gear
+    wheel(1.7,0,0.13); strut(1.7,0.13,0,0.85);
+    wheel(-0.3,0.55,0.15); strut(-0.3,0.15,0.55,0.9);
+    wheel(-0.3,-0.55,0.15); strut(-0.3,0.15,-0.55,0.9);
+  }
+
+  if(CFG.type==='heli') buildHeli();
+  else if(CFG.type==='prop') buildProp();
+  else buildJet();
+
+  // ================= camera =================
+  const target=new THREE.Vector3(0,CFG.tgtY||1.0,0);
+  const HOME={radius:CFG.camRadius,theta:0.7,phi:CFG.camPhi||1.16};
+  let radius=HOME.radius,theta=HOME.theta,phi=HOME.phi,autoRotate=true,dragging=false,lastX=0,lastY=0;
+  function applyCamera(){const s=Math.sin(phi);camera.position.set(target.x+radius*s*Math.cos(theta),target.y+radius*Math.cos(phi),target.z+radius*s*Math.sin(theta));camera.lookAt(target);}
+  const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointerup',()=>dragging=false); el.addEventListener('pointerleave',()=>dragging=false);
+  el.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;theta-=dx*0.005;phi-=dy*0.005;phi=Math.max(0.2,Math.min(1.45,phi));});
+  el.addEventListener('wheel',e=>{e.preventDefault();radius*=(1+e.deltaY*0.0011);radius=Math.max(4,Math.min(28,radius));},{passive:false});
+
+  const btnRotate=document.getElementById('btnRotate'),btnColor=document.getElementById('btnColor'),btnReset=document.getElementById('btnReset');
+  btnRotate.addEventListener('click',()=>{autoRotate=!autoRotate;btnRotate.classList.toggle('active',autoRotate);});
+  btnReset.addEventListener('click',()=>{radius=HOME.radius;theta=HOME.theta;phi=HOME.phi;});
+  btnColor.addEventListener('click',()=>{ colIdx=(colIdx+1)%PALETTE.length; bodyMat.color.setHex(PALETTE[colIdx]); });
+
+  window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+  function animate(){requestAnimationFrame(animate);
+    if(autoRotate&&!dragging)theta+=0.0015;
+    for(const sp of spinners){ sp.o.rotation[sp.ax]+=sp.s; }
+    applyCamera(); renderer.render(scene,camera);
+  }
+  applyCamera(); animate();
+  if(loading)loading.style.display='none';
+})();
+</script>
+</body>
+</html>

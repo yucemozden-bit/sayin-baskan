@@ -104,7 +104,7 @@ console.log('\n── Sahne 4: Mühür töreni ──');
   const G = fresh(['P15', 'P24']);
   check('4a: startTerm töreni kurar (tip:muhur + vaat adları)', G.transition?.tip === 'muhur' && G.transition.vaatler.length === 2, G.transition.vaatler.join(' · '));
   check('4a: main töreni sahneler (parşömen + kademeli damga + ses)', mainSrc.includes('parsomen') && mainSrc.includes('i * aralik') && mainSrc.includes('damgaGecik') && mainSrc.includes('FX.muhur()'), '');
-  check('4a: zafer sayımı gerilimli — salınım + yavaşlayan bitiş + tıkırtı', mainSrc.includes('zaferSayimi') && mainSrc.includes('salinim') && mainSrc.includes('FX.sayim()'), '');
+  check('4a: zafer sayımı gerilimli — pürüzsüz (rakip önde → sen geçersin) + tıkırtı', mainSrc.includes('zaferSayimi') && mainSrc.includes('easeGir') && mainSrc.includes('easeCik') && mainSrc.includes('FX.sayim()'), '');
   check('4a: parşömen/damga animasyonu CSS\'te', css.includes('.parsomen') && css.includes('@keyframes muhur') && css.includes('animation-delay: inherit'), '');
   const G2 = fresh([]);
   check('4b: vaatsiz dönem → "Laf değil, iş" tek parşömen', G2.transition?.tip === 'muhur' && G2.transition.vaatler.length === 0 && mainSrc.includes('Laf değil, iş'), '');

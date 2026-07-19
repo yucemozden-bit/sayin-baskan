@@ -16,7 +16,9 @@ yayınlanacak. Şu anki aşama: HTML/CSS/JS ile oynanabilir prototip (tasarım d
 - Küme düşme oyunu bitirmez ama sportif bir sonuçtur: ertesi sezon **2. Lig** başlar
   (zayıf rakipler + düşük yayın/sponsor/bilet geliri + en değerli oyuncu üst lige gider).
   Hedef terfi (ilk 3); dönersen ekonomi ve beklenti eski çıtasına oturur. `G.lig` (1/2)
-  kulüp tier'ından (küçük/orta/büyük) ayrıdır. İflas (kasa < -1M) oyunu bitirir.
+  kulüp tier'ından ayrıdır. Tier = 5 KADEME "Kulüp Seviyesi": küçük→orta→büyük→dev→efsane
+  (dev/efsane yalnız oyunla; şartlar config MIRAS.TIER.UP — şampiyonluk da ister).
+  İflas: borç göreli kayyum eşiğini (iflasEsigi) aşarsa oyun biter.
 - Referans mekanikler eski prototipte mevcut (aşağıda "Eski prototip" notu).
 
 ## Ekran haritası (mevcut durum)

@@ -47,6 +47,8 @@ function soruSec(G) {
   const sozQ = sozSorusu(G);
   if (sozQ) return sozQ;
   const wk = G.meta.week, P = PRESS_POOL, salt = pressSalt(G);
+  // ÖZEL HAYAT sorusu (2.8): ~9 haftada bir kürsüye aile/servet gelir (her iki ligde; determinist)
+  if (G.ozel && P.ozel && (wk + salt) % 9 === 4) return P.ozel[(wk + salt) % P.ozel.length];
   const lig = G.lig || 1;
   const rec = G.recent || [];
   const son = rec.slice(-1)[0];
@@ -157,16 +159,27 @@ export function render(G) {
   const wk = G.meta.week;
   const tone = G.mediaTone || 0;
   const muhabir = MUHABIRLER[wk % MUHABIRLER.length];
-  const soru = soruSec(G);
+  const soruHam = soruSec(G);
+  // Özel hayat sorularında %ES%/%C1%/%C2% başkanın gerçek ailesiyle doldurulur
+  const aileAd = (s) => String(s).replace(/%ES%/g, G.ozel?.aile?.es || 'eşiniz').replace(/%C1%/g, G.ozel?.aile?.c1 || 'kızınız').replace(/%C2%/g, G.ozel?.aile?.c2 || 'oğlunuz');
+  const soru = { ...soruHam, t: aileAd(soruHam.t), q: aileAd(soruHam.q) };
 
   const cevaplar = soru.c.map(([ton, replik]) => `<button class="med-cevap" data-act="demec" data-arg="${ton}">
       <span class="med-ton">${TONE_LABEL[ton]}</span>
       <b>«${replik}»</b>
       <i>${TONE_FX[ton]}${soru.soz && ton === 'iddiali' ? ' · ⚠ tutmazsan kongrede karşına çıkar' : ''}</i>
     </button>`).join('');
+  // MEDYA İLİŞKİSİ (2.5): kalemle aran — cevap tonların şekillendirir; dost kalem manşeti yumuşatır
+  const prel = Math.round(G.pressRel?.[muhabir.ad] ?? 50);
+  const prCls = prel >= 70 ? 'dost' : prel < 30 ? 'soguk' : '';
+  const prTxt = prel >= 70 ? 'DOST KALEM' : prel < 30 ? 'KESKİN KALEM' : 'NÖTR KALEM';
+  const ropKey = `${G.meta.season}#${muhabir.ad}`;
+  const ropOldu = !!(G.roportajLog || {})[ropKey];
   const soruHead = `<div class="med-muhabir">
     <span class="med-ava" data-tip="${esc(muhabir.kimlik)}">${esc(muhabir.ad[0])}</span>
     <span class="med-muhabir-yazi"><b>${esc(muhabir.ad)}</b><em>${esc(muhabir.kimlik.toUpperCase())} · ${esc(soru.t)}</em></span>
+    <span class="med-rel ${prCls}" data-tip="Kalemle ilişkin (${prel}) — sert kalem cesaret, babacan sükûnet, magazinci ateş sever. ≥70: manşetin yumuşar · <30: sivrilir">${prTxt} · ${prel}</span>
+    <button class="med-rop" data-act="roportaj" ${ropOldu ? 'disabled' : ''} data-tip="${ropOldu ? 'Bu sezon bu kaleme röportaj verildi' : 'Özel röportaj: ilişki +10, basın havası yumuşar (sezonda kalem başına 1, enerji −2)'}">🎙 Özel Röportaj</button>
   </div>`;
   // KAPANIŞ SAHNESİ: cevap verildiyse YARININ MANŞETİ kupürü + sayısal etki
   const kupur = (G.mansetArsiv || [])[0];

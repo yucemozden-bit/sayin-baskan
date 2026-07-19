@@ -15,8 +15,18 @@ export function render(G) {
   const tip = IPUCLARI[(G._menuTip || 0) % IPUCLARI.length];
   const item = (act, ad, hint = '', cls = '', dis = false) => `<button class="sb-menu-item ${cls}" data-act="${act}"${dis ? ' disabled' : ''}>
       <span class="sb-menu-bar"></span><span class="sb-menu-t">${esc(ad)}</span>${hint ? `<span class="sb-menu-hint">${esc(hint)}</span>` : ''}</button>`;
+  // CANLI SAHNE: çift projektör süpürmesi + ışık hüzmesinde süzülen toz zerreleri (salt CSS,
+  // index-tabanlı varyans — rand YOK; prefers-reduced-motion hepsini kapatır)
+  const zerreler = Array.from({ length: 14 }, (_, i) => {
+    const left = 34 + ((i * 37) % 60);                    // sağ-orta kuşak (hüzme bölgesi)
+    const dur = 11 + (i % 5) * 3.2;                       // 11-24sn süzülme
+    const delay = -((i * 2.9) % dur);                     // negatif gecikme: sahne dolu başlar
+    const boy = 2 + (i % 3);                              // 2-4px zerre
+    return `<span class="sb-mote" style="left:${left}%;width:${boy}px;height:${boy}px;animation-duration:${dur}s;animation-delay:${delay}s;--mo:${0.25 + (i % 4) * 0.12}"></span>`;
+  }).join('');
   return `<div class="sb-root sb-menu-screen">
-    <div class="sb-atmo"></div><div class="sb-vignette"></div><div class="sb-floodlight"></div>
+    <div class="sb-atmo"></div><div class="sb-vignette"></div><div class="sb-floodlight"></div><div class="sb-floodlight sb-floodlight-2"></div>
+    <div class="sb-motes">${zerreler}</div>
     <header class="sb-menu-top">
       <span class="sb-menu-studio">STÜDYO · KOLTUK OYUNLARI</span>
       <span class="sb-spacer"></span>
@@ -29,7 +39,7 @@ export function render(G) {
         <span class="sb-kicker sb-menu-kicker">FUTBOL KULÜBÜ BAŞKANLIĞI SİMÜLASYONU</span>
       </div>
       <h1 class="sb-hero sb-menu-hero">SAYIN<br><span class="sb-hero-accent">BAŞKAN</span></h1>
-      <p class="sb-hero-sub">Sahada teknik direktör oynatır — <span class="sb-club-ink">sözü sen söylersin.</span></p>
+      <p class="sb-hero-sub">Bu koltuğa oturan — <span class="sb-club-ink">şehrin kaderine imza atar.</span></p>
       <div class="sb-menu">
         ${item('menuYeni', 'Yeni Oyun', 'SANDIK SÖZÜ', 'is-active')}
         ${dev ? item('menuDevam', 'Devam Et', `${dev.club} · Sezon ${dev.season}`) : item('noop', 'Devam Et', 'kayıt yok', 'is-disabled', true)}

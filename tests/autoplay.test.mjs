@@ -48,7 +48,9 @@ function drainPhones(G, bot) {
   while (G.phone && guard++ < 8) A.answerPhone(G, bot.phone(G, G.phone)); // KARAR: telefon
 }
 function botWeek(G, bot) {
+  if (G.phase !== 'SEASON_LOOP') return; // İFLAS/kayyum kapanışı — ölü kariyerde hafta oynanmaz (şablon denetimi kirlenmesin)
   A.beginWeek(G);
+  if (G.phase !== 'SEASON_LOOP') return; // hafta içinde kayyum geldi
   drainPhones(G, bot);                                  // deadline telefonları hazırlıkta çalar
   if (G.pendingMatch && G.pendingMatch.phase === 'pre') {
     A.htDecision(G, bot.ht ? bot.ht(G) : 'tdguven');    // KARAR: devre arası hamlesi
@@ -250,6 +252,7 @@ function playTerm(bot, seed) {
   for (let s = 0; s < 3; s++) {
     for (let w = 0; w < 34; w++) {
       botWeek(G, bot); // YAŞAYAN: begin→telefon→devre arası→finish→son10dk→telefon→masa
+      if (G.phase !== 'SEASON_LOOP') break; // kayyum/iflas — dönem yarıda biter
       globalWeek++;
       if (G.transferWindow) bot.window(G);   // KARAR: tesis+ihale (pencere haftaları)
       bot.files(G);                           // KARAR: GM dosyaları (onay/red/şart + satış aynası)
@@ -264,6 +267,7 @@ function playTerm(bot, seed) {
       }
       G.pendingMatch = null;
     }
+    if (G.phase !== 'SEASON_LOOP') break; // kayyum/iflas — sezon zinciri de biter (ölü kariyer seçime giremez)
     A.endSeason(G);
     bot.seasonEnd(G);
     A.afterSeasonEnd(G);
@@ -277,7 +281,7 @@ function playTerm(bot, seed) {
     }
   }
   walkElectionPhases(G, bot); // D6: kampanya + münazara
-  const e = G.election;
+  const e = G.election || { kazandi: false, oyOrani: 0, breakdown: { sportif: 0, taraftar: 0, mali: 0, itibar: 0, soz: 0, rival: 0 } }; // iflasla biten dönem = kayıp
   return { won: e.kazandi, oy: e.oyOrani, breakdown: e.breakdown, violations };
 }
 
@@ -323,19 +327,23 @@ function playCareer(bot, seed, maxTerms = 4) {
   const G = A.newGame(data, 'normal'); A.selectClub(G, bot.tier); A.setTicketPrice(G, bot.ticket);
   let terms = 0, zincirKirildi = false, tur = 0;
   while (terms < maxTerms && tur++ < maxTerms + 3) {
+    if (G.phase === 'CAREER_END' || G.phase === 'GAME_OVER') { MIRAS_STATS.kapanis++; break; } // iflas/kayyum kapanışı
     A.startTerm(G, typeof bot.promises === "function" ? bot.promises(G) : bot.promises, bot.directive(G));
     if (bot.staffInit) bot.staffInit(G);
     for (let s = 0; s < 3; s++) {
       for (let w = 0; w < 34; w++) {
         botWeek(G, bot); // YAŞAYAN granüler hafta
+        if (G.phase !== 'SEASON_LOOP') break; // kayyum/iflas
         if (G.transferWindow) bot.window(G);
         bot.files(G); bot.weekly(G);
         const l = G.inbox.find((m) => m.action === 'ticket' && !m.resolved);
         if (l) A.resolveTicket(G, l.id, bot.ticketLetter);
         G.pendingMatch = null;
       }
+      if (G.phase !== 'SEASON_LOOP') break; // kayyum/iflas — sezon zinciri biter
       A.endSeason(G); bot.seasonEnd(G); A.afterSeasonEnd(G);
     }
+    if (G.phase === 'CAREER_END' || G.phase === 'GAME_OVER') { MIRAS_STATS.kapanis++; break; } // iflas kapanışı
     walkElectionPhases(G, bot); // D6
     if (G.election.kazandi) {
       if (!zincirKirildi) terms++;                // hayatta kalma eğrisi = KESİNTİSİZ koltuk (bantların kalibre anlamı)
@@ -406,7 +414,13 @@ check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D 
 // çekilişi kaydı, tüm maç RNG akışı ötelendi. DENGE-NÖTR: Cimri botu son (pas) seçeneği seçer, pas
 // seçenekleri artık no-op → Cimri'nin olayları mekanik SIFIR etki, yine de dönem-2 survival %58→%64
 // yeniden örneklendi (saf akış kayması, kolaylaşma DEĞİL). Dönem-2 tavanı ±gürültüyle 58→66.
-const bands2 = [[1, 38, 66], [2, 15, 40], [3, 3, 26]]; // [idx, lo, hi] — dönem 2/3/4
+// KULÜP İNŞASI PAKETİ (2026-07-20, kullanıcı isteği üçlüsü): sezon içi genç gelişimi (+≤3/sezon,
+// oynadıkça/kazandıkça) + kimya doğal oturması (+0.1/maç, G +0.5 — tek yönlü düşüş bitti) + prim
+// güçlendirme (taze prim ~derbi salınımı). Üçü de KÜMÜLATİF takım gücü kazandırır → iyi yönetilen
+// kulüp artık BİLEREK daha kalıcı: ölçülen eğri her iki botta ~73→53→36. Bantlar yeni dengeye
+// ±gürültüyle taşındı (38-66→55-80, 15-40→35-62, 3-26→18-45). Niyet korunur: her dönem zorlaşır,
+// dönem-4'te koltuk hâlâ 1/3 ihtimal — efsane mümkün, garanti değil.
+const bands2 = [[1, 55, 80], [2, 35, 62], [3, 18, 45]]; // [idx, lo, hi] — dönem 2/3/4
 for (const [i, lo, hi] of bands2) {
   check(`çok dönem: dönem-${i + 1} hayatta kalma %${lo}-${hi} (her iki bot)`,
     [survival['Cimri'][i], survival['Dengeli'][i]].every((v) => v >= lo && v <= hi),

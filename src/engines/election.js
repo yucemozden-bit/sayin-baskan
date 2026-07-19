@@ -85,6 +85,14 @@ export function eleksiyon(state, { baslangicBorc, tutulmayanVaat = 0 } = {}) {
   const soz = sozKarne(state);
   const kupasiz = !H.some((s) => s.champion || s.cup || s.europeWin);
   const rival = rakipCekiciligi(state, { tutulmayanVaat, sportif, taraftar, mali, kupasiz });
-  const oy = oyOrani({ sportif, taraftar, mali, itibar, soz, rival });
-  return { oyOrani: oy, kazandi: oy > TUNING.WIN_LINE, breakdown: { sportif, taraftar, mali, itibar, soz, rival } };
+  // AİLE DESTEĞİ (Özel Hayat 2.8): sandık günü ailen yanında mı? Eş+çocuk bağı ort ≥70 →
+  // +2 oy puanı ("kongre salonunda ön sırada oturdular"). Varsayılan başlangıç ort 66.7 —
+  // eşik yalnız BİLİNÇLİ aile yatırımıyla aşılır (autoplay-nötr; asla negatif olmaz).
+  // Boşanma (#6): eş sandık hesabından çıkar — destek yalnız çocuklardan gelir (eşik aynı, aşmak zorlaşır)
+  const R = state.ozel?.iliski;
+  const bosandi = !!state.ozel?.flags?.bosandi;
+  const aile = R ? Math.round(bosandi ? (R.c1 + R.c2) / 2 : (R.es + R.c1 + R.c2) / 3) : 0;
+  const aileBonus = aile >= 70 ? 0.02 : 0;
+  const oy = clamp(oyOrani({ sportif, taraftar, mali, itibar, soz, rival }) + aileBonus, 0, 1);
+  return { oyOrani: oy, kazandi: oy > TUNING.WIN_LINE, breakdown: { sportif, taraftar, mali, itibar, soz, rival, aile, aileBonus } };
 }

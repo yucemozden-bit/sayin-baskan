@@ -59,9 +59,9 @@ console.log('\n── Transfer v3: bütçe bağı + sorgu hakkı + ilgi/süre + 
 {
   const G = fresh();
   const html = tv.render(G);
-  check('bütçe bağı: BÜTÇE paneli kalan kese + tahmini bedel', html.includes('Kalan bütçe') && html.includes('~bedel'));
+  check('bütçe bağı: BÜTÇE paneli kalan kese + bedel-değer ayrımı', html.includes('KALAN KESE') && html.includes('değer '));
   check('mevki filtre butonları (Tümü + mevkiler)', html.includes('trFiltre') && html.includes('Tümü') && html.includes('Stoper'));
-  check('tahmini bedel gösterir (sis bedelde de)', html.includes('~bedel'));
+  check('bedel ön planda + piyasa değeri alt satırda', html.includes('tr-tt-val') && html.includes('değer '));
   check('AKTİF PAZARLIK paneli (açık dosyalar / gelen teklifler)', html.includes('AKTİF PAZARLIK'));
   check('sorgu hakkı görünür (X hak)', /sorgu \d+ hak/.test(html));
 }

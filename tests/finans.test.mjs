@@ -148,6 +148,64 @@ console.log('\n── Sponsor Batma Olayı ──');
   check('batma riski olmayan sponsor batmaz (süre normal azalır)', G.sponsorDeals.gogus !== null && !G.inbox.some((m) => m.t.startsWith('SPONSOR BATTI')));
 }
 
+console.log('\n── SPONSOR AVI: rakip marka fesih bedelini üstlenir ──');
+{
+  // KABUL yolu — dosya elle kurulur (determinist), sonuç: ceza kasadan ÇIKMAZ, yeni imza + peşinat girer
+  const G = fresh('orta');
+  A.signSponsor(G, 'gogus', A.sponsorOffers(G, 'gogus')[0].id);
+  const eski = G.sponsorDeals.gogus;
+  const av = { id: 'sp-test-av', name: 'AvcıHolding', sektor: 'holding', ik: '🦅', type: 'standart', incomeMult: 1.2, weekly: Math.round(eski.weekly * 1.3 * 100) / 100, annual: Math.round(eski.weekly * 1.3 * 52 * 10) / 10, pesinat: 12, fesihCeza: 40, years: 3 };
+  G.inbox.unshift({ id: 'avk', action: 'spBuyout', slot: 'gogus', avTeklif: av, avCeza: eski.fesihCeza, t: 'test', b: '' });
+  const kasa0 = G.economy.kasa, rep0 = G.club.reputation;
+  A.resolveSponsorBuyout(G, 'avk', 'kabul');
+  check('KABUL: eski gider, yeni imzalanır — ceza kasadan çıkmaz, yalnız peşinat girer',
+    G.sponsorDeals.gogus.name === 'AvcıHolding' && Math.abs(G.economy.kasa - (kasa0 + 12)) < 1e-9, `kasa ${Math.round(kasa0)} → ${Math.round(G.economy.kasa)}`);
+  check('küçük imaj bedeli (itibar −1) + SPONSOR DARBESİ manşeti', G.club.reputation === rep0 - 1 && G.inbox.some((m) => (m.t || '').startsWith('SPONSOR DARBESİ')));
+  // RED yolu — sadakat jesti: mevcut marka tek seferlik teşekkür öder, anlaşma yerinde kalır
+  const G2 = fresh('orta');
+  A.signSponsor(G2, 'gogus', A.sponsorOffers(G2, 'gogus')[0].id);
+  const d2 = G2.sponsorDeals.gogus;
+  G2.inbox.unshift({ id: 'avr', action: 'spBuyout', slot: 'gogus', avTeklif: { ...av }, avCeza: d2.fesihCeza, t: 'test', b: '' });
+  const kasa2 = G2.economy.kasa;
+  A.resolveSponsorBuyout(G2, 'avr', 'red');
+  check('RED: anlaşma yerinde + sadakat jesti (haftalık×3) kasaya',
+    G2.sponsorDeals.gogus.name === d2.name && Math.abs(G2.economy.kasa - (kasa2 + Math.round(d2.weekly * 3 * 10) / 10)) < 1e-9 && G2.inbox.some((m) => (m.t || '').startsWith('Sadakat jesti')));
+  check('red sonrası o slota av bekleme süresi yazılır', (G2._spAvCd?.gogus || 0) > 0);
+  // Pazar nabzı avı kendisi de üretebilmeli (hash) — imzalı sponsorla haftalar ilerlet
+  const G3 = fresh('orta');
+  A.signSponsor(G3, 'gogus', A.sponsorOffers(G3, 'gogus')[0].id);
+  let dusdu = false;
+  for (let w = 0; w < 80 && !dusdu; w++) {
+    G3.meta.week++; A.sponsorMarketTick(G3);
+    if (G3.inbox.some((m) => m.action === 'spBuyout' && !m.resolved)) dusdu = true;
+  }
+  check('haftalık nabız SPONSOR AVI dosyası düşürebiliyor (hash, rand yok)', dusdu);
+  const kart = G3.inbox.find((m) => m.action === 'spBuyout');
+  if (kart) check('av dosyası fesih bedelini ve rakip şartlarını taşır', kart.avCeza > 0 && kart.avTeklif?.annual > 0 && (kart.b || '').includes('üstleniyor'));
+}
+
+console.log('\n── CANLI PAZAR: teklifler her hafta tazelenir ──');
+{
+  const G = fresh('orta');
+  // gogus'u boşalt → bomboş slota İLK haftada garanti yeni marka gelir
+  for (const o of [...A.sponsorOffers(G, 'gogus')]) A.rejectSponsorOffer(G, 'gogus', o.id);
+  G.meta.week++; A.sponsorMarketTick(G);
+  check('bomboş masaya İLK haftada garanti teklif gelir', A.sponsorOffers(G, 'gogus').length >= 1, A.sponsorOffers(G, 'gogus').map((o) => o.name).join(' · '));
+  // 6 haftada birden çok yeni dosya (canlılık): sayaç
+  let yeni = 0;
+  for (let w = 0; w < 6; w++) { const n0 = G.inbox.filter((m) => (m.t || '').startsWith('Yeni sponsor teklifi')).length; G.meta.week++; A.sponsorMarketTick(G); yeni += G.inbox.filter((m) => (m.t || '').startsWith('Yeni sponsor teklifi')).length - n0; }
+  check('pazar diri: 6 haftada ≥3 yeni dosya', yeni >= 3, `${yeni} yeni teklif`);
+  // UI: vitrin bileşenleri
+  const fin = await import('../src/ui/finance.js');
+  G.nav = 'finans';
+  const h = fin.render(G);
+  check('vitrin: CANLI PİYASA nabzı + yıldız plaka + süre sayaçları', h.includes('CANLI PİYASA') && h.includes('EN GÜÇLÜ TEKLİF') && h.includes('⏳'));
+  check('hızlı imza butonu plakada', h.includes('signSponsor') && h.includes('İMZALA'));
+  A.signSponsor(G, 'gogus', A.sponsorOffers(G, 'gogus')[0].id);
+  const h2 = fin.render(G);
+  check('imzalı anlaşma altın levhada: haftalık + fesih + sözleşme yılı noktaları', h2.includes('spo-card signed') && h2.includes('FESİH CEZASI') && h2.includes('spo-dots'));
+}
+
 console.log('\n── Prim → Finans ──');
 {
   const G = fresh('orta');

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Yat · 3D</title>
+<style>
+  :root { --gold:#e7c063; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#0a1420; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  .hud { position:fixed; left:18px; top:16px; color:#fff; pointer-events:none; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+  .hud h1 { font-size:20px; letter-spacing:.5px; font-weight:800; }
+  .hud .sub { font-size:12px; opacity:.8; margin-top:2px; letter-spacing:.3px; }
+  .hint { position:fixed; left:18px; bottom:16px; color:#eaf2fb; font-size:12px; opacity:.7; text-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .panel { position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:8px; }
+  .btn {
+    pointer-events:auto; cursor:pointer; user-select:none;
+    background:rgba(14,26,40,.72); color:#eef2f8; border:1px solid rgba(231,192,99,.35);
+    padding:9px 14px; border-radius:10px; font-size:13px; font-weight:600; letter-spacing:.2px;
+    backdrop-filter:blur(6px); transition:all .15s ease; text-align:center; min-width:150px;
+  }
+  .btn:hover { border-color:var(--gold); background:rgba(24,40,60,.85); }
+  .btn.active { background:var(--gold); color:#1a1207; border-color:var(--gold); }
+  .loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; color:#cfe0ff; font-size:14px; letter-spacing:.5px; }
+</style>
+<style id="sb-sade">.hud .sub,.hint{display:none!important}</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud">
+  <h1 id="ttl"></h1>
+  <div class="sub" id="sub"></div>
+</div>
+<div class="panel">
+  <div class="btn active" id="btnRotate">⟳ Otomatik dönüş</div>
+  <div class="btn" id="btnColor">🎨 Renk değiştir</div>
+  <div class="btn" id="btnReset">⤿ Görünümü sıfırla</div>
+</div>
+<div class="hint">Sürükle: döndür · Tekerlek / iki parmak: yakınlaş</div>
+<div class="loading" id="loading">3D sahne yükleniyor…</div>
+
+<script src="three.min.js"></script>
+<script>
+(function(){
+  const CFG = {"title":"LÜKS TEKNE","sub":"Motor Yat · Ayna Su · İnteraktif 3D","L":2.2,"B":0.82,"H":0.8,"decks":1,"deckY":0.24,"camRadius":6.8,"camPhi":1.31,"arch":false,"mast":false,"pool":false,"helipad":false,"accent":13280842,"palette":[1056051,15988215,790034,1323044,5903910]};
+  const holder=document.getElementById('app'), loading=document.getElementById('loading');
+  document.getElementById('ttl').textContent=CFG.title; document.getElementById('sub').textContent=CFG.sub; document.title=CFG.title;
+  if(!window.THREE){ loading.textContent="3D kütüphanesi yüklenemedi (internet gerekli)."; return; }
+
+  // ============ inline Reflector (ayna su) ============
+  (function(){
+    const {Color,LinearFilter,MathUtils,Matrix4,Mesh,PerspectiveCamera,Plane,RGBFormat,ShaderMaterial,UniformsUtils,Vector3,Vector4,WebGLRenderTarget}=THREE;
+    class Reflector extends Mesh{
+      constructor(geometry,options={}){
+        super(geometry); this.type='Reflector'; const scope=this;
+        const color=(options.color!==undefined)?new Color(options.color):new Color(0x7F7F7F);
+        const textureWidth=options.textureWidth||512, textureHeight=options.textureHeight||512;
+        const clipBias=options.clipBias||0; const shader=options.shader||Reflector.ReflectorShader;
+        const reflectorPlane=new Plane(), normal=new Vector3(), reflectorWorldPosition=new Vector3(), cameraWorldPosition=new Vector3();
+        const rotationMatrix=new Matrix4(), lookAtPosition=new Vector3(0,0,-1), clipPlane=new Vector4();
+        const view=new Vector3(), target=new Vector3(), q=new Vector4(), textureMatrix=new Matrix4(), virtualCamera=new PerspectiveCamera();
+        const parameters={minFilter:LinearFilter,magFilter:LinearFilter,format:RGBFormat};
+        const renderTarget=new WebGLRenderTarget(textureWidth,textureHeight,parameters);
+        if(!MathUtils.isPowerOfTwo(textureWidth)||!MathUtils.isPowerOfTwo(textureHeight)) renderTarget.texture.generateMipmaps=false;
+        const material=new ShaderMaterial({uniforms:UniformsUtils.clone(shader.uniforms),fragmentShader:shader.fragmentShader,vertexShader:shader.vertexShader});
+        material.uniforms['tDiffuse'].value=renderTarget.texture; material.uniforms['color'].value=color; material.uniforms['textureMatrix'].value=textureMatrix;
+        this.material=material;
+        this.onBeforeRender=function(renderer,scene,camera){
+          reflectorWorldPosition.setFromMatrixPosition(scope.matrixWorld); cameraWorldPosition.setFromMatrixPosition(camera.matrixWorld);
+          rotationMatrix.extractRotation(scope.matrixWorld); normal.set(0,0,1); normal.applyMatrix4(rotationMatrix);
+          view.subVectors(reflectorWorldPosition,cameraWorldPosition); if(view.dot(normal)>0)return;
+          view.reflect(normal).negate(); view.add(reflectorWorldPosition);
+          rotationMatrix.extractRotation(camera.matrixWorld); lookAtPosition.set(0,0,-1); lookAtPosition.applyMatrix4(rotationMatrix); lookAtPosition.add(cameraWorldPosition);
+          target.subVectors(reflectorWorldPosition,lookAtPosition); target.reflect(normal).negate(); target.add(reflectorWorldPosition);
+          virtualCamera.position.copy(view); virtualCamera.up.set(0,1,0); virtualCamera.up.applyMatrix4(rotationMatrix); virtualCamera.up.reflect(normal); virtualCamera.lookAt(target);
+          virtualCamera.far=camera.far; virtualCamera.updateMatrixWorld(); virtualCamera.projectionMatrix.copy(camera.projectionMatrix);
+          textureMatrix.set(0.5,0,0,0.5, 0,0.5,0,0.5, 0,0,0.5,0.5, 0,0,0,1);
+          textureMatrix.multiply(virtualCamera.projectionMatrix); textureMatrix.multiply(virtualCamera.matrixWorldInverse); textureMatrix.multiply(scope.matrixWorld);
+          reflectorPlane.setFromNormalAndCoplanarPoint(normal,reflectorWorldPosition); reflectorPlane.applyMatrix4(virtualCamera.matrixWorldInverse);
+          clipPlane.set(reflectorPlane.normal.x,reflectorPlane.normal.y,reflectorPlane.normal.z,reflectorPlane.constant);
+          const pm=virtualCamera.projectionMatrix;
+          q.x=(Math.sign(clipPlane.x)+pm.elements[8])/pm.elements[0]; q.y=(Math.sign(clipPlane.y)+pm.elements[9])/pm.elements[5]; q.z=-1.0; q.w=(1.0+pm.elements[10])/pm.elements[14];
+          clipPlane.multiplyScalar(2.0/clipPlane.dot(q));
+          pm.elements[2]=clipPlane.x; pm.elements[6]=clipPlane.y; pm.elements[10]=clipPlane.z+1.0-clipBias; pm.elements[14]=clipPlane.w;
+          renderTarget.texture.encoding=renderer.outputEncoding; scope.visible=false;
+          const crt=renderer.getRenderTarget(), cxr=renderer.xr.enabled, csa=renderer.shadowMap.autoUpdate;
+          renderer.xr.enabled=false; renderer.shadowMap.autoUpdate=false;
+          renderer.setRenderTarget(renderTarget); renderer.state.buffers.depth.setMask(true);
+          if(renderer.autoClear===false)renderer.clear(); renderer.render(scene,virtualCamera);
+          renderer.xr.enabled=cxr; renderer.shadowMap.autoUpdate=csa; renderer.setRenderTarget(crt); scope.visible=true;
+        };
+      }
+    }
+    Reflector.ReflectorShader={uniforms:{color:{value:null},tDiffuse:{value:null},textureMatrix:{value:null}},
+      vertexShader:`uniform mat4 textureMatrix; varying vec4 vUv; void main(){ vUv=textureMatrix*vec4(position,1.0); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+      fragmentShader:`uniform vec3 color; uniform sampler2D tDiffuse; varying vec4 vUv;
+        float bo(float b,float s){return(b<0.5?(2.0*b*s):(1.0-2.0*(1.0-b)*(1.0-s)));}
+        vec3 bo(vec3 b,vec3 s){return vec3(bo(b.r,s.r),bo(b.g,s.g),bo(b.b,s.b));}
+        void main(){ vec4 base=texture2DProj(tDiffuse,vUv); gl_FragColor=vec4(bo(base.rgb,color),1.0);}`};
+    THREE.Reflector=Reflector;
+  })();
+
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=0.9;
+  holder.appendChild(renderer.domElement);
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(42,window.innerWidth/window.innerHeight,0.1,400);
+
+  // sky gradient background
+  (function(){
+    const c=document.createElement('canvas'); c.width=16; c.height=256; const g=c.getContext('2d');
+    const grd=g.createLinearGradient(0,0,0,256); grd.addColorStop(0,'#aab8c6'); grd.addColorStop(0.55,'#cdd8e0'); grd.addColorStop(1,'#e8edf1');
+    g.fillStyle=grd; g.fillRect(0,0,16,256);
+    const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; scene.background=tex;
+  })();
+  scene.fog=new THREE.Fog(0xe2e8ee, 44, 170);
+
+  // neutral studio env (renkler doğru okunsun; su yine mavi kalır)
+  (function(){
+    const es=new THREE.Scene(); es.background=new THREE.Color(0x30353c);
+    es.add(new THREE.Mesh(new THREE.BoxGeometry(60,30,60),new THREE.MeshStandardMaterial({side:THREE.BackSide,color:0x2a2e34,roughness:1})));
+    function card(w,h,x,y,z,inten){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({color:0x000000,emissive:0xffffff,emissiveIntensity:inten}));m.position.set(x,y,z);m.lookAt(0,0,0);es.add(m);}
+    card(26,10,0,16,4,2.6); card(16,12,-18,6,10,1.7); card(16,12,18,6,-8,1.5);
+    const pmrem=new THREE.PMREMGenerator(renderer); pmrem.compileEquirectangularShader();
+    scene.environment=pmrem.fromScene(es,0.03).texture;
+  })();
+
+  scene.add(new THREE.HemisphereLight(0xc4d2e0,0x2a3440,0.35));
+  const sun=new THREE.DirectionalLight(0xfff3dc,1.55); sun.position.set(20,26,14); sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.near=1; sun.shadow.camera.far=80;
+  sun.shadow.camera.left=-16;sun.shadow.camera.right=16;sun.shadow.camera.top=16;sun.shadow.camera.bottom=-16; sun.shadow.bias=-0.0005; scene.add(sun);
+  const fillB=new THREE.DirectionalLight(0xcfe0f0,0.55); fillB.position.set(-14,10,-8); scene.add(fillB);
+
+  // water (mirror)
+  const water=new THREE.Reflector(new THREE.PlaneGeometry(300,300),{textureWidth:512,textureHeight:512,color:0x05121a});
+  water.rotation.x=-Math.PI/2; water.position.y=0; scene.add(water);
+  // yarı saydam koyu deniz katmanı (yansımayı söndürür, su altını puslu yapar)
+  const waterTop=new THREE.Mesh(new THREE.PlaneGeometry(300,300), new THREE.MeshBasicMaterial({color:0x07202c,transparent:true,opacity:0.8,depthWrite:false}));
+  waterTop.rotation.x=-Math.PI/2; waterTop.position.y=0.005; scene.add(waterTop);
+
+  // ---------- materials ----------
+  const PALETTE = CFG.palette || [0xf3f5f7,0x14314f,0x0c0e12,0xd9c98f];
+  let colIdx=0;
+  const hullMat=new THREE.MeshStandardMaterial({color:PALETTE[0],metalness:0.08,roughness:0.62,envMapIntensity:0.16});
+  const superMat=new THREE.MeshStandardMaterial({color:0xf1f4f7,metalness:0.0,roughness:0.74,envMapIntensity:0.1});
+  const glassMat=new THREE.MeshStandardMaterial({color:0x131e2a,metalness:0.2,roughness:0.5,envMapIntensity:0.2});
+  const teakMat=new THREE.MeshStandardMaterial({color:0xcaa46a,roughness:0.6,metalness:0.05,envMapIntensity:0.5});
+  const chromeMat=new THREE.MeshStandardMaterial({color:0xeef1f5,metalness:1.0,roughness:0.12,envMapIntensity:1.5});
+  const darkMat=new THREE.MeshStandardMaterial({color:0x11151b,metalness:0.4,roughness:0.5});
+  const accentMat=new THREE.MeshStandardMaterial({color:CFG.accent||0x1f5fd6,roughness:0.4,metalness:0.2});
+  const poolMat=new THREE.MeshPhysicalMaterial({color:0x2f95cc,metalness:0.2,roughness:0.1,transparent:true,opacity:0.85,emissive:0x0d4b6b,emissiveIntensity:0.3});
+
+  const boat=new THREE.Group(); scene.add(boat);
+  function bx(w,h,d,mat,x,y,z,rot){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);if(rot){m.rotation.z=rot.z||0;m.rotation.y=rot.y||0;m.rotation.x=rot.x||0;}m.castShadow=true;m.receiveShadow=true;boat.add(m);return m;}
+  function cyl(rt,rb,h,seg,mat,x,y,z,rot){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);m.position.set(x,y,z);if(rot){m.rotation.z=rot.z||0;m.rotation.x=rot.x||0;m.rotation.y=rot.y||0;}m.castShadow=true;boat.add(m);return m;}
+
+  const L=CFG.L, B=CFG.B, H=CFG.H, dY=CFG.deckY;
+
+  // ---------- HULL (extruded top-view outline) ----------
+  (function(){
+    const P=[[L,0],[L*0.62,B*0.72],[L*0.15,B*1.0],[-L*0.55,B*0.98],[-L*0.92,B*0.84],[-L,B*0.72],[-L,-B*0.72],[-L*0.92,-B*0.84],[-L*0.55,-B*0.98],[L*0.15,-B*1.0],[L*0.62,-B*0.72]];
+    const s=new THREE.Shape(); s.moveTo(P[0][0],P[0][1]); for(let i=1;i<P.length;i++)s.lineTo(P[i][0],P[i][1]); s.closePath();
+    const geo=new THREE.ExtrudeGeometry(s,{depth:H,bevelEnabled:true,bevelThickness:0.06,bevelSize:0.06,bevelSegments:3,steps:1,curveSegments:5});
+    const m=new THREE.Mesh(geo,hullMat); m.rotation.x=-Math.PI/2; m.position.y=dY-H; m.castShadow=true; m.receiveShadow=true; boat.add(m);
+    // boot stripe (accent) near waterline
+    const s2=new THREE.Shape(); s2.moveTo(P[0][0],P[0][1]); for(let i=1;i<P.length;i++)s2.lineTo(P[i][0],P[i][1]); s2.closePath();
+    const g2=new THREE.ExtrudeGeometry(s2,{depth:0.12,bevelEnabled:false,steps:1,curveSegments:5});
+    const m2=new THREE.Mesh(g2,accentMat); m2.rotation.x=-Math.PI/2; m2.position.y=-0.05; m2.scale.set(1.012,1.012,1); boat.add(m2);
+    // rubrail (dark sheer line at deck edge)
+    const s3=new THREE.Shape(); s3.moveTo(P[0][0],P[0][1]); for(let i=1;i<P.length;i++)s3.lineTo(P[i][0],P[i][1]); s3.closePath();
+    const g3=new THREE.ExtrudeGeometry(s3,{depth:0.07,bevelEnabled:false,steps:1,curveSegments:5});
+    const m3=new THREE.Mesh(g3,superMat); m3.rotation.x=-Math.PI/2; m3.position.y=dY-0.03; m3.scale.set(1.02,1.02,1); boat.add(m3);
+  })();
+
+  // teak deck (aft cockpit + walkable)
+  bx(L*1.5, 0.05, B*1.5, teakMat, -L*0.35, dY+0.03, 0);
+
+  // ---------- SUPERSTRUCTURE ----------
+  const hardtopMat=new THREE.MeshStandardMaterial({color:0xd6dbe1,metalness:0.3,roughness:0.5,envMapIntensity:0.8});
+  const dh=Math.max(0.46,H*0.42);
+  function deckhouse(cx,cw,cl,ch,y,front){
+    bx(cl*2,ch,cw*2,superMat,cx,y+ch/2,0);                                        // WHITE walls
+    bx(cl*2+0.04,ch*0.4,cw*2+0.05,glassMat,cx,y+ch*0.66,0);                       // dark window band (upper)
+    bx(cl*2+0.24,0.09,cw*2+0.24,hardtopMat,cx,y+ch+0.045,0);                      // hardtop (overhang)
+    if(front) bx(0.12,ch*0.46,cw*1.7,glassMat,cx+cl+0.02,y+ch*0.7,0,{z:-0.36});   // raked windshield (upper)
+  }
+  const baseY=dY+0.02;
+  deckhouse(-L*0.02, B*0.72, L*0.60, dh, baseY, true);
+  let topY=baseY+dh+0.10;
+  if(CFG.decks>=2){ deckhouse(-L*0.10, B*0.58, L*0.46, dh*0.86, topY, true); topY+=dh*0.86+0.10; }
+  if(CFG.decks>=3){ deckhouse(-L*0.16, B*0.44, L*0.32, dh*0.76, topY, true); topY+=dh*0.76+0.10; }
+
+  // hull side windows (scale cue)
+  for(const s of [1,-1]) for(let i=0;i<CFG.decks+2;i++){ bx(0.45,0.09,0.03,glassMat,-L*0.32+i*0.62,dY-0.15,s*B*0.99); }
+
+  // ---------- radar arch ----------
+  if(CFG.arch){
+    const ay=topY+0.02, aw=B*0.6, ax=-L*0.18;
+    cyl(0.05,0.05,0.5,10,chromeMat, ax, ay+0.2, aw, {x:0.3});
+    cyl(0.05,0.05,0.5,10,chromeMat, ax, ay+0.2, -aw, {x:-0.3});
+    bx(0.12,0.1,aw*2.1,chromeMat, ax-0.12, ay+0.42, 0);
+    const dome=new THREE.Mesh(new THREE.SphereGeometry(0.16,16,10,0,Math.PI*2,0,Math.PI/2),superMat); dome.position.set(ax-0.12,ay+0.5,0); boat.add(dome);
+    cyl(0.015,0.015,0.45,6,chromeMat, ax-0.12, ay+0.72, 0.22);
+    topY=ay+0.5;
+  }
+  // ---------- mast (superyacht) ----------
+  if(CFG.mast){
+    const mx=-L*0.18, my=topY+0.05;
+    cyl(0.04,0.06,1.3,8,superMat, mx, my+0.65, 0);
+    bx(0.02,0.02,0.85,chromeMat, mx, my+1.2, 0);
+    cyl(0.015,0.015,0.4,6,chromeMat, mx-0.1, my+1.4, 0);
+  }
+
+  // ---------- foredeck features ----------
+  if(CFG.helipad){ // helipad on bow
+    const hp=new THREE.Mesh(new THREE.CylinderGeometry(B*0.62,B*0.62,0.04,28),darkMat); hp.position.set(L*0.66,dY+0.06,0); boat.add(hp);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(B*0.5,0.03,8,28),accentMat); ring.rotation.x=Math.PI/2; ring.position.set(L*0.66,dY+0.09,0); boat.add(ring);
+    bx(0.06,0.02,0.28,superMat,L*0.66,dY+0.09,0); bx(0.28,0.02,0.06,superMat,L*0.62,dY+0.09,0); bx(0.28,0.02,0.06,superMat,L*0.70,dY+0.09,0);
+  } else { // sunpad
+    bx(L*0.5,0.12,B*1.1,superMat,L*0.55,dY+0.09,0);
+  }
+  if(CFG.pool){ // aft pool
+    bx(L*0.5,0.12,B*0.9,superMat,-L*0.7,dY+0.08,0);
+    bx(L*0.42,0.16,B*0.7,poolMat,-L*0.7,dY+0.12,0);
+  }
+
+  // ---------- swim platform + stern ----------
+  bx(0.5,0.08,B*1.3,teakMat,-L-0.22,0.06,0);
+  // stern name accent
+  bx(0.04,0.18,B*1.0,accentMat,-L*0.99,dY-0.2,0);
+
+  // ---------- railings (chrome) along foredeck ----------
+  (function(){
+    const yb=dY+0.06, yr=dY+0.34;
+    const pts=[[L*0.9,0],[L*0.62,B*0.68],[L*0.2,B*0.92],[-L*0.2,B*0.9]];
+    function side(sign){
+      for(let i=0;i<pts.length;i++){ cyl(0.02,0.02,0.32,6,chromeMat, pts[i][0], yb+0.16, sign*pts[i][1]); }
+      for(let i=0;i<pts.length-1;i++){ const a=pts[i],b=pts[i+1]; const mx=(a[0]+b[0])/2,mz=sign*(a[1]+b[1])/2; const len=Math.hypot(b[0]-a[0],(b[1]-a[1])); const ang=Math.atan2(sign*(b[1]-a[1]),b[0]-a[0]); const r=new THREE.Mesh(new THREE.BoxGeometry(len,0.03,0.03),chromeMat); r.position.set(mx,yr,mz); r.rotation.y=-ang; boat.add(r); }
+    }
+    side(1); side(-1);
+  })();
+
+  // gentle flag at stern
+  cyl(0.015,0.015,0.5,6,chromeMat,-L-0.15,dY+0.1,0); bx(0.02,0.16,0.26,accentMat,-L-0.15,dY+0.32,0.14);
+
+  // ================= camera =================
+  const target=new THREE.Vector3(0,CFG.deckY+0.4,0);
+  const HOME={radius:CFG.camRadius,theta:0.75,phi:CFG.camPhi};
+  let radius=HOME.radius,theta=HOME.theta,phi=HOME.phi,autoRotate=true,dragging=false,lastX=0,lastY=0;
+  function applyCamera(){const s=Math.sin(phi);camera.position.set(target.x+radius*s*Math.cos(theta),target.y+radius*Math.cos(phi),target.z+radius*s*Math.sin(theta));camera.lookAt(target);}
+  const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointerup',()=>dragging=false); el.addEventListener('pointerleave',()=>dragging=false);
+  el.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;theta-=dx*0.005;phi-=dy*0.005;phi=Math.max(0.2,Math.min(1.45,phi));});
+  el.addEventListener('wheel',e=>{e.preventDefault();radius*=(1+e.deltaY*0.0011);radius=Math.max(4,Math.min(30,radius));},{passive:false});
+
+  const btnRotate=document.getElementById('btnRotate'),btnColor=document.getElementById('btnColor'),btnReset=document.getElementById('btnReset');
+  btnRotate.addEventListener('click',()=>{autoRotate=!autoRotate;btnRotate.classList.toggle('active',autoRotate);});
+  btnReset.addEventListener('click',()=>{radius=HOME.radius;theta=HOME.theta;phi=HOME.phi;});
+  btnColor.addEventListener('click',()=>{ colIdx=(colIdx+1)%PALETTE.length; hullMat.color.setHex(PALETTE[colIdx]); });
+
+  window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+  let t=0;
+  function animate(){requestAnimationFrame(animate); t+=0.016;
+    if(autoRotate&&!dragging)theta+=0.0014;
+    boat.position.y=Math.sin(t*0.7)*0.03; boat.rotation.z=Math.sin(t*0.55)*0.018; boat.rotation.x=Math.sin(t*0.5+1)*0.01;
+    applyCamera(); renderer.render(scene,camera);
+  }
+  applyCamera(); animate();
+  if(loading)loading.style.display='none';
+})();
+</script>
+</body>
+</html>

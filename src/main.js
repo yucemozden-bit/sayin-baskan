@@ -24,6 +24,7 @@ import * as media from './ui/media.js';
 import * as congress from './ui/congress.js';
 import * as dataHub from './ui/dataHub.js';
 import * as clubView from './ui/clubView.js';
+import * as ozelHayat from './ui/ozelHayat.js';
 import { renderCampaign, renderDebate } from './ui/campaignView.js';
 import * as opposition from './ui/opposition.js';
 import * as careerEnd from './ui/careerEnd.js';
@@ -91,12 +92,28 @@ function render() {
       // damga ~1.2sn sonra tok sesle iner → dönem damgası + Ferda. DEVAM her an atlar.
       const z = t.zafer;
       const azalt = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const zTop = (z && z.toplam) || KONGRE_UYE;      // toplam delege
+      const zEsik = Math.floor(zTop / 2) + 1;           // kazanma çizgisi (%50+1 oy)
       const zaferBlok = z ? `<div class="secim-zafer">
           <div class="overline zg-ust" style="color:var(--pos)">Kongre Seçimi · Oylar Sayılıyor…</div>
+          <div class="zg-salon">Kongre salonu · ${zTop} delege · sandıklar açılıyor</div>
+          <div class="zg-panel">
+            <div class="zg-stat"><div class="zg-stat-k">Sayılan Sandık</div><div class="zg-stat-v tnum zg-sayilan">%0</div></div>
+            <div class="zg-stat"><div class="zg-stat-k">Kullanılan Oy</div><div class="zg-stat-v tnum zg-katilan">0</div></div>
+            <div class="zg-stat vurgu"><div class="zg-stat-k">Kazanma Çizgisi</div><div class="zg-stat-v tnum">${zEsik}</div></div>
+          </div>
           <div class="zafer-baslik led zg-kazandin">KAZANDIN</div>
-          <div class="aday-bar" style="margin-top:8px">
-            <div class="satir"><span class="zg-lbl-sen">${escH(z.baskanAd || 'SEN')} · 0</span><div class="track"><div class="sen" style="width:0%"></div></div></div>
-            <div class="satir"><span class="muted zg-lbl-rakip">${escH(z.rakipAd)} · 0</span><div class="track"><div class="rakip" style="width:0%"></div></div></div>
+          <div class="zg-onde"><span class="muted">Şu an önde:</span> <b class="zg-onde-ad">—</b></div>
+          <div class="aday-bar zg-bars" style="margin-top:8px">
+            <div class="satir">
+              <div class="zg-satir-ust"><span class="zg-ad">${escH(z.baskanAd || 'SEN')}</span><span class="zg-lbl-sen">0 oy</span></div>
+              <div class="track"><div class="sen" style="width:0%"></div><div class="esik-cizgi" style="left:50%"></div></div>
+            </div>
+            <div class="satir">
+              <div class="zg-satir-ust"><span class="zg-ad muted">${escH(z.rakipAd)}</span><span class="zg-lbl-rakip muted">0 oy</span></div>
+              <div class="track"><div class="rakip" style="width:0%"></div><div class="esik-cizgi" style="left:50%"></div></div>
+            </div>
+            <div class="micro zg-esik-not">kesikli çizgi · kazanma çizgisi ${zEsik} oy</div>
           </div>
           <div class="muted zg-sonuc" style="font-size:12px;margin-top:6px">${escH(z.rakipAd)} sandıkta geride kaldı — koltuk senin. Şimdi imza vakti.</div>
         </div>` : '';
@@ -125,6 +142,18 @@ function render() {
         adlar.forEach((_, i) => setTimeout(() => { if (document.querySelector('.parsomen')) FX.muhur(); }, bazi + i * aralik + damgaGecik));
       }
       if (z && !t._zafer) { t._zafer = true; setTimeout(() => zaferSayimi(z, azalt), 60); } // konfetiAt() + FX.zafer sayım bitince
+    } else if (t.tip === 'kupa') {
+      // #1 ŞAMPİYONLUK GECESİ — altın kupa sinematiği: kupa iner, ışık patlar, kariyer yıldızları dizilir
+      const yildizlar = Array.from({ length: Math.min(5, t.kupaNo || 1) }, () => '<span class="kupa-yildiz-tek">★</span>').join('');
+      icerik = `<div class="scene kupa-sahne" style="max-width:600px">
+        <div class="overline kupa-ust">Lig Şampiyonluğu · ${t.sezon || G.worldSeason}. Sezon</div>
+        <div class="kupa-svg">${kupaSvg()}</div>
+        <div class="kupa-yildizlar" data-tip="Kariyer şampiyonlukların">${yildizlar}</div>
+        <div class="zafer-baslik led kupa-baslik">ŞAMPİYON</div>
+        <div class="kupa-kulup">${escH((G.club?.name || '').toLocaleUpperCase('tr'))}</div>
+        <div class="muted kupa-soz" style="font-style:italic">${escH(t.sub || '')}</div>
+      </div>`;
+      if (!t._kutlama) { t._kutlama = true; setTimeout(() => { konfetiAt(); FX.zafer(); }, 400); }
     } else {
       icerik = `<div class="scene" style="max-width:560px">
         <div style="font-size:44px">${t.icon || '⚽'}</div>
@@ -132,10 +161,19 @@ function render() {
         <div class="muted" style="font-style:italic">${escH(t.sub || '')}</div>
       </div>`;
     }
-    html = shell(G, {
-      center: true, devam: { label: 'DEVAM ►', pulse: true },
-      content: icerik,
-    });
+    // sb- cinematic tam-ekran: oyunun geri kalanıyla AYNI topbar (arma+lig+faz çipi+kasa/borç+başkan)
+    // ve alt bar. Seçim gecesi/tören artık kokpit-medya-veri ile aynı formatta.
+    const chip = t.tip === 'muhur' ? 'KONGRE SEÇİMİ · SANDIK' : t.tip === 'kupa' ? 'ŞAMPİYONLUK GECESİ' : 'SEZON GEÇİŞİ';
+    const bbNote = t.tip === 'muhur' ? 'Kongre seçim sonucu · mühür töreni' : t.tip === 'kupa' ? 'Kupa töreni · şehir bayramda' : (t.sub ? escH(t.sub) : 'Devam et');
+    html = `<div class="sb-root sb-cinematic secim-toren">
+      <div class="sb-atmo"></div><div class="sb-vignette"></div>
+      ${cockpit.sbTopbar(G, { phaseChip: chip })}
+      <div class="sb-body sb-body-col secim-toren-body">${icerik}</div>
+      <footer class="sb-bottombar">
+        <div class="sb-bb-l"><span class="sb-bb-k">${t.tip === 'muhur' ? 'KONGRE' : 'GEÇİŞ'}</span><span class="sb-bb-note">${bbNote}</span></div>
+        <button class="sb-btn sb-btn-primary" data-act="devam">DEVAM ▸</button>
+      </footer>
+    </div>`;
     app.innerHTML = html;
     document.body.classList.remove('kriz');
     return;
@@ -175,10 +213,11 @@ function render() {
           html = shell(G, { content: matchday.render(G), center: true, devam: needsChoice ? null : { label: 'DEVAM ►', pulse: true } });
         }
       } else {
-        const screens = { cockpit, kadro: squadView, transfer: transferView, tesis: facilitiesView, finans: finance, medya: media, kongre: congress, veri: dataHub, kulup: clubView, inbox, ayarlar: settings };
+        const screens = { cockpit, kadro: squadView, transfer: transferView, tesis: facilitiesView, finans: finance, medya: media, kongre: congress, veri: dataHub, kulup: clubView, ozel: ozelHayat, inbox, ayarlar: settings };
         const screen = screens[G.nav] || cockpit;
+        if (G.nav === 'ozel' && !G.ozel && G.club) A.initOzel(G); // eski kayıt: özel hayat katmanı tembel kurulur
         // sb- görsel katmana göç etmiş nav ekranları — kendi tam-ekran sbShell kabuğunu üretir
-        const SB_NAV = new Set(['cockpit', 'kadro', 'transfer', 'tesis', 'finans', 'medya', 'kongre', 'veri', 'kulup', 'inbox']);
+        const SB_NAV = new Set(['cockpit', 'kadro', 'transfer', 'tesis', 'finans', 'medya', 'kongre', 'veri', 'kulup', 'ozel', 'inbox', 'ayarlar']);
         const hazir = (G.hazirlik || 0) > 0;
         if (SB_NAV.has(G.nav)) {
           // sb- göç etmiş nav ekranı — kendi tam-ekran sbShell kabuğunu üretir (shell() ile sarmalanmaz)
@@ -197,10 +236,10 @@ function render() {
       html = renderDebate(G); break;      // sb-cinematic; cevap butonları sahnede
     case 'ELECTION_NIGHT': {
       const e = G.election;
-      const revealing = (e.revealStep ?? 0) <= 5 && !e.counting && !e.done;
+      const revealing = (e.revealStep ?? 0) <= 6 && !e.counting && !e.done; // 6 karne kartı (Aile dahil)
       const label = e.done ? (e.kazandi ? 'Yeni Döneme Başla ►' : 'Kariyer Sonu ►')
         : e.counting ? 'Seçimi Sonlandır ►'
-          : revealing ? (e.revealStep < 5 ? 'Karneyi Aç ►' : 'Rakibi Dinle ►') : 'Oyları Say ►';
+          : revealing ? (e.revealStep < 6 ? 'Karneyi Aç ►' : 'Rakibi Dinle ►') : 'Oyları Say ►';
       html = shell(G, { content: electionNight.render(G), center: true, devam: { label, disabled: false, pulse: true } });
       break;
     }
@@ -217,6 +256,7 @@ function render() {
   app.innerHTML = html;
   document.body.classList.toggle('kontrast', !!G.uiKontrast); // Ayarlar → Yüksek Kontrast
   fitVaat(); // KAYDIRMASIZ GARANTİ: sahne ekrandan uzunsa orantılı küçült — asla taşmaz
+  fitSb();   // sb- ekranları (Finans vitrin) için aynı garanti — panel kırpılmaz, ölçeklenir
   typewriterTepki(); // Makam Odası: GM tepkisi harf harf yazılır (toplantı hissi)
   canliSkorSayimi(); // Maç yayını: skor 0-0 başlar, goller ticker'a düştükçe TEK TEK artar
   // GÖRSEL KİMLİK §2: kulüp rengi runtime sızması (kariyer başında bir kez uygular)
@@ -273,6 +313,22 @@ function fitVaat() {
   const avail = stage.clientHeight - 8;
   const need = el.scrollHeight;
   if (need > avail && avail > 160) {
+    const s = Math.max(0.55, avail / need);
+    el.style.transformOrigin = 'top left';
+    el.style.transform = `scale(${s})`;
+    el.style.width = `${(100 / s).toFixed(2)}%`;
+  }
+}
+
+// sb- ekranlarında da KAYDIRMASIZ GARANTİ: doğal yükseklikli içerik (ör. Finans .fin-root)
+// ayrılan alandan uzunsa fitVaat ile aynı teknikle orantılı küçültülür — kırpılma/taşma yok.
+function fitSb() {
+  const el = app.querySelector('.fin-root');
+  if (!el) return;
+  el.style.transform = ''; el.style.width = '';
+  const avail = el.clientHeight;           // flex'in bu içeriğe ayırdığı alan
+  const need = el.scrollHeight;            // içeriğin doğal boyu (sponsor paneli artık doğal akar)
+  if (need > avail + 2 && avail > 160) {
     const s = Math.max(0.55, avail / need);
     el.style.transformOrigin = 'top left';
     el.style.transform = `scale(${s})`;
@@ -384,8 +440,8 @@ function flushToasts() {
 }
 
 // Y2: Telefon modalı — arayan kimliği renkli çerçeveyle EKRANI KESER
-const CALLER_COLOR = { gm: 'var(--info)', gazeteci: 'var(--warn)', kurul: 'var(--club)', menajer: 'var(--neg)', kaptan: 'var(--pos)' };
-const CALLER_TR = { gm: 'GENEL MENAJER', gazeteci: 'GAZETECİ', kurul: 'KURUL', menajer: 'MENAJER', kaptan: 'KAPTAN' };
+const CALLER_COLOR = { gm: 'var(--info)', gazeteci: 'var(--warn)', kurul: 'var(--club)', menajer: 'var(--neg)', kaptan: 'var(--pos)', aile: '#e88aa8' };
+const CALLER_TR = { gm: 'GENEL MENAJER', gazeteci: 'GAZETECİ', kurul: 'KURUL', menajer: 'MENAJER', kaptan: 'KAPTAN', aile: '💗 AİLE' };
 // TELEFON KONU OYUNCUSU — kart HER telefonda çıksın: önce açık referans (file.player/playerId),
 // yoksa başlık/gövdede ADI GEÇEN kadro/teklif/piyasa oyuncusunu bul (en uzun ad = en spesifik).
 // Böylece savas/kaptan/kontrat/sakat/skandal gibi oyuncu konulu tüm telefonlarda kart açılır.
@@ -538,9 +594,10 @@ function dispatch(act, arg) {
     case 'renewContract': A.renewContract(G, arg); break;                                       // oyuncu kartı: sözleşme yenile
     case 'noop': break;                                                                        // kart içi boş tık (kapatmasın)
     case 'midPromise': A.makeMidPromise(G, arg); break;                                        // oyun-içi yeni söz
-    case 'trFiltre': G._trFiltre = arg; G._trSayfa = 0; break;                                 // piyasa filtresi (bütçe/mevki/hepsi)
+    case 'trFiltre': G._trFiltre = arg; G._trSayfa = 0; break;                                 // piyasa filtresi (mevki/kısa liste/hepsi)
     case 'trSayfa': G._trSayfa = Math.max(0, (G._trSayfa || 0) + Number(arg)); break;          // 80+ havuzda sayfalama
-    case 'trTab': G._trTab = arg; break;                                                       // PİYASA/SATIŞ/TEKLİFLER sekmeleri
+    case 'trSirala': G._trSirala = arg; G._trSayfa = 0; break;                                 // masa sıralaması (güç/bedel/yaş)
+    case 'shortlist': { const s = new Set(G._shortlist || []); s.has(arg) ? s.delete(arg) : s.add(arg); G._shortlist = [...s]; break; } // ★ kısa liste
     case 'kurulButce': A.kurulButceArtisi(G); break;                                           // dönemde 1 kez tavan artışı iste
     case 'sosyalProje': A.sosyalProje(G); break;                                               // P10: kulüp mahalleye iner
     case 'kadinTakim': A.kadinTakimiKur(G); break;                                             // P11: kadın futbol şubesi
@@ -551,6 +608,10 @@ function dispatch(act, arg) {
     case 'reqOffer': A.requestOffer(G, arg); break;                                            // GM'e dosya iste
     case 'tfile': { const [id, c] = arg.split('|'); A.resolveTransferFile(G, id, c); break; } // §1 onay dosyası
     case 'sfile': { const [id, c] = arg.split('|'); A.resolveSaleFile(G, id, c); break; }     // §1 satış aynası
+    case 'kayyum': { const [id, c] = arg.split('|'); A.kayyumPaket(G, id, c); break; }        // #3 kurtuluş paketi
+    case 'megaProje': A.megaProjeBaslat(G); break;                                            // #8 stadyum kompleksi
+    case 'spBuyout': { const [id, c] = arg.split('|'); A.resolveSponsorBuyout(G, id, c); break; } // sponsor avı — fesih bedelini rakip öder
+    case 'vitrin': { const [k, i] = arg.split('|'); G._vitrin = { kat: k, idx: +i || 0 }; break; } // showroom 3D vitrin seçimi (salt UI)
     case 'cfile': { const [id, i] = arg.split('|'); A.hireCoachFile(G, id, i); break; }       // §2 TD imza
     case 'fireCoach': A.fireCoach(G); break;                                                   // §2 kovma
     case 'dirBudget': G._dir = { ...(G._dir || { line: 'hazir' }), budgetKey: arg }; break;    // §1 direktif
@@ -611,6 +672,17 @@ function dispatch(act, arg) {
     case 'campaign': A.campaignDo(G, arg); break;                                            // D6 KP aksiyonu
     case 'debate': A.answerDebate(G, arg); break;                                            // D6 münazara cevabı
     case 'debateSkip': A.skipDebate(G); break;
+    // ── İLİŞKİ aksiyonları (2.1) ──
+    case 'pJest': A.playerJest(G, arg); break;                                                // kişisel jest (haftada 1)
+    case 'pSoz': A.playerSoz(G, arg); break;                                                  // "satmam sözü"
+    case 'roportaj': { const r = A.ozelRoportaj(G); if (r && r.ok) FX.devam(); break; }       // basına özel röportaj (2.5)
+    // ── ÖZEL HAYAT aksiyonları ──
+    case 'ozelTab': G._ozelTab = arg; break;
+    case 'ozelProg': A.ozelProg(G, arg); break;                                               // haftalık akşam programı (+/−)
+    case 'ozelKarar': { const r = A.ozelKarar(G, Number(arg)); if (r && r.ok) FX.tik(); break; } // özel gündem ikilemi (tok karar sesi)
+    case 'ozelVarlik': A.ozelVarlik(G, arg); break;                                           // varlık yükseltme
+    case 'ozelDavet': { const r = A.ozelDavet(G, arg); if (r && r.ok) FX.devam(); break; }    // davet düzenle
+    case 'ozelBagis': A.ozelBagis(G, parseFloat(arg)); break;                                 // kulübe kişisel destek
     case 'save': doSave(); return;
     case 'load': doLoad(); return;
     case 'devam': onDevam(); autoSave(); return;                                              // her ilerleyişte otokayıt
@@ -673,7 +745,7 @@ function onDevam() {
       A.advanceCampaign(G); render(); break;
     case 'ELECTION_NIGHT': {
       const e = G.election;
-      if ((e.revealStep ?? 0) <= 5 && !e.counting && !e.done) { e.revealStep = (e.revealStep ?? 0) + 1; render(); break; } // karne kartları tek tek + rakip
+      if ((e.revealStep ?? 0) <= 6 && !e.counting && !e.done) { e.revealStep = (e.revealStep ?? 0) + 1; render(); break; } // karne kartları tek tek + rakip
       if (e.counting) { finalizeVoteCount(); break; } // "Seçimi Sonlandır" → animasyonu atla, sonucu hemen göster
       if (!e.counting && !e.done) runVoteCount();
       else if (e.done) {
@@ -744,46 +816,64 @@ function zaferSayimi(z, azalt) {
   const TOPLAM = z.toplam || KONGRE_UYE;
   const senF = z.senOy ?? Math.round(TOPLAM * z.sen / 100), rakF = TOPLAM - senF;
   const benAd = z.baskanAd || 'SEN';
+  const set = (s, v) => { const el = q(s); if (el) el.textContent = v; };
+  // TEK ÇİZİM NOKTASI — iki barı da AYNI karede çizer. width = oy/TOPLAM olduğundan
+  // oyu ÇOK olanın barı HER ZAMAN daha uzun; transition YOK → ne hesaplanırsa o çizilir
+  // (eski hata: CSS width-transition hızlı büyüyen/önde barı geriden takip edip kısa gösteriyordu).
+  const ciz = (senV, rakV) => {
+    // ÖNEMLİ: bar SADECE .aday-bar içinden seçilir. "Şu an önde" rozeti (.zg-onde-ad) önde
+    // olana göre sen/rakip class'ı alır ve DOM'da bardan önce gelir → '.secim-zafer .rakip'
+    // o rozeti yakalar, genişlik yanlış elemana yazılır, ÖNDE olanın barı hiç güncellenmezdi.
+    const sen = q('.secim-zafer .aday-bar .sen'), rak = q('.secim-zafer .aday-bar .rakip'); if (!sen || !rak) return false;
+    // INLINE transition/transform none: eski/önbellekteki CSS'te width-transition kalsa bile
+    // inline stil onu EZER → kovalama/lag olmaz, genişlik = oy/TOPLAM birebir çizilir.
+    sen.style.transition = 'none'; sen.style.transform = 'none';
+    rak.style.transition = 'none'; rak.style.transform = 'none';
+    sen.style.width = (senV / TOPLAM * 100) + '%';
+    rak.style.width = (rakV / TOPLAM * 100) + '%';
+    q('.zg-lbl-sen').textContent = `${senV} oy · %${Math.round(senV / TOPLAM * 100)}`;
+    q('.zg-lbl-rakip').textContent = `${rakV} oy · %${Math.round(rakV / TOPLAM * 100)}`;
+    const sayilan = senV + rakV;
+    set('.zg-sayilan', '%' + Math.round(sayilan / TOPLAM * 100));
+    set('.zg-katilan', String(sayilan));
+    const ondeEl = q('.zg-onde-ad');
+    if (ondeEl) {
+      const onde = senV >= rakV;
+      ondeEl.textContent = onde ? benAd : z.rakipAd;
+      ondeEl.classList.toggle('lead-sen', onde);   // NOT: 'sen'/'rakip' DEĞİL — bar seçicisiyle çakışırdı
+      ondeEl.classList.toggle('lead-rakip', !onde);
+    }
+    return true;
+  };
   const bitir = () => {
     if (!q('.secim-zafer')) return; // ekran atlandı
-    q('.secim-zafer').classList.add('bitti'); // huzme dur, kazanan bar nabız atar
+    q('.secim-zafer').classList.add('bitti');
     q('.zg-ust').textContent = 'Kongre Seçimi · Sandık Kapandı';
-    q('.secim-zafer .sen').style.width = (senF / TOPLAM * 100) + '%';
-    q('.secim-zafer .rakip').style.width = (rakF / TOPLAM * 100) + '%';
-    q('.zg-lbl-sen').textContent = `${benAd} · ${senF} oy`;
-    q('.zg-lbl-rakip').textContent = `${z.rakipAd} · ${rakF} oy`;
+    set('.zg-salon', `Kongre salonu · ${TOPLAM} delege · tüm sandıklar sayıldı`);
+    ciz(senF, rakF);                                  // final: tam değerler tek noktadan
+    const onde = q('.zg-onde'); if (onde) onde.style.display = 'none';
     q('.zg-kazandin').classList.add('goster');
     q('.zg-sonuc').classList.add('goster');
     konfetiAt(); FX.zafer();
   };
   if (azalt || !q('.secim-zafer')) { bitir(); return; }
-  // Fark SENARYOLU: ilk sandıklar rakibe gider (önde o), ~%42'de SEN geçersin,
-  // küçük dalgalanmayla ayrışıp kazanırsın. Sayaçlar asla geri düşmez, final TAM tutar.
-  const D = senF - rakF;
-  const farkOf = (p) => Math.round(D * (
-    Math.pow(p, 2.4)                                                       // sona doğru açılan gerçek fark
-    - 0.35 * Math.sin(Math.min(p, .6) / .6 * Math.PI) * Math.pow(1 - p, 1.5) // erken dönem: rakip önde
-    + 0.06 * Math.sin(p * 22) * (1 - p)                                    // salinim: geçiş anı gerilir
-  ));
-  const sure = 10000, t0 = performance.now();
-  let senCur = 0, rakCur = 0, sonTik = 0;
-  const iv = setInterval(() => {
-    const sen = q('.secim-zafer .sen');
-    if (!sen) { clearInterval(iv); return; }
-    const p = Math.min(1, (performance.now() - t0) / sure);
-    const toplam = Math.round(TOPLAM * (1 - Math.pow(1 - p, 1.35))); // sayım sona doğru yavaşlar
-    let ns = Math.round((toplam + farkOf(p)) / 2);
-    ns = Math.max(senCur, Math.min(ns, senF));            // monoton + final kelepçesi
-    let nr = Math.max(rakCur, Math.min(toplam - ns, rakF));
-    if (p >= 1) { ns = senF; nr = rakF; }
-    senCur = ns; rakCur = nr;
-    sen.style.width = (senCur / TOPLAM * 100) + '%';
-    q('.secim-zafer .rakip').style.width = (rakCur / TOPLAM * 100) + '%';
-    q('.zg-lbl-sen').textContent = `${benAd} · ${senCur}`;
-    q('.zg-lbl-rakip').textContent = `${z.rakipAd} · ${rakCur}`;
-    if (performance.now() - sonTik > 1100) { sonTik = performance.now(); FX.sayim(); } // sandık tıkırtısı
-    if (p >= 1) { clearInterval(iv); bitir(); }
-  }, 120);
+  // rAF: her kare tek p'den çizilir → iki bar TAM senkron; rakip önden dolar (x^0.8),
+  // sen sona doğru geçer (x^1.25). İkisi de monoton → donma/zıplama yok.
+  const easeGir = (x) => Math.pow(x, 1.25);
+  const easeCik = (x) => Math.pow(x, 0.8);
+  const sure = 9000;
+  let t0 = 0, sonTik = 0;
+  const adim = (now) => {
+    if (t0 === 0) t0 = now;
+    const p = Math.min(1, (now - t0) / sure);
+    const senV = p >= 1 ? senF : Math.round(senF * easeGir(p));
+    const rakV = p >= 1 ? rakF : Math.round(rakF * easeCik(p));
+    if (!ciz(senV, rakV)) return;                     // ekran atlandı → dur
+    if (now - sonTik > 1100) { sonTik = now; FX.sayim(); } // sandık tıkırtısı
+    if (p >= 1) { bitir(); return; }
+    requestAnimationFrame(adim);
+  };
+  requestAnimationFrame(adim);
 }
 
 // GÖRSEL 5f: hafif konfeti — 14 parça, 2sn, kendini temizler (reduced-motion'da CSS kapatır)
@@ -797,6 +887,27 @@ function konfetiAt() {
     document.body.appendChild(k);
     setTimeout(() => k.remove(), 2600);
   }
+}
+
+// #1 ŞAMPİYONLUK KUPASI — prosedürel altın kupa SVG (asset yok; başkanlık altını degrade + ışık huzmesi)
+function kupaSvg() {
+  return `<svg viewBox="0 0 120 140" width="100%" height="100%" aria-hidden="true">
+    <defs>
+      <linearGradient id="kupa-au" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f0cd6e"/><stop offset=".5" stop-color="#d4a940"/><stop offset="1" stop-color="#9a7622"/>
+      </linearGradient>
+      <radialGradient id="kupa-glow" cx="50%" cy="34%" r="62%">
+        <stop offset="0" stop-color="rgba(240,205,110,.45)"/><stop offset="1" stop-color="transparent"/>
+      </radialGradient>
+    </defs>
+    <rect width="120" height="140" fill="url(#kupa-glow)"/>
+    <path d="M35 18 h50 v26 c0 18 -11 30 -25 30 s-25 -12 -25 -30 Z" fill="url(#kupa-au)"/>
+    <path d="M35 24 c-14 0 -20 8 -18 18 c2 9 10 14 20 14 M85 24 c14 0 20 8 18 18 c-2 9 -10 14 -20 14" fill="none" stroke="url(#kupa-au)" stroke-width="6" stroke-linecap="round"/>
+    <rect x="54" y="74" width="12" height="16" fill="url(#kupa-au)"/>
+    <path d="M42 90 h36 l6 14 h-48 Z" fill="url(#kupa-au)"/>
+    <rect x="34" y="104" width="52" height="10" rx="2" fill="#7c5f1d"/>
+    <path d="M44 20 v22 c0 10 4 18 8 22" stroke="rgba(255,255,255,.45)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>`;
 }
 
 // ── OTOKAYIT (localStorage): her hafta ilerleyişinde sessizce yazılır; açılışta "Devam Et" sunar ──
@@ -864,9 +975,19 @@ app.addEventListener('click', (ev) => {
   // ve "tuşa basınca ekran yenileniyor" hissi doğar.
   if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
 });
-// Esc: açık overlay'i kapat — oyuncu kartı / başarım duvarı (başka tuşlar oyunu İLERLETMEZ)
+// Esc: açık overlay'i kapat · SPACE: ekrandaki DEVAM butonuna basar (kullanıcı isteği) —
+// yazı alanında yazarken ve tuş basılı tutulurken (repeat) ÇALIŞMAZ; ekranda buton yoksa hiçbir şey ilerlemez.
 window.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape' || !G) return;
+  if (!G) return;
+  if (e.key === ' ' || e.code === 'Space') {
+    if (e.repeat) return; // basılı tutup hafta makinelemek yok — her ilerleme bilinçli bir dokunuş
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    const btn = document.querySelector('button[data-act="devam"]:not([disabled])');
+    if (btn) { e.preventDefault(); btn.click(); } // preventDefault: sayfa kaydırma + odaklı butonda çift tetik engeli
+    return;
+  }
+  if (e.key !== 'Escape') return;
   if (G._pcard) { G._pcard = null; render(); }
   else if (G._achModal) { G._achModal = false; render(); }
 });
@@ -875,9 +996,9 @@ eventBus.on('TICK_END', () => {}); // ui eventBus dinler (ileride canlı widget'
 // AÇILIŞ 1f: kart hover'ında görsel renk parıltısı CSS ile kalır; uğultu sesi kaldırıldı (kullanıcı isteği)
 globalThis.SBhover = () => {};
 
-window.addEventListener('resize', () => fitVaat()); // pencere boyu değişse de vaat sahnesi sığar
+window.addEventListener('resize', () => { fitVaat(); fitSb(); }); // pencere boyu değişse de sahneler sığar
 // Fontlar geç gelirse ilk render fitVaat'ı yanlış (küçük) ölçüyle çalıştırır → sahne az ölçeklenip
 // alttan taşabilir. Web fontları yerleşince bir kez daha sığdır (sonraki her render zaten çağırır).
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitVaat());
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitVaat(); fitSb(); });
 
 boot();

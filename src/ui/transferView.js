@@ -8,7 +8,7 @@ import { TUNING } from '../config.js';
 import { esc, fmt } from './frame.js';
 import { shownRating } from '../engines/market.js';
 import { sbShell } from './cockpit.js';
-import { playerAvatar } from './playerCard.js';
+// playerAvatar yerine mini FORMA ikonu kullanılıyor (skaut dosyası dili)
 
 const POS_TR = { GK: 'Kaleci', DEF: 'Stoper', MID: 'Orta saha', FWD: 'Forvet' };
 const POS_COL = { GK: 'var(--club)', DEF: 'var(--info)', MID: 'var(--pos)', FWD: 'var(--warn)' };
@@ -26,17 +26,27 @@ export function render(G) {
   const maasYuk = Math.round((G.squad || []).reduce((a, p) => a + (p.wage || 0), 0) * 10) / 10;
   const maasPct = dir.wageCap ? Math.min(100, Math.round((maasYuk / (dir.wageCap * 12)) * 100)) : 0;
 
-  // ── BÜTÇE paneli (sağ üst) ──
+  // ── BÜTÇE paneli (sağ üst) — her satır ETKİSİNİ kendisi söyler; gizli mekanikler görünür ──
+  const haftalikMaas = Math.round(maasYuk / (TUNING.ECONOMY?.WEEKS_PER_YEAR || 52) * 10) / 10;
+  const LINE_BANT = { genc: '17-21 yaş · güç 50-62', hazir: '24-28 yaş · güç 65-72', yildiz: 'tek isim · güç 78-85' };
+  const ffp = G.ffp;
+  const ffpPct = ffp ? Math.min(100, Math.round((ffp.spent / Math.max(1, ffp.limit)) * 100)) : 0;
+  const ffpRenk = ffpPct > 90 ? 'var(--neg)' : ffpPct > 70 ? 'var(--warn)' : 'var(--pos)';
+  const kurulKullanildi = G._kurulButceDonem === (G.meta?.term || 1);
   const butcePanel = `<div class="sb-panel tr-butce-panel">
-    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">BÜTÇE</span></div>
-    <div class="trb-kalan"><span>Kalan bütçe</span><b class="${kalan <= effBudget * 0.15 ? 'neg' : ''}">${fmt(kalan)}<em>mn</em></b></div>
+    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">BÜTÇE &amp; DİREKTİF</span><span class="sb-panel-r" data-tip="Makam Odası'nda verdiğin direktifin canlı takibi — kese sanaldır, para alım anında KASADAN çıkar">Makam kararın</span></div>
+    <div class="trb-kalan"><span>KALAN KESE</span><b class="${kalan <= effBudget * 0.15 ? 'neg' : ''}">${fmt(kalan)}<em>mn</em></b></div>
     <div class="sb-bar"><span class="sb-bar-fill" style="width:${100 - pct}%;background:${barCol}"></span></div>
-    <div class="trb-note">${effBudget}mn keseden <b>${fmt(spent)}mn</b> harcandı${sale ? ` · satış +${fmt(sale)}mn` : ''}</div>
-    <div class="trb-row"><span>Maaş tavanı (tek transfer)</span><b>${fmt(dir.wageCap || 0)}mn</b></div>
-    <div class="trb-row"><span>Kadro maaş yükü</span><b>${fmt(maasYuk)}mn/sezon</b></div>
-    <div class="sb-bar sb-bar-thin"><span class="sb-bar-fill" style="width:${maasPct}%;background:${maasPct > 85 ? 'var(--neg)' : 'var(--club-2)'}"></span></div>
-    <div class="trb-row"><span>GM çizgisi</span><b>${lineTr[dir.line] || '—'}</b></div>
-    <button class="tr-kurul-btn" data-act="kurulButce" ${G._kurulButceDonem === (G.meta?.term || 1) || G.mode === 'aile' ? 'disabled' : ''} data-tip="Dönemde 1 kez: kurulun mali güveni ≥55 ise tavan +%15 (Mali −6); zayıfsa RET + Mali −3">🏛 Kurula bütçe artışı iste</button>
+    <div class="trb-denklem" data-tip="Sattığın oyuncunun bedeli keseyi BÜYÜTÜR — satarak alım gücü yaratırsın">
+      <span>Kese <b>${fmt(dir.budget || 0)}</b></span><i>+</i><span class="pos">Satış <b>${fmt(sale)}</b></span><i>−</i><span class="${spent ? 'neg' : ''}">Harcanan <b>${fmt(spent)}</b></span>
+    </div>
+    <div class="trb-etki">◆ Bedeli keseyi aşan isim <b>“Bütçe dışı”</b> düşer — ancak GM görüşüyle zorlanır</div>
+    <div class="trb-row" data-tip="Pazarlıkta GM, oyuncu maaşını bu tavana ÇEKEREK anlaşır — yıldızların el freni"><span>Maaş tavanı <i>(tek transfer)</i></span><b>${fmt(dir.wageCap || 0)}mn/yıl</b></div>
+    <div class="trb-row" data-tip="Kadronun yıllık maaş toplamı — her hafta kasandan sessizce kesilir"><span>Kadro maaş yükü</span><b>${fmt(maasYuk)}mn <em class="neg">(haftada −${fmt(haftalikMaas)})</em></b></div>
+    ${ffp ? `<div class="trb-row" data-tip="Federasyon harcama limiti: transfer bedeli + maaş buna sayılır. Aşarsan taahhütname imzalarsın — gelecek gelirden kesilir${ffp.taahhut ? ' · TAAHHÜT AKTİF' : ''}"><span>FFP limiti</span><b style="color:${ffpRenk}">${fmt(ffp.spent)} / ${fmt(ffp.limit)}mn</b></div>
+    <div class="sb-bar sb-bar-thin"><span class="sb-bar-fill" style="width:${ffpPct}%;background:${ffpRenk}"></span></div>` : ''}
+    <div class="trb-row" data-tip="Makam'daki 'Gözüm kimde olsun?' kararın — GM dosyaları BU banttan getirir"><span>GM çizgisi</span><b>${lineTr[dir.line] || '—'} <em>· ${LINE_BANT[dir.line] || ''}</em></b></div>
+    <button class="tr-kurul-btn" data-act="kurulButce" ${kurulKullanildi || G.mode === 'aile' ? 'disabled' : ''} data-tip="${G.mode === 'aile' ? 'Aile modunda kurul yok' : kurulKullanildi ? 'Bu dönem hakkını kullandın' : 'Dönemde 1 KEZ: kurulun mali güveni ≥55 ise kese +%15 büyür ama Mali −6 · mali güven zayıfsa RET + Mali −3 (hak yine yanar)'}">🏛 ${kurulKullanildi ? 'Kurul hakkı kullanıldı' : 'Kuruldan +%15 iste (Mali −6)'}</button>
   </div>`;
 
   // ── Pencere kapalı ──
@@ -62,13 +72,31 @@ export function render(G) {
   const yasMax = { genc: 23, hazir: 28, yildiz: 30 }[dir.line] || 28;
   const tavan = Math.max(10, Math.min(60, Math.round(kalan * 0.8) || 40));
   const yildizTavan = Math.max(35, Math.min(75, Math.round(kalan) || 60));
+  // ARKETİP KARTLARI (görsel+dinamik): her kart CANLI hedef okur — yaşlanan/en zayıf hat, bütçeye
+  // göre tavan, rakip başkan indirimi. İlan yayındayken şerit büyük nabızlı duruma döner.
+  const kelepirDost = ((G.bkRel || {})[G.opponents?.[0]?.id] ?? 50) >= 70;
   const arama = G.ilan
-    ? `<div class="tr-ilan-live" data-tip="Menajerler ellerindekini getirir; kulüpler 1-3 haftada dosya yollar"><span class="tr-live-dot"></span>İLAN YAYINDA · <b>${POS_TR[G.ilan.pos]}</b> aranıyor · ${G.ilan.kalan} cevap hakkı</div>`
-    : `<div class="tr-arama">
-        <span class="tr-arama-lbl">ARA:</span>
-        <button class="tr-arketip" data-act="ilan" data-arg="${yasli}|20|${Math.max(10, Math.round(tavan * 0.5))}" data-tip="${POS_TR[yasli]} (yaşlanan hat) · gelecek yatırımı · ≤20 yaş">🌱 Genç Yetenek</button>
-        <button class="tr-arketip yildiz" data-act="ilan" data-arg="${zayif}|31|${yildizTavan}" data-tip="${POS_TR[zayif]} (en zayıf hat) · tribün coşar, kese zorlanır">⭐ Yıldız Avı</button>
-        <button class="tr-arketip" data-act="ilan" data-arg="${zayif}|31|15" data-tip="${POS_TR[zayif]} · bütçe yormaz, sürpriz çıkabilir · tavan 15mn">💰 Kelepir</button>
+    ? `<div class="tr-ilan-live" data-tip="Menajerler ellerindekini getirir; kulüpler 1-3 haftada dosya yollar">
+        <span class="tr-live-dot"></span>
+        <div class="tr-ilan-id"><b>İLAN YAYINDA</b><i>${POS_TR[G.ilan.pos]} aranıyor · "İLAN" rozetli isimler listede · cevap dosyaları Inbox'a düşer</i></div>
+        <span class="tr-ilan-hak">${G.ilan.kalan} cevap hakkı</span>
+      </div>`
+    : `<div class="tr-arama2">
+        <button class="tr-ark genc" data-act="ilan" data-arg="${yasli}|20|${Math.max(10, Math.round(tavan * 0.5))}" data-tip="İlan ver — menajerler 1-3 haftada dosya getirir">
+          <span class="tr-ark-ust">🌱 <b>Genç Yetenek</b></span>
+          <i>${POS_TR[yasli]} · ≤20 yaş · tavan ${Math.max(10, Math.round(tavan * 0.5))}mn</i>
+          <em>yaşlanan hatta gelecek yatırımı</em>
+        </button>
+        <button class="tr-ark yildiz" data-act="ilan" data-arg="${zayif}|31|${yildizTavan}" data-tip="İlan ver — büyük isimler pahalı gelir, tribün coşar">
+          <span class="tr-ark-ust">⭐ <b>Yıldız Avı</b></span>
+          <i>${POS_TR[zayif]} · tavan ${yildizTavan}mn</i>
+          <em>en zayıf hatta yıldız — kese zorlanır</em>
+        </button>
+        <button class="tr-ark kelepir" data-act="ilan" data-arg="${zayif}|31|15" data-tip="İlan ver — ucuz dosyalar, sürpriz cevher çıkabilir">
+          <span class="tr-ark-ust">💰 <b>Kelepir</b></span>
+          <i>${POS_TR[zayif]} · tavan 15mn</i>
+          <em>${kelepirDost ? '🤝 rakip başkan indirimi AKTİF' : 'bütçe yormaz, sürpriz çıkabilir'}</em>
+        </button>
       </div>`;
 
   // ── Hedef listesi (piyasa) — mevki filtresi + sisli güç aralığı ──
@@ -76,23 +104,50 @@ export function render(G) {
   const fog = Math.max(1, TUNING.FOG_BASE - G.facilities.scout * TUNING.FOG_PER_SCOUT - (G.fogNarrow || 0));
   const h = Math.ceil(fog / 2);
   const hak = G.sorguHak ?? 0;
-  const filtre = G._trFiltre && POS_LIST.includes(G._trFiltre) ? G._trFiltre : 'hepsi';
+  const kisaListe = new Set(G._shortlist || []);
+  const filtre = G._trFiltre === 'kisa' || (G._trFiltre && POS_LIST.includes(G._trFiltre)) ? G._trFiltre : 'hepsi';
   const askOf = (p) => Math.round((p.fee || p.marketValue || 0) * (1 + (p._ilgi || 0) * 0.12));
   const gorun = (p) => (p._sorgu ? p._sorgu.guc : shownRating(p, G.facilities.scout, G.meta.week).deger);
-  let list = (G.market || []).slice().sort((a, b) => gorun(b) - gorun(a));
-  const sayac = { hepsi: list.length };
+  // SIRALAMA — başkanın masası kendi düzenini kurar (güç / bedel / yaş)
+  const sirala = ['guc', 'bedel', 'yas'].includes(G._trSirala) ? G._trSirala : 'guc';
+  const sortFn = sirala === 'bedel' ? (a, b) => askOf(a) - askOf(b) : sirala === 'yas' ? (a, b) => a.age - b.age : (a, b) => gorun(b) - gorun(a);
+  let list = (G.market || []).slice().sort(sortFn);
+  const sayac = { hepsi: list.length, kisa: list.filter((p) => kisaListe.has(p.id)).length };
   for (const k of POS_LIST) sayac[k] = list.filter((p) => p.pos === k).length;
-  if (filtre !== 'hepsi') list = list.filter((p) => p.pos === filtre);
+  if (filtre === 'kisa') list = list.filter((p) => kisaListe.has(p.id));
+  else if (filtre !== 'hepsi') list = list.filter((p) => p.pos === filtre);
+  // HAT FARKI — bu isim o hattın mevcut ortalamasını ne kadar oynatır? (ilk-N hat ortalaması)
+  const NEED = { GK: 1, DEF: 4, MID: 4, FWD: 2 };
+  const hatOrt = {};
+  for (const k of POS_LIST) {
+    const iyi = G.squad.filter((x) => x.pos === k).sort((a, b) => b.overall - a.overall).slice(0, NEED[k]);
+    hatOrt[k] = iyi.length ? iyi.reduce((s, x) => s + x.overall, 0) / iyi.length : 0;
+  }
   const perPage = 8;
   const toplamSayfa = Math.max(1, Math.ceil(list.length / perPage));
   const sayfa = Math.min(G._trSayfa || 0, toplamSayfa - 1);
   const pageList = list.slice(sayfa * perPage, sayfa * perPage + perPage);
 
+  const SIRA_TR = { guc: 'Güç', bedel: 'Bedel', yas: 'Yaş' };
   const filtreBar = `<div class="tr-filtre">
     <button class="tr-fbtn ${filtre === 'hepsi' ? 'on' : ''}" data-act="trFiltre" data-arg="hepsi">Tümü ${sayac.hepsi}</button>
     ${POS_LIST.map((k) => `<button class="tr-fbtn ${filtre === k ? 'on' : ''}" data-act="trFiltre" data-arg="${k}">${POS_TR[k]} ${sayac[k]}</button>`).join('')}
+    <button class="tr-fbtn tr-fbtn-kisa ${filtre === 'kisa' ? 'on' : ''}" data-act="trFiltre" data-arg="kisa" data-tip="Kısa listen — satırdaki ★ ile isim ekle/çıkar">★ ${sayac.kisa}</button>
+    <span class="tr-sirala"><i>SIRALA</i>${['guc', 'bedel', 'yas'].map((k) => `<button class="tr-fbtn mini ${sirala === k ? 'on' : ''}" data-act="trSirala" data-arg="${k}">${SIRA_TR[k]}</button>`).join('')}</span>
   </div>`;
 
+  // SVG ikonlar — emoji yerine hat çizgisi (skaut dosyası dili)
+  const IK = {
+    buyutec: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg>',
+    rapor: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h7l3 3v11H5z"/><path d="M12 3v3h3"/><path d="M7.5 10h5M7.5 13h5"/></svg>',
+    kilit: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="9" width="10" height="7.5" rx="1.5"/><path d="M7 9V6.5a3 3 0 016 0V9"/></svg>',
+    yildiz: '<svg viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"><path d="M10 2.8l2.1 4.4 4.8.6-3.5 3.3.9 4.7L10 13.5l-4.3 2.3.9-4.7L3.1 7.8l4.8-.6z"/></svg>',
+  };
+  // Mini FORMA — pozisyon renkli SVG jersey: skaut dosyasında oyuncu, fotoğraf değil formadır
+  const forma = (p) => `<svg class="tr-forma" viewBox="0 0 34 34">
+      <path d="M10 5 L14 3 Q17 5 20 3 L24 5 L29 10 L25.5 13.5 L24.5 11.5 L24.5 29 Q17 31.5 9.5 29 L9.5 11.5 L8.5 13.5 L5 10 Z" fill="${POS_COL[p.pos]}" opacity=".22" stroke="${POS_COL[p.pos]}" stroke-width="1.4"/>
+      <text x="17" y="21.5" text-anchor="middle" font-size="11" font-weight="800" fill="${POS_COL[p.pos]}">${{ GK: 'K', DEF: 'S', MID: 'O', FWD: 'F' }[p.pos] || '?'}</text>
+    </svg>`;
   const row = (p) => {
     const sr = gorun(p);
     const srH = p._sorgu ? (p._sorgu.h ?? 1) : h;
@@ -100,24 +155,33 @@ export function render(G) {
     const durum = ask <= kalan * 0.85 ? 'in' : ask <= kalan ? 'sinir' : 'dis';
     const s = p._sorgu;
     const alt = s
-      ? `${POS_TR[p.pos]} · ${p.age}y · maaş ${fmt(s.maas)}mn · menajer: ${esc(s.tavir)}`
-      : `${POS_TR[p.pos]} · ${p.age}y · söz. ${p.contractYears ?? '—'}y${(p._ilgi || 0) > 0 ? ` · 🔥${p._ilgi} talip` : ''}`;
+      ? `${p.age} yaş · maaş ${fmt(s.maas)}mn · menajer: ${esc(s.tavir)}`
+      : `${p.age} yaş · söz. ${p.contractYears ?? '—'}y${(p._ilgi || 0) > 0 ? ` · 🔥${p._ilgi} talip` : ''}`;
+    // HAT FARKI — karar çipi: bu isim hattı oynatır mı?
+    const fark = Math.round(sr - (hatOrt[p.pos] || 0));
+    const farkChip = hatOrt[p.pos]
+      ? `<span class="tr-fark ${fark >= 2 ? 'arti' : fark <= -2 ? 'eksi' : ''}" data-tip="${POS_TR[p.pos]} hattının ilk ${NEED[p.pos]} ortalaması ${Math.round(hatOrt[p.pos])} — bu isim hattı ${fark >= 0 ? 'yükseltir' : 'yükseltmez'}">${fark > 0 ? '▲ Dinamik +' + fark : fark < 0 ? '▼ Dinamik ' + fark : '— Dengede'}</span>` : '<span class="tr-fark"></span>';
+    const yildizOn = kisaListe.has(p.id);
     const teklifBtn = durum === 'dis'
-      ? `<button class="tr-tbtn dis" data-act="gmItiraz" data-arg="${p.id}" data-tip="Bütçe dışı — GM'in görüşünü al">Bütçe dışı</button>`
+      ? `<button class="tr-tbtn dis" data-act="gmItiraz" data-arg="${p.id}" data-tip="Bütçe dışı — GM'in görüşünü al">${IK.kilit}<span>Bütçe dışı</span></button>`
       : `<button class="tr-tbtn" data-act="reqOffer" data-arg="${p.id}" data-tip="GM ${p.name} için onay dosyası hazırlar — karar AKTİF PAZARLIK'ta">Teklif Ver</button>`;
     const sorguBtn = s
-      ? (p._derin ? '<span class="tr-drapor" data-tip="Derin rapor alındı — kesin güç + isimli rakip ilgisi">🔬</span>'
-        : `<button class="tr-sbtn" data-act="derinRapor" data-arg="${p.id}" ${G.economy.kasa < 0.8 ? 'disabled' : ''} data-tip="Dış büro: KESİN güç + gelişim + isimli rakip ilgisi (0,8mn)">🔬</button>`)
+      ? (p._derin ? `<span class="tr-ikbtn tam" data-tip="Derin rapor alındı — kesin güç + isimli rakip ilgisi">${IK.rapor}</span>`
+        : `<button class="tr-ikbtn" data-act="derinRapor" data-arg="${p.id}" ${G.economy.kasa < 0.8 ? 'disabled' : ''} data-tip="Dış büro raporu: KESİN güç + gelişim + isimli rakip ilgisi (0,8mn)">${IK.rapor}</button>`)
       : hak > 0
-        ? `<button class="tr-sbtn" data-act="sorgula" data-arg="${p.id}" data-tip="Sorgula: güç ±1, maaş, karakter, menajer tavrı (${hak} hak)">🔍</button>`
-        : `<button class="tr-sbtn" data-act="sorgula" data-arg="${p.id}|ucret" ${G.economy.kasa < 0.2 ? 'disabled' : ''} data-tip="Haftalık hak doldu — ücretli sorgu (0,2mn)">🔍</button>`;
-    return `<div class="tr-tt" data-act="pcard" data-arg="${p.id}" data-tip="Kart: güç aralığı · form · değer · sözleşme">
+        ? `<button class="tr-ikbtn" data-act="sorgula" data-arg="${p.id}" data-tip="Sorgula: güç ±1, maaş, karakter, menajer tavrı (${hak} hak)">${IK.buyutec}</button>`
+        : `<button class="tr-ikbtn" data-act="sorgula" data-arg="${p.id}|ucret" ${G.economy.kasa < 0.2 ? 'disabled' : ''} data-tip="Haftalık hak doldu — ücretli sorgu (0,2mn)">${IK.buyutec}</button>`;
+    return `<div class="tr-tt ${durum === 'dis' ? 'tr-tt-dis' : ''}" data-act="pcard" data-arg="${p.id}" data-tip="Kart: güç aralığı · form · değer · sözleşme">
       <span class="tr-tt-ov ${ovCls(sr)}">${sr}<i>±${srH}</i></span>
-      <span class="tr-tt-av">${playerAvatar(p, 34)}</span>
-      <div class="tr-tt-id"><b>${esc(p.name)}${p.age <= 21 ? ' <span class="tr-genc">GENÇ</span>' : ''}</b><i>${alt}</i></div>
-      <span class="tr-tt-pos" style="color:${POS_COL[p.pos]}">${(POS_TR[p.pos] || p.pos).toLocaleUpperCase('tr')}</span>
-      <span class="tr-tt-val"><b>${fmt(p.marketValue)}mn</b><em>~bedel ${fmt(ask)}mn</em></span>
-      <span class="tr-tt-act">${sorguBtn}${teklifBtn}</span>
+      <span class="tr-tt-av">${forma(p)}</span>
+      <div class="tr-tt-id"><b>${esc(p.name)}${p.age <= 21 ? ' <span class="tr-genc">GENÇ</span>' : ''}${p._ilan ? ' <span class="tr-ilan-tag" data-tip="Bu isim SENİN İLANINLA piyasaya geldi — menajerler getirdi">İLAN</span>' : ''}</b><i>${alt}</i></div>
+      ${farkChip}
+      <span class="tr-tt-pos" style="color:${POS_COL[p.pos]};border-color:${POS_COL[p.pos]}">${(POS_TR[p.pos] || p.pos).toLocaleUpperCase('tr')}</span>
+      <span class="tr-tt-val"><b>${fmt(ask)}<em>mn</em></b><i data-tip="Piyasa değeri — bedel talip sayısıyla şişer">değer ${fmt(p.marketValue)}mn</i></span>
+      <span class="tr-tt-act">
+        <button class="tr-ikbtn tr-star ${yildizOn ? 'on' : ''}" data-act="shortlist" data-arg="${p.id}" data-tip="${yildizOn ? 'Kısa listeden çıkar' : 'Kısa listeye ekle — ★ filtresiyle takip et'}">${IK.yildiz}</button>
+        ${sorguBtn}${teklifBtn}
+      </span>
     </div>`;
   };
   const pager = toplamSayfa > 1 ? `<div class="tr-pager">

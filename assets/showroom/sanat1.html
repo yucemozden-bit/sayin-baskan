@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sanat · 3D</title>
+<style>
+  :root { --gold:#e7c063; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#0a0b0d; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  .hud { position:fixed; left:18px; top:16px; color:#fff; pointer-events:none; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+  .hud h1 { font-size:20px; letter-spacing:.5px; font-weight:800; }
+  .hud .sub { font-size:12px; opacity:.75; margin-top:2px; letter-spacing:.3px; }
+  .hint { position:fixed; left:18px; bottom:16px; color:#dfe6f0; font-size:12px; opacity:.65; text-shadow:0 1px 4px rgba(0,0,0,.6); }
+  .panel { position:fixed; right:16px; top:16px; display:flex; flex-direction:column; gap:8px; }
+  .btn {
+    pointer-events:auto; cursor:pointer; user-select:none;
+    background:rgba(18,20,26,.72); color:#eef2f8; border:1px solid rgba(231,192,99,.35);
+    padding:9px 14px; border-radius:10px; font-size:13px; font-weight:600; letter-spacing:.2px;
+    backdrop-filter:blur(6px); transition:all .15s ease; text-align:center; min-width:150px;
+  }
+  .btn:hover { border-color:var(--gold); background:rgba(30,33,42,.88); }
+  .btn.active { background:var(--gold); color:#1a1207; border-color:var(--gold); }
+  .loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; color:#cfe0ff; font-size:14px; letter-spacing:.5px; }
+</style>
+<style id="sb-sade">.hud .sub,.hint{display:none!important}</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud"><h1 id="ttl"></h1><div class="sub" id="sub"></div></div>
+<div class="panel">
+  <div class="btn active" id="btnRotate">⟳ Otomatik dönüş</div>
+  <div class="btn" id="btnColor">🎨 Varyant değiştir</div>
+  <div class="btn" id="btnReset">⤿ Görünümü sıfırla</div>
+</div>
+<div class="hint">Sürükle: döndür · Tekerlek / iki parmak: yakınlaş</div>
+<div class="loading" id="loading">3D sahne yükleniyor…</div>
+
+<script src="three.min.js"></script>
+<script>
+(function(){
+  const CFG = {"title":"GENÇ KOLEKSİYON","sub":"Modern Soyut · Boğaziçi Modern Müzesi","type":"modern","seed":42,"museum":"BOĞAZİÇİ MODERN MÜZESİ","artTitle":"\"Kompozisyon No.7\"","year":"2019","pals":[["#c8102e","#f2c313","#1f5fd6","#111111"],["#0e7c5a","#e86a10","#173a8f","#111111"],["#7a1d6b","#e8b90f","#0d6e8c","#111111"]],"camRadius":6,"camPhi":1.32,"tgtY":1.7};
+  const holder=document.getElementById('app'), loading=document.getElementById('loading');
+  document.getElementById('ttl').textContent=CFG.title; document.getElementById('sub').textContent=CFG.sub; document.title=CFG.title;
+  if(!window.THREE){ loading.textContent="3D kütüphanesi yüklenemedi (internet gerekli)."; return; }
+
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=0.95;
+  holder.appendChild(renderer.domElement);
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(42,window.innerWidth/window.innerHeight,0.1,300);
+
+  // gallery dark backdrop
+  (function(){
+    const c=document.createElement('canvas'); c.width=16; c.height=256; const g=c.getContext('2d');
+    const grd=g.createLinearGradient(0,0,0,256); grd.addColorStop(0,'#191b20'); grd.addColorStop(0.55,'#101216'); grd.addColorStop(1,'#07080a');
+    g.fillStyle=grd; g.fillRect(0,0,16,256);
+    const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; scene.background=tex;
+  })();
+  // env for gold/marble reflections
+  (function(){
+    const es=new THREE.Scene(); es.background=new THREE.Color(0x23262b);
+    es.add(new THREE.Mesh(new THREE.BoxGeometry(50,26,50),new THREE.MeshStandardMaterial({side:THREE.BackSide,color:0x1e2126,roughness:1})));
+    function card(w,h,x,y,z,i){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({color:0x000000,emissive:0xfff2dd,emissiveIntensity:i}));m.position.set(x,y,z);m.lookAt(0,0,0);es.add(m);}
+    card(16,6,0,12,3,2.2); card(10,8,-14,5,6,1.4); card(10,8,14,5,-5,1.2);
+    const pmrem=new THREE.PMREMGenerator(renderer); pmrem.compileEquirectangularShader();
+    scene.environment=pmrem.fromScene(es,0.02).texture;
+  })();
+
+  scene.add(new THREE.HemisphereLight(0x8f96a4,0x14120e,0.32));
+  const key=new THREE.DirectionalLight(0xfff2dd,0.5); key.position.set(5,9,6); scene.add(key);
+
+  // ---------- parquet floor ----------
+  (function(){
+    const c=document.createElement('canvas'); c.width=c.height=512; const g=c.getContext('2d');
+    g.fillStyle='#7a5a38'; g.fillRect(0,0,512,512);
+    for(let row=0;row<8;row++){
+      for(let col=0;col<6;col++){
+        const off=(row%2)*64;
+        const l=0.72+((row*7+col*13)%10)/34;
+        g.fillStyle='rgb('+(150*l|0)+','+(112*l|0)+','+(70*l|0)+')';
+        g.fillRect(col*128-off,row*64,128,64);
+        g.strokeStyle='rgba(40,26,14,.55)'; g.lineWidth=2; g.strokeRect(col*128-off,row*64,128,64);
+      }
+    }
+    for(let i=0;i<2200;i++){ g.fillStyle='rgba(60,40,20,'+(Math.random()*0.08)+')'; g.fillRect(Math.random()*512,Math.random()*512,3,1); }
+    const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(14,14); tex.anisotropy=4;
+    const floor=new THREE.Mesh(new THREE.PlaneGeometry(160,160),new THREE.MeshStandardMaterial({map:tex,roughness:0.42,metalness:0.12,envMapIntensity:0.5}));
+    floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+  })();
+  // round dais
+  const daisMat=new THREE.MeshStandardMaterial({color:0x2a2d33,roughness:0.6,metalness:0.15});
+  const dais=new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.5,0.12,48),daisMat); dais.position.y=0.06; dais.receiveShadow=true; scene.add(dais);
+
+  // ---------- materials ----------
+  const goldMat=new THREE.MeshStandardMaterial({color:0xcaa64a,metalness:0.85,roughness:0.28,envMapIntensity:1.3});
+  const goldDk=new THREE.MeshStandardMaterial({color:0x8f6f2a,metalness:0.85,roughness:0.35,envMapIntensity:1.1});
+  const wallMat=new THREE.MeshStandardMaterial({color:0x481318,roughness:0.92,metalness:0.02});     // museum red wall (deep)
+  const wallMat2=new THREE.MeshStandardMaterial({color:0xefece4,roughness:0.9,metalness:0.0});      // modern white wall
+  const darkMat=new THREE.MeshStandardMaterial({color:0x17191d,metalness:0.4,roughness:0.5});
+  const brassMat=new THREE.MeshStandardMaterial({color:0xb08d3e,metalness:0.9,roughness:0.25,envMapIntensity:1.3});
+  const ropeMat=new THREE.MeshStandardMaterial({color:0x7a1523,roughness:0.7});
+
+  const exhibit=new THREE.Group(); scene.add(exhibit);
+  const spinners=[];
+  function bx(w,h,d,mat,x,y,z,rot){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);if(rot){m.rotation.set(rot.x||0,rot.y||0,rot.z||0);}m.castShadow=true;m.receiveShadow=true;exhibit.add(m);return m;}
+  function cylm(rt,rb,h,seg,mat,x,y,z){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;exhibit.add(m);return m;}
+
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+
+  // ---------- procedural artworks ----------
+  function makeModern(seed,pal){
+    const c=document.createElement('canvas'); c.width=560; c.height=440; const g=c.getContext('2d');
+    const rnd=mulberry32(seed);
+    g.fillStyle='#f0ead9'; g.fillRect(0,0,560,440);
+    for(let i=0;i<7;i++){ g.fillStyle=pal[i%pal.length]; g.globalAlpha=0.92;
+      g.fillRect(rnd()*400|0,rnd()*300|0,60+rnd()*160|0,50+rnd()*140|0); }
+    for(let i=0;i<3;i++){ g.beginPath(); g.globalAlpha=0.95; g.fillStyle=pal[(i+2)%pal.length];
+      g.arc(60+rnd()*440,60+rnd()*320,24+rnd()*46,0,Math.PI*2); g.fill(); }
+    g.globalAlpha=1; g.fillStyle='#141414';
+    for(let i=0;i<3;i++){ g.fillRect(0,(60+rnd()*320)|0,560,5+rnd()*6|0); }
+    for(let i=0;i<2;i++){ g.fillRect((70+rnd()*420)|0,0,5+rnd()*6|0,440); }
+    const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.minFilter=THREE.LinearFilter; t.generateMipmaps=false; t.anisotropy=8; return t;
+  }
+  function makeKlasik(seed,pal){
+    const c=document.createElement('canvas'); c.width=640; c.height=430; const g=c.getContext('2d');
+    const rnd=mulberry32(seed);
+    const sky=g.createLinearGradient(0,0,0,300); sky.addColorStop(0,pal.sky1); sky.addColorStop(1,pal.sky2);
+    g.fillStyle=sky; g.fillRect(0,0,640,300);
+    const sx=180+rnd()*280, sy=110+rnd()*70;
+    const glow=g.createRadialGradient(sx,sy,6,sx,sy,120); glow.addColorStop(0,pal.sun); glow.addColorStop(1,'rgba(255,200,120,0)');
+    g.fillStyle=glow; g.fillRect(0,0,640,300);
+    g.fillStyle=pal.sunCore; g.beginPath(); g.arc(sx,sy,26,0,Math.PI*2); g.fill();
+    g.fillStyle=pal.far; g.beginPath(); g.moveTo(0,215);
+    for(let x=0;x<=640;x+=60){ g.lineTo(x,190+Math.sin(x*0.02+seed)*22+rnd()*14); } g.lineTo(640,300); g.lineTo(0,300); g.fill();
+    g.fillStyle=pal.water; g.fillRect(0,300,640,130);
+    const streak=g.createLinearGradient(0,300,0,430); streak.addColorStop(0,pal.sun); streak.addColorStop(1,'rgba(255,200,120,0)');
+    g.fillStyle=streak; g.fillRect(sx-30,300,60,130);
+    g.fillStyle=pal.near;
+    g.beginPath(); g.moveTo(0,430); g.lineTo(0,350); g.quadraticCurveTo(120,335,230,430); g.fill();
+    g.beginPath(); g.moveTo(640,430); g.lineTo(640,345); g.quadraticCurveTo(520,330,410,430); g.fill();
+    for(let i=0;i<4;i++){ const tx=30+rnd()*140+(i>1?420:0), ty=352+rnd()*20;
+      g.fillStyle=pal.near; g.fillRect(tx-2,ty,4,34);
+      g.beginPath(); g.ellipse(tx,ty-8,17+rnd()*9,24+rnd()*8,0,0,Math.PI*2); g.fill(); }
+    const vg=g.createRadialGradient(320,215,140,320,215,420); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(30,16,4,.38)');
+    g.fillStyle=vg; g.fillRect(0,0,640,430);
+    const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.minFilter=THREE.LinearFilter; t.generateMipmaps=false; t.anisotropy=8; return t;
+  }
+  function makePlaque(){
+    const c=document.createElement('canvas'); c.width=512; c.height=256; const g=c.getContext('2d');
+    g.fillStyle='#221b15'; g.fillRect(0,0,512,256);
+    g.strokeStyle='#caa64a'; g.lineWidth=6; g.strokeRect(14,14,484,228);
+    g.fillStyle='#caa64a'; g.textAlign='center';
+    g.font='bold 34px Georgia'; g.fillText(CFG.museum,256,86);
+    g.fillStyle='#e8dcc2'; g.font='italic 30px Georgia'; g.fillText(CFG.artTitle,256,150);
+    g.font='24px Georgia'; g.fillStyle='#a89878'; g.fillText(CFG.year,256,200);
+    const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; return t;
+  }
+
+  // ---------- exhibit builders ----------
+  let variant=0, artMesh=null, statue=null;
+  function ropeLine(x1,z1,x2,z2){
+    [ [x1,z1],[x2,z2] ].forEach(p=>{ cylm(0.035,0.045,0.85,10,brassMat,p[0],0.545,p[1]);
+      const ball=new THREE.Mesh(new THREE.SphereGeometry(0.055,10,10),brassMat); ball.position.set(p[0],1.02,p[1]); exhibit.add(ball); });
+    const len=Math.hypot(x2-x1,z2-z1), ang=Math.atan2(z2-z1,x2-x1);
+    const rope=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,len,8),ropeMat);
+    rope.rotation.z=Math.PI/2; rope.rotation.y=-ang; rope.position.set((x1+x2)/2,0.93,(z1+z2)/2); exhibit.add(rope);
+  }
+  function spotPair(tx,ty,tz){
+    [[-1.1,0],[1.1,0]].forEach(p=>{
+      const s=new THREE.SpotLight(0xfff0d2,2.1,16,0.52,0.55,1.4);
+      s.position.set(tx+p[0],4.0,tz+2.1); s.target.position.set(tx,ty,tz);
+      s.castShadow=true; s.shadow.mapSize.set(1024,1024); scene.add(s); scene.add(s.target);
+      const housing=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,0.24,12),darkMat);
+      housing.position.set(tx+p[0],3.98,tz+2.05); housing.rotation.x=0.7; exhibit.add(housing);
+    });
+    bx(3.2,0.07,0.07,darkMat,tx,4.08,tz+2.05);
+    cylm(0.03,0.03,0.5,8,darkMat,tx,4.35,tz+2.05);
+  }
+
+  function buildPainting(klasik){
+    const W=klasik?2.5:2.1, Hh=klasik?1.7:1.65, cy=1.85;
+    // display wall
+    const wm=klasik?wallMat:wallMat2;
+    bx(4.6,3.6,0.28,wm,0,1.8,-0.6);
+    bx(4.7,0.22,0.34,darkMat,0,0.11,-0.6);                                  // skirting
+    bx(4.7,0.12,0.34,klasik?goldDk:darkMat,0,3.66,-0.6);                    // cornice
+    // frame
+    if(klasik){
+      bx(W+0.42,Hh+0.42,0.09,goldMat,0,cy,-0.42);
+      bx(W+0.2,Hh+0.2,0.11,goldDk,0,cy,-0.415);
+      [[-(W+0.32)/2,(Hh+0.32)/2],[(W+0.32)/2,(Hh+0.32)/2],[-(W+0.32)/2,-(Hh+0.32)/2],[(W+0.32)/2,-(Hh+0.32)/2]].forEach(p=>{
+        const r=new THREE.Mesh(new THREE.SphereGeometry(0.07,10,10),goldMat); r.position.set(p[0],cy+p[1],-0.38); exhibit.add(r); });
+    } else {
+      bx(W+0.18,Hh+0.18,0.07,darkMat,0,cy,-0.43);
+    }
+    // canvas
+    const tex=klasik?makeKlasik(CFG.seed+variant,CFG.pals[variant]):makeModern(CFG.seed+variant,CFG.pals[variant]);
+    const mat=new THREE.MeshStandardMaterial({map:tex,roughness:0.82,metalness:0.0});
+    artMesh=new THREE.Mesh(new THREE.PlaneGeometry(W,Hh),mat); artMesh.position.set(0,cy,-0.342); exhibit.add(artMesh);
+    // plaque
+    const pl=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.31),new THREE.MeshStandardMaterial({map:makePlaque(),roughness:0.6}));
+    pl.position.set(W/2+0.55,1.35,-0.44); exhibit.add(pl);
+    // rope + spots
+    ropeLine(-1.9,1.15,1.9,1.15);
+    spotPair(0,cy,-0.4);
+  }
+
+  function statueMat(i){
+    return [ new THREE.MeshPhysicalMaterial({color:0xf1ede4,roughness:0.34,metalness:0.04,clearcoat:0.4,envMapIntensity:0.9}),
+             new THREE.MeshStandardMaterial({color:0x7d5426,metalness:0.92,roughness:0.32,envMapIntensity:1.3}),
+             new THREE.MeshStandardMaterial({color:0x23262c,metalness:0.5,roughness:0.3,envMapIntensity:1.0}) ][i%3];
+  }
+  function buildStatue(){
+    cylm(0.85,0.95,0.16,32,daisMat,0,0.14,0);
+    bx(0.95,1.05,0.95,new THREE.MeshStandardMaterial({color:0xd9d3c7,roughness:0.55,metalness:0.05}),0,0.75,0);
+    bx(1.1,0.09,1.1,new THREE.MeshStandardMaterial({color:0xc9c2b4,roughness:0.5}),0,1.33,0);
+    const pl=new THREE.Mesh(new THREE.PlaneGeometry(0.72,0.36),new THREE.MeshStandardMaterial({map:makePlaque(),roughness:0.6}));
+    pl.position.set(0,0.82,0.482); exhibit.add(pl);
+    statue=new THREE.Mesh(new THREE.TorusKnotGeometry(0.42,0.14,140,18),statueMat(variant));
+    statue.position.set(0,2.05,0); statue.castShadow=true; exhibit.add(statue);
+    spinners.push({o:statue,ax:'y',s:0.004});
+    ropeLine(-1.35,1.35,1.35,1.35); ropeLine(1.35,1.35,1.35,-1.35);
+    ropeLine(1.35,-1.35,-1.35,-1.35); ropeLine(-1.35,-1.35,-1.35,1.35);
+    spotPair(0,2.0,0);
+  }
+
+  if(CFG.type==='heykel') buildStatue(); else buildPainting(CFG.type==='klasik');
+
+  // ================= camera =================
+  const target=new THREE.Vector3(0,CFG.tgtY||1.6,0);
+  const HOME={radius:CFG.camRadius,theta:1.62,phi:CFG.camPhi||1.28};
+  let radius=HOME.radius,theta=HOME.theta,phi=HOME.phi,autoRotate=true,dragging=false,lastX=0,lastY=0;
+  function applyCamera(){const s=Math.sin(phi);camera.position.set(target.x+radius*s*Math.cos(theta),target.y+radius*Math.cos(phi),target.z+radius*s*Math.sin(theta));camera.lookAt(target);}
+  const el=renderer.domElement;
+  el.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;el.setPointerCapture(e.pointerId);});
+  el.addEventListener('pointerup',()=>dragging=false); el.addEventListener('pointerleave',()=>dragging=false);
+  el.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;theta-=dx*0.005;phi-=dy*0.005;phi=Math.max(0.2,Math.min(1.5,phi));});
+  el.addEventListener('wheel',e=>{e.preventDefault();radius*=(1+e.deltaY*0.0011);radius=Math.max(2.6,Math.min(16,radius));},{passive:false});
+
+  const btnRotate=document.getElementById('btnRotate'),btnColor=document.getElementById('btnColor'),btnReset=document.getElementById('btnReset');
+  btnRotate.addEventListener('click',()=>{autoRotate=!autoRotate;btnRotate.classList.toggle('active',autoRotate);});
+  btnReset.addEventListener('click',()=>{radius=HOME.radius;theta=HOME.theta;phi=HOME.phi;});
+  btnColor.addEventListener('click',()=>{
+    variant=(variant+1)%3;
+    if(CFG.type==='heykel'){ statue.material=statueMat(variant); }
+    else { const tex=CFG.type==='klasik'?makeKlasik(CFG.seed+variant,CFG.pals[variant]):makeModern(CFG.seed+variant,CFG.pals[variant]);
+      artMesh.material.map=tex; artMesh.material.needsUpdate=true; }
+  });
+
+  window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+  function animate(){requestAnimationFrame(animate);
+    if(autoRotate&&!dragging)theta+=0.0013;
+    for(const sp of spinners){ sp.o.rotation[sp.ax]+=sp.s; }
+    applyCamera(); renderer.render(scene,camera);
+  }
+  applyCamera(); animate();
+  if(loading)loading.style.display='none';
+})();
+</script>
+</body>
+</html>

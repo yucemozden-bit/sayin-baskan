@@ -47,6 +47,16 @@ export function itemActions(G, m) {
         <button data-act="sfile" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET</button>
         ${m.file && m.file.player ? `<button data-act="pcard" data-arg="${m.file.player.id}" data-tip="Oyuncunun kartını aç">🔍 Kartı aç</button>` : ''}
       </div>`;
+    } else if (active && m.action === 'spBuyout') { // SPONSOR AVI — rakip marka fesih bedelini üstlenir
+      opts = `<div class="opts">
+        <button data-act="spBuyout" data-arg="${m.id}|kabul" style="border-color:var(--pos)">KABUL — cezayı ${esc(m.avTeklif?.name || 'yeni marka')} öder</button>
+        <button data-act="spBuyout" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET — sözümüz söz</button>
+      </div>`;
+    } else if (active && m.action === 'kayyum') { // #3: kurtuluş paketi — 3 oyuncu tek kalem, bedel borca
+      opts = `<div class="opts">
+        <button data-act="kayyum" data-arg="${m.id}|sat" style="border-color:var(--pos)">PAKETİ SAT — ${m.tutar}mn borca</button>
+        <button data-act="kayyum" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET — kadroyu koru</button>
+      </div>`;
     } else if (active && m.action === 'cfile') {
       opts = `<div class="opts">${(G.coachFiles || []).map((c, i) =>
         `<button data-act="cfile" data-arg="${m.id}|${i}">İmzala: ${esc(c.name)}</button>`).join('')}</div>`;

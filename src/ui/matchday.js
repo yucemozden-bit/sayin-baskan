@@ -164,6 +164,15 @@ function live(G, m) {
     .map(([ik, tx], i) => `<div class="sb-tel ${tone === i ? 'sb-tel-active' : ''}">${ik} ${tx}</div>`).join('');
   const lig = (G.hazirlik || 0) > 0 ? 'HAZIRLIK MAÇI' : 'LİG MAÇI';
   const venue = `${esc(G.club.stadName || 'Stadyum')}${m.isDerby ? ' · DERBİ' : ''}`;
+  // AİLE LOCASI (Özel Hayat köprüsü) — ev sıcaksa aile tribünde; iç saha + salt görsel doku
+  const oz = G.ozel;
+  const loca = oz && isHome
+    ? (oz.g.ev >= 60
+      ? `<div class="md-loca" data-tip="Ev huzuru yüksek — ailen bu akşam locada">💗 LOCADA: ${esc(oz.aile?.es || '')}${m.isDerby ? `, ${esc(oz.aile?.c2 || '')}` : ''} · el sallıyorlar</div>`
+      : oz.g.ev < 40
+        ? '<div class="md-loca soguk" data-tip="Ev huzuru düşük — loca bu akşam boş">🪑 Aile locası boş bu akşam</div>'
+        : '')
+    : '';
   return `<div class="sb-root sb-cinematic md-bc md-bc-${cls}">
     <div class="sb-atmo sb-atmo-pitch"></div><div class="sb-vignette"></div><div class="sb-pitch-lines"></div>
     <div class="sb-mac-top">
@@ -171,6 +180,7 @@ function live(G, m) {
       <span class="sb-chip sb-chip-live"><i class="sb-dot-live"></i>${bitti ? 'MAÇ BİTTİ' : 'CANLI'} · ${lig}</span>
       <span class="sb-mac-venue">${venue}</span>
     </div>
+    ${loca}
     <div class="sb-scoreboard">
       ${homeBlock}
       <div class="sb-sb-center"><div class="sb-sb-score"><span class="sb-sb-num ${isHome ? 'sb-club-ink' : ''}">${homeG}</span><span class="sb-sb-dash">-</span><span class="sb-sb-num ${!isHome ? 'sb-club-ink' : ''}">${awayG}</span></div><div class="sb-sb-clock">${dk}</div></div>
