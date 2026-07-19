@@ -26,8 +26,9 @@ export function render(G) {
   const cols = KOLONLAR.map(([pos, ad, c]) => {
     const list = G.squad.filter((p) => p.pos === pos).sort((a, b) => b.overall - a.overall);
     const cards = list.map((p) => {
-      // Katılım kaynağı: ALTYAPI (ocak çocuğu, kalıcı) veya YENİ (bu sezon transferle geldi)
-      const kaynak = p.ocak ? ' <span class="kad-c-ocak" title="Altyapıdan yetişti">ALTYAPI</span>'
+      // Katılım kaynağı: ALTYAPI (ocak çocuğu — rozet 23 yaşına kadar; iz p.ocak'ta kalıcı,
+      // kullanıcı bulgusu: 28'lik oyuncuda "altyapıdan çıktı" gibi okunuyordu) veya YENİ (taze transfer)
+      const kaynak = (p.ocak && p.age <= 23) ? ' <span class="kad-c-ocak" title="Altyapıdan yetişti">ALTYAPI</span>'
         : (p.yeniHafta > 0 ? ' <span class="kad-c-yeni" title="Yeni transfer — 3 hafta sonra kalkar">YENİ</span>' : '');
       const tags = `${p.id === G.captainId ? ' <b class="kad-c-c" title="Kaptan">C</b>' : ''}${p.isStar ? ' <b class="kad-c-star">★</b>' : ''}${kaynak}${p.age <= 21 ? ' <span class="kad-c-genc">GENÇ</span>' : ''}${p.injuryWeeks > 0 ? ' 🩹' : ''}${p.suspensionWeeks > 0 ? ' 🟥' : ''}${p.vitrin ? ' 🏷' : ''}${p.kiralikListe ? ' ↔' : ''}${p.loanIn ? ' 🔒' : ''}`;
       const durum = p.vitrin ? '<b class="kad-c-dur sat">SATIŞTA</b> · ' : p.kiralikListe ? '<b class="kad-c-dur kir">KİRALIK L.</b> · ' : p.loanIn ? '<b class="kad-c-dur loan">KİRALIK</b> · ' : '';

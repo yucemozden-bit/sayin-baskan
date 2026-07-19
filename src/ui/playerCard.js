@@ -185,11 +185,16 @@ export function render(G) {
   if (!p) return '';
   const yabanci = !(G.squad || []).some((x) => x === p); // kadromda değil (teklif/piyasa oyuncusu)
   const derin = !!p._derin;              // derin rapor alındıysa gerçek güç bilinir
-  const sisli = yabanci && !derin;       // sisli göster: kadroda değil ve derin rapor yok
+  const sisli = yabanci && !derin;       // güç SİSİ: kadroda değil ve derin rapor yok
+  // BUG DERSİ (2026-07-21): derin rapor yalnız GÜCÜ netleştirir — kart DÜZENİ hep yabancılığa
+  // bakar. Eskiden derin raporlu piyasa oyuncusu TAM kadro kartıyla açılıyordu (Jest/Söz/Satış/
+  // Sözleşme butonları + son 5 maç + başkana güven — hiçbiri benim olmayan oyuncuya ait olamaz).
 
   let gucBig, gucSub, gucTip, tierVal;
-  if (!sisli) {
+  if (!yabanci) {
     gucBig = String(p.overall); gucSub = 'GÜÇ'; gucTip = 'Mevcut güç'; tierVal = p.overall;
+  } else if (derin) {
+    gucBig = String(p.overall); gucSub = 'GÜÇ ✓'; gucTip = 'Derin rapor — gerçek güç netleşti (skaut dosyası kesinleşti)'; tierVal = p.overall;
   } else if (p._sorgu) {
     const g = p._sorgu.guc, hh = p._sorgu.h ?? 1;
     gucBig = `${g - hh}–${g + hh}`; gucSub = 'GÜÇ ±'; gucTip = 'Sorgu sonrası daralmış tahmin — gerçek güç imzadan sonra sahada belli olur'; tierVal = g;
@@ -205,13 +210,13 @@ export function render(G) {
   const bedel = Math.round(p.marketValue * 1.12 * 10) / 10;
   const krk = karakterOf(p);
 
-  // — ORTAK BAŞLIK —
-  const potStar = !sisli && p.potential ? `<div class="pc-pot" data-tip="Potansiyel — gelişim tavanı">POTANSİYEL <b>${potStars(p.potential)}</b></div>` : '';
+  // — ORTAK BAŞLIK — (potansiyel: kadro oyuncusunda hep; yabancıda yalnız derin raporla görünür)
+  const potStar = (!sisli) && p.potential ? `<div class="pc-pot" data-tip="Potansiyel — gelişim tavanı">POTANSİYEL <b>${potStars(p.potential)}</b></div>` : '';
   const chips = `<span class="pc-chip" style="border-color:${POS_COL[p.pos]};color:${POS_COL[p.pos]}">${POS_TR[p.pos] || p.pos}</span>
     <span class="pc-chip">${p.age} yaş</span>
     <span class="pc-chip">${ayakOf(p)}</span>
     ${p.age <= 21 ? '<span class="pc-chip g">GENÇ</span>' : ''}
-    ${p.ocak ? '<span class="pc-chip alt" data-tip="Altyapıdan yetişti">ALTYAPI</span>' : (p.yeniHafta > 0 ? '<span class="pc-chip yeni" data-tip="Yeni transfer — 3 hafta sonra kalkar">YENİ</span>' : '')}
+    ${(p.ocak && p.age <= 23) ? '<span class="pc-chip alt" data-tip="Altyapıdan yetişti">ALTYAPI</span>' : (p.yeniHafta > 0 ? '<span class="pc-chip yeni" data-tip="Yeni transfer — 3 hafta sonra kalkar">YENİ</span>' : '')}
     ${p.id === G.captainId ? '<span class="pc-chip c" data-tip="Kaptan">C</span>' : ''}
     ${p.loanIn ? '<span class="pc-chip i">KİRALIK</span>' : ''}
     ${p.vitrin ? '<span class="pc-chip i">SATIŞTA</span>' : ''}
@@ -220,7 +225,7 @@ export function render(G) {
     ${p.suspensionWeeks > 0 ? '<span class="pc-chip i">🟥 CEZALI</span>' : ''}
     <span class="pc-chip krk" data-tip="Karakter — ${esc(KARAKTER_NOT[krk] || '')}">${esc(krk)}</span>`;
   // BAŞKANLIK DOSYASI kimliği: üstte altın tick'li dosya şeridi — kart "modal" değil, masaya konan evrak
-  const head = `<div class="pc-dosya"><span class="sb-tick"></span>${sisli ? 'SKAUT DOSYASI · İMZASIZ' : 'OYUNCU DOSYASI · KULÜP ARŞİVİ'}</div>
+  const head = `<div class="pc-dosya"><span class="sb-tick"></span>${yabanci ? (derin ? 'SKAUT DOSYASI · KESİN RAPOR ✓' : 'SKAUT DOSYASI · İMZASIZ') : 'OYUNCU DOSYASI · KULÜP ARŞİVİ'}</div>
   <div class="pc-head">
     ${playerAvatar(p, 84)}
     <div class="pc-kim">
@@ -230,8 +235,8 @@ export function render(G) {
     <div class="pc-guc">${gucRing(tierVal, gucBig, gucSub, tier, gucTip)}${potStar}</div>
   </div>`;
 
-  // — SİSLİ / YABANCI: lite kart (gerçek profil imzadan önce sızmaz) —
-  if (sisli) {
+  // — YABANCI: lite kart (derin raporlu da olsa — kadro aksiyonları/iç profil imzadan önce sızmaz) —
+  if (yabanci) {
     return `<div class="pcard-ovl" data-act="pcardClose"><div class="pcard pcard-lite ${tier}" data-act="noop">
       <button class="pc-close" data-act="pcardClose" aria-label="Kapat">✕</button>
       ${head}

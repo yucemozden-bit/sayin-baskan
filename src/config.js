@@ -39,10 +39,11 @@ export const TUNING = {
   DEV_GEL_ESIK: 20,       // +1 güç için birikmesi gereken puan
   // GELİŞİM SÜREKLİLİĞİ (2026-07-21, kullanıcı: "sonraki sezonlarda kimse yükselmiyor" — 4 sezon
   // teşhisi: S1'de 10 artan, S4'te 0; tavanlar 1-2 sezonda doluyordu, 22-23 yaş tümden kapalıydı):
-  DEV_GEC_YAS: 23,        // sezon içi gelişim yaş sınırı 21 → 23 (22-23 = "geç gelişimci")
+  DEV_GEC_YAS: 27,        // sezon içi gelişim yaş sınırı (22-27 = "geç gelişimci"; kullanıcı isteği 2026-07-21: gelişim 27'ye kadar sürsün)
   DEV_GEC_CARPAN: 0.5,    // geç gelişimci haftalık puanı ×0.5 (gençten yavaş ama artık büyüyebiliyor; 0.6→0.5 temper)
   DEV_GEC_CAP: 2,         // geç gelişimci sezon içi tavanı +2 (genç +3/elit +4)
-  POT_ESNEME: { yas: 23, artis: 2, kariyerCap: 4, tavan: 88 }, // tavana vuran ≤23 genç: sezon sonu pot +2 (kariyerde en çok +4, mutlak tavan 88) — determinist, rand YOK
+  POT_ESNEME: { yas: 27, artis: 2, kariyerCap: 4, tavan: 88 }, // tavana vuran ≤27 oyuncu: sezon sonu pot +2 (kariyerde en çok +4, mutlak tavan 88) — determinist, rand YOK
+  LIG_GELISIM: 0.4,       // KARŞI AĞIRLIK: rakip güçleri sezon başına +0.4 — oyuncu kadroları artık kariyer boyu büyüyor (27 yaş sınırı); lig yerinde sayarsa uzun kariyer bedavaya döner. (0.6 denendi: transfersiz oyunu fazla eziyordu.) Determinist, rand YOK.
   DEV_CAP_ELITE_ANT: 8,   // antrenman ≥8 → sezon içi gelişim tavanı +3 yerine +4 (elit tesis farkı)
   FIT_ANT: 0.25,          // dinlenen oyuncuya maç başına EK kondisyon = antrenman sv × bu ("kondisyon çabuk toparlar" artık gerçek; 0.4→0.25 autoplay bandı için tempered)
   // — Ekonomi —

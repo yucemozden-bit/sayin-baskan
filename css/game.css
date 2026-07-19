@@ -819,12 +819,19 @@ body { overflow: hidden; }
 /* sb- cinematic tören gövdesi: sahneyi ortala, sb kabuğu içinde otursun */
 .secim-toren-body { justify-content: center; align-items: center; padding: 2vh 2em; overflow: hidden; }
 .secim-toren-body > .scene { margin: 0 auto; }
-/* sn-fit: seçim gecesi/ritüel ölçek kökü (SB_FIT_ROOTS) — içerik uzarsa kırpılmaz, küçülür */
-.sn-fit { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-.sn-fit > .scene { margin: 0 auto; }
+/* sn-fit: seçim gecesi/ritüel ölçek kökü (SB_FIT_ROOTS) — içerik uzarsa kırpılmaz, küçülür.
+   KRİTİK: justify-content CENTER OLAMAZ — ortalanmış taşmada üst taşma scrollHeight'a SAYILMAZ,
+   fitSb ihtiyacı küçük ölçer ve ölçek devreye girmez (canlı KAZANDIN kırpması böyle doğdu).
+   Üstten hizala + kısa içeriği iç margin-block:auto ortalar (auto margin yalnız BOŞ alanı emer). */
+.sn-fit { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow: hidden; }
+.sn-fit > .scene { margin: auto; }
 /* analiz + sandık açılımı YAN YANA (done aşaması) — tek dar kolon yerine simetrik panel */
-.sn-done-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; max-width: 1040px; margin: 14px auto 0; text-align: left; align-items: start; }
+.sn-done-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; max-width: 1360px; margin: 14px auto 0; text-align: left; align-items: start; }
 .sn-done-grid .card { max-width: none !important; margin: 0 !important; }
+.sn-veda { padding: .45em 0; border-top: 1px solid var(--line); font-size: 12px; }
+.sn-veda b { display: block; color: var(--ink-1); font-weight: 700; }
+.sn-veda i { display: block; color: var(--ink-2); font-style: italic; margin-top: 2px; }
+.sn-veda-mj i { color: var(--ink-2); }
 @media (prefers-reduced-motion: reduce) { .zg-salon, .zg-panel, .zg-onde { animation: none !important; } }
 .parsomen { animation-duration: .55s; padding-right: 108px; }
 /* mühür: kutunun SAĞINA basılan resmî tasdik damgası (mürekkep havası, hafif eğik) */

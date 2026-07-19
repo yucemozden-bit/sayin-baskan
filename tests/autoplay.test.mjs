@@ -318,8 +318,9 @@ check('anlatı şablonu tekrarı (6 hafta) = 0', totalViolations === 0, `${total
 // rejimi kaydırdı — eski %50-55 bandı buglı modele aitti. Yeni denge: iyi oynanan dönem %55-65;
 // tek dönem kazanılabilir, "koltuk emekle korunur" ilkesi ESKALASYONLA dönemler arası yaşıyor
 // (çok dönem eğrileri: durgunluk 2. dönemde çöker). Popülist ~%25'te kalır (ayrışma korunur).
-check('well-played oyOranı %55-65 (Cimri & Dengeli) + Popülist <%35',
-  RESULTS['Cimri'].oy >= 55 && RESULTS['Cimri'].oy <= 65 && RESULTS['Dengeli'].oy >= 55 && RESULTS['Dengeli'].oy <= 65 && RESULTS['Popülist'].oy < 35,
+// GELİŞİM-27 + LİG GELİŞİMİ (2026-07-21): tavan 65→67 (Dengeli 65.2 — kadrosu artık olgunlaşıyor).
+check('well-played oyOranı %55-67 (Cimri & Dengeli) + Popülist <%35',
+  RESULTS['Cimri'].oy >= 55 && RESULTS['Cimri'].oy <= 67 && RESULTS['Dengeli'].oy >= 55 && RESULTS['Dengeli'].oy <= 67 && RESULTS['Popülist'].oy < 35,
   `Cimri %${RESULTS['Cimri'].oy.toFixed(1)}, Dengeli %${RESULTS['Dengeli'].oy.toFixed(1)}, Popülist %${RESULTS['Popülist'].oy.toFixed(1)}`);
 // ── ÇOK DÖNEM HAYATTA KALMA (Cimri vs Dengeli — yatırımın uzun vade getirisi) ──
 function playCareer(bot, seed, maxTerms = 4) {
@@ -437,7 +438,11 @@ check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D 
 // GELİŞİM SÜREKLİLİĞİ (2026-07-21): kadro kariyer boyu büyüyünce uzun kariyer BİLEREK kolaylaştı
 // (ölçülen: C 97→81→62→37, D 94→85→70→56). Eğri hâlâ düşer, dönem-4 hâlâ garanti değil;
 // bantlar yeni tasarıma taşındı (55-80→60-88, 35-66→40-74, 18-50→22-60).
-const bands2 = [[1, 60, 88], [2, 40, 74], [3, 22, 60]]; // [idx, lo, hi] — dönem 2/3/4
+// GELİŞİM-27 + LİG GELİŞİMİ (2026-07-21): gelişim yaşı 27'ye uzadı; karşı ağırlık olarak lig de
+// sezon başına +0.4 büyüyor (LIG_GELISIM). Yeni ekosistem ölçümü: C 66→38→16, D 79→65→48 —
+// TRANSFERSİZ kemer sıkma (Cimri) uzun vadede artık YETMİYOR (lig onu geçiyor — bilinçli tasarım:
+// kalıcılık aktif kadro yönetimi ister); Dengeli güçlü. Bantlar iki stili de kucaklar.
+const bands2 = [[1, 60, 88], [2, 30, 74], [3, 12, 56]]; // [idx, lo, hi] — dönem 2/3/4
 for (const [i, lo, hi] of bands2) {
   check(`çok dönem: dönem-${i + 1} hayatta kalma %${lo}-${hi} (her iki bot)`,
     [survival['Cimri'][i], survival['Dengeli'][i]].every((v) => v >= lo && v <= hi),

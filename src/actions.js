@@ -331,6 +331,10 @@ function initSeason(G, opts = {}) {
   G._ligChange = null;
   // D1: Canlı lig — sezon başı AI başkan kararları (ilk sezonda drift yok; merdiven kalibre)
   if ((G.worldSeason = (G.worldSeason ?? 0) + 1) > 1) {
+    // LİG DE GELİŞİR (2026-07-21, gelişim-27 karşı ağırlığı): rakip kadrolar da her sezon olgunlaşır —
+    // oyuncu kadrosu kariyer boyu büyürken lig yerinde sayarsa uzun kariyer gerilimi ölür.
+    // Determinist (rand YOK); merdivenin GÖRELİ sırası korunur, senin fazladan büyümen yine sıra oynatır.
+    for (const o of G.opponents || []) o.strength = Math.min(92, o.strength + TUNING.LIG_GELISIM);
     const { news, crises } = aiSeasonStart(G.opponents);
     if (news.length) { G.leagueNews = news[0]; for (const n of news.slice(0, 2)) pushInbox(G, { cat: 'lig', t: 'Lig Gündemi', b: n }); }
     // B1d: AI FFP baskısı — aşırı harcayan AI zorunlu satışa düşer → KELEPİR dosyası (motivasyon görünür)
@@ -507,7 +511,7 @@ function mh32(s) { let h = 0; const t = String(s); for (let i = 0; i < t.length;
 function makeMarket(G) {
   const core = generateMarket(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout });
   const ek = extendMarketDet(Math.round(G.temelGuc), {
-    names: G.data.names, scout: G.facilities.scout, count: 70,
+    names: G.data.names, scout: G.facilities.scout, count: 70, exclude: new Set((G.squad || []).map((p) => p.name)),
     salt: (G.meta?.season || 1) * 100 + ((G.meta?.week || 1) >= 17 ? 1 : 0),
   });
   return core.concat(ek);
@@ -530,7 +534,7 @@ export function scoutTick(G) {
   }
   if (gidenler.length) {
     // Kaçanların yerine taze isimler — piyasa döner ama boşalmaz
-    G.market.push(...extendMarketDet(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout, count: gidenler.length, salt: 50000 + (G.meta?.week || 0) + (G.meta?.season || 1) * 53 }));
+    G.market.push(...extendMarketDet(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout, count: gidenler.length, exclude: new Set((G.squad || []).map((p) => p.name)), salt: 50000 + (G.meta?.week || 0) + (G.meta?.season || 1) * 53 }));
     const onemli = gidenler.filter((p) => p._sorgu || p.overall >= Math.round(G.temelGuc) + 12).slice(0, 2);
     for (const p of onemli) {
       const rk = rakipler.length ? rakipler[mh32(p.name) % rakipler.length].name : 'bir rakip';
@@ -555,7 +559,14 @@ export function scoutTick(G) {
   const ov = Math.max(35, Math.min(92, base + dI(-6, 10 + sb)));
   const age = dI(18, 32);
   const nm = G.data.names;
-  const name = nm ? `${nm.first[dI(0, nm.first.length - 1)]} ${nm.last[dI(0, nm.last.length - 1)]}` : 'Serbest ' + seq;
+  // İSİM ÇAKIŞMA ENGELİ: kadrodaki biriyle aynı isim üretme (soyadı determinist kaydır — bkz. extendMarketDet)
+  let name = 'Serbest ' + seq;
+  if (nm) {
+    const fi = dI(0, nm.first.length - 1); let li = dI(0, nm.last.length - 1);
+    const kadro = new Set((G.squad || []).map((x) => x.name));
+    name = `${nm.first[fi]} ${nm.last[li]}`;
+    for (let k = 0; kadro.has(name) && k < nm.last.length; k++) { li = (li + 1) % nm.last.length; name = `${nm.first[fi]} ${nm.last[li]}`; }
+  }
   const p = new Player({ id: 'mkt-w' + seq, name, pos: POS[dI(0, 3)], overall: ov, potential: age < 24 ? Math.min(95, ov + dI(0, 8)) : ov, age, contractYears: dI(2, 4), rng: dR });
   const pr = TUNING.TRANSFER.PREMIUM; p.fee = p.marketValue * ((pr[0] + pr[1]) / 2); // deterministik bedel (transferFee rand kullanır)
   const mhN = mh32(String(p.id) + '|' + p.name); p._ilgi = mhN % 4; p._kalan = 2 + ((mhN >>> 4) % 4); // yeni isim de ilgi/süre ile doğar
@@ -996,7 +1007,8 @@ function finishWeekTail(G, lateMove) {
   // D3: rastgele olay kartı (etiket ağırlıklı; sprint haftaları ×1.3; tek aktif olay)
   const sprintMult = wk >= CAL.SPRINT_FROM ? CAL.SPRINT_MULT : 1;
   if (!G.inbox.some((m) => m.action === 'event' && !m.resolved) && rand(0, 1) < TUNING.EVENT_P * sprintMult) {
-    const ev = pickRandomEvent(G, G.data.events);
+    const ev0 = pickRandomEvent(G, G.data.events);
+    const ev = ev0 ? olayKisisellestir(G, ev0) : ev0;
     if (ev && ev.auto) {
       applyEventEffects(G, ev.effects || {});
       pushInbox(G, { cat: 'olay', t: ev.title, b: ev.body || (ev.effects && ev.effects.note) || 'Olay kendiliğinden gelişti.' });
@@ -2073,6 +2085,8 @@ export function resolveTransferFile(G, msgId, choice) {
   G.club.kadroDeger = squadMarketValue(G.squad);
   G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G);
   m.resolved = true;
+  // DOSYA HİJYENİ: aynı oyuncuya açık BAŞKA alım dosyası kaldıysa kapat (çift-dosya karmaşası)
+  for (const mm of G.inbox) if (mm !== m && mm.action === 'tfile' && !mm.resolved && mm.file?.player?.id === f.player.id) mm.resolved = true;
   registerDecision(G, 'onay');
   if (G.windowStats) G.windowStats.onay++;
   // GİZLİ REYTİNG: saha gerçeği konuşur — rapor yanıldıysa imza mesajının İÇİNDE açığa çıkar
@@ -3085,6 +3099,23 @@ export function startNewTerm(G) {
 
 // ── Inbox & metin yardımcıları ──
 // Y1: tick başına zorunlu karar ≤2 — fazlası kuyruğa (spam yasağı)
+// OLAY KİŞİSELLEŞTİRME (kullanıcı: "kimin olduğu, ne kadarı belli değil — saçma"): yıldız-satış
+// tipli olaylarda (economy.kasaGain string = en değerli oyuncu satılır) gövdeye İSİM + YAŞ + GÜÇ +
+// BEDEL yazılır, "Sat" etiketi bedelli olur. Yalnız SUNUM katmanı — çözüm mantığı ve rand akışı aynı;
+// şablon objesi klonlanır (G.data.events kirletilmez).
+export function olayKisisellestir(G, ev) {
+  const satisMi = (o) => typeof o?.effects?.economy?.kasaGain === 'string' && o.effects.economy.kasaGain !== '2..5';
+  if (!(ev.options || []).some(satisMi)) return ev;
+  const star = (G.squad || []).slice().sort((a, b) => (b.marketValue || 0) - (a.marketValue || 0))[0];
+  if (!star) return ev;
+  const bedel = fmt1(star.marketValue);
+  return {
+    ...ev,
+    body: `${ev.body || ''} Masadaki isim: ${star.name} (${posTrPhone(star.pos)}, ${star.age} yaş, güç ${star.overall}) — teklif ${bedel}mn.`,
+    options: (ev.options || []).map((o) => satisMi(o) ? { ...o, label: `${o.label} — ${star.name}, ${bedel}mn kasaya` } : o),
+  };
+}
+
 function pushInbox(G, msg) {
   if (msg.action && !msg.noQueue) {
     G.tickDecisions = (G.tickDecisions || 0) + 1;
@@ -3950,7 +3981,7 @@ export function ilanVer(G, opts) {
   for (const p of G.squad.filter((x) => x.pos === pos)) p.morale = clamp(p.morale + TUNING.MEGA.ILAN.MORAL_CEZA, 0, 100);
   // İLANIN SOMUT SONUCU: piyasa o mevkide GENİŞLER — menajerler ellerindeki isimleri getirir
   if (Array.isArray(G.market)) {
-    const gelenler = extendMarketDet(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout, count: 4, salt: 9000 + (G.meta?.week || 0), pos });
+    const gelenler = extendMarketDet(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout, count: 4, exclude: new Set((G.squad || []).map((p) => p.name)), salt: 9000 + (G.meta?.week || 0), pos });
     for (const p of gelenler) p._ilan = true; // listede "İLAN" rozetiyle ayrışır — "hangileri benim ilanımdan geldi?" sorusu biter
     G.market.push(...gelenler);
     G.market.sort((a, b) => b.overall - a.overall);

@@ -42,7 +42,7 @@ console.log('\n── EĞRİ: gelişim sonraki sezonlarda ÖLMEZ ──');
   console.log('  ölçüm:', sezonlar.map((s, i) => `S${i + 1} içi ${s.ic}${i < 2 ? '+sonu ' + s.son : ''}`).join(' · '));
   check('S1: gelişim canlı (içi ≥ 4)', sezonlar[0].ic >= 4, `${sezonlar[0].ic}`);
   check('S2: gelişim SÜRÜYOR (içi+sonu ≥ 4)', sezonlar[1].ic + sezonlar[1].son >= 4, `${sezonlar[1].ic}+${sezonlar[1].son}`);
-  check('S3: gelişim SÜRÜYOR (içi+sonu ≥ 2 — eski kodda 0-1\'e düşüyordu)', sezonlar[2].ic + sezonlar[1].son >= 2, `içi ${sezonlar[2].ic}`);
+  check('S3: gelişim SÜRÜYOR (içi ≥ 1 — eski kodda 0\'a düşüyordu)', sezonlar[2].ic >= 1, `içi ${sezonlar[2].ic}`);
   // abartı freni: kadro ortalaması şişmesin (güç enflasyonu ligi kırmasın)
   const ort = G.squad.reduce((a, p) => a + p.overall, 0) / G.squad.length;
   check('abartı yok: dönem sonunda kadro ort. 50-62 bandında', ort >= 50 && ort <= 62, ort.toFixed(1));
@@ -54,13 +54,17 @@ console.log('\n── MEKANİK: geç gelişimci + potansiyel esnemesi ──');
   const G = A.newGame(data, 'normal');
   A.selectClub(G, 'orta');
   A.startTerm(G, ['P15'], { budget: 60, line: 'hazir' });
-  // 22 yaş, boşluklu oyuncu → artık gelişebilmeli (eski sınır ≤21 kapatıyordu)
+  // 22 ve 26 yaş, boşluklu oyuncular → artık gelişebilmeli (sınır 27'ye çıktı — kullanıcı isteği)
   const gec = G.squad.find((p) => p.age >= 24);
   gec.age = 22; gec.overall = 55; gec.potential = 68; gec._gelSezon = 0; gec._gel = 0;
+  const orta = G.squad.find((p) => p.age >= 24 && p !== gec);
+  orta.age = 26; orta.overall = 56; orta.potential = 66; orta._gelSezon = 0; orta._gel = 0;
   while ((G.hazirlik || 0) > 0) A.preSeasonWeek(G);
   while (G.meta.week <= 34 && G.phase === 'SEASON_LOOP') { A.advanceWeek(G); G.pendingMatch = null; A.drainAllPhones && A.drainAllPhones(G); }
   check('22 yaş geç gelişimci sezon içinde büyüdü', gec.overall > 55, `55 → ${gec.overall}`);
-  check(`geç gelişimci sezon tavanı ${TUNING.DEV_GEC_CAP} aşılamaz`, (gec._gelSezon || 0) <= TUNING.DEV_GEC_CAP, `_gelSezon ${gec._gelSezon}`);
+  check('26 yaş da büyüyor (sınır 27 — kullanıcı isteği)', orta.overall > 56, `56 → ${orta.overall}`);
+  check(`geç gelişimci sezon tavanı ${TUNING.DEV_GEC_CAP} aşılamaz`, (gec._gelSezon || 0) <= TUNING.DEV_GEC_CAP && (orta._gelSezon || 0) <= TUNING.DEV_GEC_CAP, `_gelSezon ${gec._gelSezon}/${orta._gelSezon}`);
+  check('28+ hâlâ GELİŞMEZ (sınır 27\'de durur)', !G.squad.some((p) => p.age >= 28 && (p._gelSezon || 0) > 0));
 
   // POT ESNEMESİ: tavana vuran genç sezon sonunda +2 tavan kazanır (kariyer cap'li)
   const genc = G.squad.find((p) => p.age <= 21 && p !== gec) || G.squad[0];

@@ -92,8 +92,11 @@ export function developSquad(squad, facilities, rng = rand) {
   for (const p of squad) {
     const once = p.overall; // ▲/▼ oku: sezon sonu değişimi de kadroda 3 hafta görünür
     p.age += 1;
-    if (p.age < TUNING.SQUADGEN.YOUTH_AGE && p.overall < p.potential) {
-      p.overall = Math.min(p.potential, p.overall + Math.round(rng(0, antrenman * TUNING.DEV_U24_MAX)));
+    // Gelişim yaşı 27'ye uzadı (kullanıcı isteği 2026-07-21): <24 tam hız, 24-27 YARI hız.
+    // rand SAYISI oyuncu başına hâlâ ≤1 (uygunluk kümesi genişledi — bilinçli akış kayması).
+    if (p.age <= (TUNING.DEV_GEC_YAS ?? 23) && p.overall < p.potential) {
+      const hiz = p.age < TUNING.SQUADGEN.YOUTH_AGE ? 1 : 0.5;
+      p.overall = Math.min(p.potential, p.overall + Math.round(rng(0, antrenman * TUNING.DEV_U24_MAX) * hiz));
     }
     if (p.age > TUNING.AGE_DECAY_START) {
       p.overall = Math.max(30, p.overall - Math.round(rng(0, (p.age - TUNING.AGE_DECAY_START) * TUNING.DEV_DECAY_RATE)));

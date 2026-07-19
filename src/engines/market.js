@@ -38,7 +38,7 @@ export function publicView(p, scoutLv = 0, week = 0) {
 
 // DETERMİNİSTİK HAVUZ GENİŞLETİCİ: çekirdek (seed'li) pazarın üstüne hash tabanlı +N isim.
 // pos verilirse o mevkide üretir (ilan sonucu havuz genişlemesi).
-export function extendMarketDet(refStrength, { names = null, scout = 0, count = 70, salt = 0, pos = null } = {}) {
+export function extendMarketDet(refStrength, { names = null, scout = 0, count = 70, salt = 0, pos = null, exclude = null } = {}) {
   const POS = ['GK', 'DEF', 'MID', 'FWD'];
   const out = [];
   const sb = Math.round((scout || 0) * 1.5);
@@ -47,7 +47,18 @@ export function extendMarketDet(refStrength, { names = null, scout = 0, count = 
     const ri = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
     const ov = Math.max(35, Math.min(92, refStrength + ri(-9, 10 + sb)));
     const age = ri(18, 33);
-    const name = names ? `${names.first[ri(0, names.first.length - 1)]} ${names.last[ri(0, names.last.length - 1)]}` : 'Serbest ' + i;
+    // İSİM ÇAKIŞMA ENGELİ (kullanıcı raporu 2026-07-21: kadrodaki "Osman Nas" için piyasa KLONU
+    // üretilip alım dosyası gelmişti — "benim oyuncuma teklif mi soruyor?" karmaşası).
+    // exclude (kadro isimleri) çakışırsa SOYADI determinist kaydır — rand tüketmez, hash kararlı.
+    let name = 'Serbest ' + i;
+    if (names) {
+      const fi = ri(0, names.first.length - 1); let li = ri(0, names.last.length - 1);
+      name = `${names.first[fi]} ${names.last[li]}`;
+      for (let k = 0; exclude && exclude.has(name) && k < names.last.length; k++) {
+        li = (li + 1) % names.last.length;
+        name = `${names.first[fi]} ${names.last[li]}`;
+      }
+    }
     const p = new Player({
       id: `mktx-${salt}-${i}`, name, pos: pos || POS[ri(0, 3)],
       overall: ov, potential: age < 24 ? Math.min(95, ov + ri(0, 8)) : ov,

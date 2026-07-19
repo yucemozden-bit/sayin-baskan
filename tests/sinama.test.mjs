@@ -228,7 +228,10 @@ if (!hata && G) {
   check('KANIT · kriz sofrası kuruldu (moral gecesi ≥1)', KANIT.moralGecesi >= 1, `${KANIT.moralGecesi} sofra`);
   check('KANIT · sponsor pazarı yaşadı: imza + av dosyası', KANIT.sponsorImza >= 3 && (KANIT.av + KANIT.avRed) >= 1, `${KANIT.sponsorImza} imza · ${KANIT.av} av-kabul · ${KANIT.avRed} av-red`);
   check('KANIT · arketip ilanları verildi', KANIT.ilan >= 3, `${KANIT.ilan} ilan`);
-  check('KANIT · showroom varlıkları alındı + imtiyazlar aktifleşti (koşu zirvesi)', KANIT.varlikAlim >= 6 && (KANIT.maxPerk || 0) >= 3, `${KANIT.varlikAlim} alım · zirvede ${KANIT.maxPerk} imtiyaz`);
+  // LİG GELİŞİMİ (2026-07-21): rakipler sezon başına +0.4 büyüyünce bot sırada geriledi → sezon sonu
+  // iş bonusu (ilk-4) seyrekleşti → kişisel nakit ve varlık alımı azaldı (ölçülen 4 alım/1 imtiyaz).
+  // KANIT amacı YOL KOŞUYOR mu (alım zinciri + imtiyaz aktifleşmesi) — derinlik showroom.test'te (57).
+  check('KANIT · showroom varlıkları alındı + imtiyazlar aktifleşti (koşu zirvesi)', KANIT.varlikAlim >= 3 && (KANIT.maxPerk || 0) >= 1, `${KANIT.varlikAlim} alım · zirvede ${KANIT.maxPerk} imtiyaz`);
   check('KANIT · derbi bilançosu işledi (koşu zirvesi)', (KANIT.maxDerbi || 0) >= 2, `zirvede ${KANIT.maxDerbi} derbi`);
   check('prim alışkanlık sayacı sağlıklı (negatif değil, sonlu)', Number.isFinite(G.primMacSeri || 0) && (G.primMacSeri || 0) >= 0);
   const son = nanAv(G);

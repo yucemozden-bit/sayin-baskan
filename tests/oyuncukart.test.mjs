@@ -83,5 +83,28 @@ console.log('\n── Oyuncu Kartı ──');
 }
 
 console.log('\n' + '─'.repeat(48));
+console.log('\n── YABANCI OYUNCU: kart hep LITE (derin raporlu bile) ──');
+{
+  // BUG REGRESYONU (2026-07-21): derin rapor alınmış PİYASA oyuncusu TAM kadro kartıyla
+  // açılıyordu — Jest/Söz/Satış/Sözleşme butonları benim olmayan oyuncuda görünüyordu.
+  const G = fresh(9);
+  G.transferWindow = true;
+  if (!G.market || !G.market.length) G.market = A.makeMarket ? A.makeMarket(G) : G.market;
+  const mp = (G.market || [])[0];
+  check('piyasa oyuncusu var (ön koşul)', !!mp);
+  if (mp) {
+    G._pcard = mp.id;
+    const hSis = pc.render(G);
+    check('sisli yabancı: SKAUT DOSYASI + güç aralıklı + kadro aksiyonları YOK',
+      hSis.includes('SKAUT DOSYASI') && !hSis.includes('data-act="vitrin"') && !hSis.includes('data-act="pJest"') && !hSis.includes('Sözleşme Yenile'));
+    mp._derin = true; // derin rapor alındı — yalnız GÜÇ netleşir
+    const hDerin = pc.render(G);
+    check('derin raporlu yabancı: hâlâ LITE kart (KESİN RAPOR başlığı)', hDerin.includes('KESİN RAPOR'));
+    check('derin raporlu yabancı: kesin güç + potansiyel görünür', hDerin.includes(`>${mp.overall}<`) || hDerin.includes(String(mp.overall)));
+    check('derin raporlu yabancı: kadro aksiyonları/iç profil SIZMAZ',
+      !hDerin.includes('data-act="vitrin"') && !hDerin.includes('data-act="pJest"') && !hDerin.includes('Sözleşme Yenile') && !hDerin.includes('SON 5 MAÇ') && !hDerin.includes('BAŞKANA GÜVEN'));
+  }
+}
+
 console.log(`SONUÇ: ${pass} geçti, ${fail} kaldı`);
 process.exit(fail ? 1 : 0);

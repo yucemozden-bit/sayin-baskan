@@ -59,7 +59,8 @@ export function render(G) {
          <div class="donem-damga">${G.meta.term + 1}. DÖNEM</div>
          <div class="muted" style="margin-top:8px">Konfeti, tezahürat, rozet tazelendi.</div>`
       : `<div class="vote led result-lost">KAYBETTİN</div><div class="muted">Makam odası sessiz. Devir-teslim raporu hazırlanıyor.</div>${yakanBoyut(G)}`;
-    // Faz 5: analiz dökümü — ağırlıklı katkılar; SANDIK AÇILIMI ile YAN YANA (simetri + tek ekran)
+    // Faz 5: analiz + sandık açılımı + (kayıpta) veda — GENİŞ 3 SÜTUN (tek uzun kolon ölçeklenince
+    // ortadan kırpılıyordu — kullanıcı raporu 2026-07-21; veda artık grid'in 3. paneli)
     const W = TUNING.ELECT_W;
     const contribs = KEYS.map((k) => ({ k, c: W[k] * b[k] })).sort((x, y) => y.c - x.c);
     const best = contribs[0], worst = contribs[contribs.length - 1];
@@ -73,8 +74,7 @@ export function render(G) {
       </div>
       <div class="muted" style="font-size:12px;margin-top:8px">En büyük koz: <b>${NAMES[best.k]}</b> · En zayıf halka: <b>${NAMES[worst.k]}</b></div>
     </div>`;
-    result += `<div class="sn-done-grid">${analiz}${blokAcilimi(b)}</div>`;
-    if (!e.kazandi) result += farewell(G);
+    result += `<div class="sn-done-grid">${analiz}${blokAcilimi(b)}${e.kazandi ? '' : farewell(G)}</div>`;
   }
 
   const inner = `<div class="scene secim-sahne ${e.done && !e.kazandi ? 'kaybettin-gri' : ''}" style="max-width:1080px">
@@ -125,25 +125,25 @@ function yakanBoyut(G) {
   return `<div class="muted" style="margin-top:6px;font-size:13px">Sandık analizi: seni asıl yakan boyut — <b style="color:var(--neg)">${TR[dusuk[0]]}</b> (${Math.round(dusuk[1])}/100).</div>`;
 }
 
-// Y8: KAYBETME VEDA SAHNESİ — boş makam odası + kurul vedaları (loyalty'e göre) + muhalif gazetecinin adil vedası
+// Y8: KAYBETME VEDA SAHNESİ — boş makam odası + kurul vedaları (loyalty'e göre) + muhalif gazetecinin
+// adil vedası. sn-done-grid'in 3. paneli olarak KOMPAKT (3 veda — tek kolon çağındaki 5'li liste
+// sahneyi taşırıyordu).
 function farewell(G) {
-  const vedalar = (G.board || []).slice(0, 5).map((m) => {
+  const vedalar = (G.board || []).slice(0, 3).map((m) => {
     const soz = m.loyalty >= 60
       ? `"Başkanım… yolun açık olsun. Bu odada seninle çalışmak şerefti."`
       : m.loyalty < 45
         ? `"Kongre konuştu. Anahtarları masaya bırakın lütfen."`
         : `"Böyle günler de var. Kulüp hepimizden büyük."`;
-    return `<div class="l"><span>${esc(m.name)} <span class="muted">(${esc(m.archetype)})</span></span><i style="text-align:right">${soz}</i></div>`;
+    return `<div class="sn-veda"><b>${esc(m.name)} <span class="muted">(${esc(m.archetype)})</span></b><i>${soz}</i></div>`;
   }).join('');
   const mj = muhalif((G.data || {}).media);
-  const mjBlock = mj ? `<div class="msg" style="margin-top:10px;text-align:left">
-      <div class="t">📰 ${esc(mj.name)} — veda yazısı</div>
-      <div class="b">"Yıllarca bu köşeden eleştirdim; bugün hakkını teslim edeyim: koltuğa yapışmadı, sandığın önünde eğildi. Kaybetti ama kulübü ayakta bıraktı. Bu şehirde herkes bunu yapamazdı."</div>
-    </div>` : '';
-  return `<div class="card" style="max-width:560px;margin:14px auto;text-align:left">
-    <div class="overline">Boş makam odası — ışıklar tek tek sönüyor</div>
-    <div class="muted" style="font-size:12px;margin:6px 0">Kutular toplandı. Duvarda arma, masada devir-teslim dosyası. Kurul üyeleri kapıda…</div>
-    <div class="fin-lines">${vedalar}</div>
+  const mjBlock = mj ? `<div class="sn-veda sn-veda-mj"><b>📰 ${esc(mj.name)} — veda yazısı</b>
+      <i>"Yıllarca eleştirdim; hakkını teslim edeyim: koltuğa yapışmadı, sandığın önünde eğildi. Kaybetti ama kulübü ayakta bıraktı."</i></div>` : '';
+  return `<div class="card">
+    <div class="overline">Boş makam odası — ışıklar sönüyor</div>
+    <div class="muted" style="font-size:12px;margin:6px 0">Kutular toplandı. Duvarda arma, masada devir-teslim dosyası…</div>
+    ${vedalar}
     ${mjBlock}
   </div>`;
 }
