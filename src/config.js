@@ -7,6 +7,7 @@ export const TUNING = {
   // — Zaman —
   SEASON_WEEKS: 34, SEASONS_PER_TERM: 3, LEAGUE_TEAMS: 18,
   PRESEASON_WEEKS: 3, // sezon başı hazırlık/transfer dönemi (maç yok; kadro kurulur)
+  PRESEASON_FIT: 35,  // kamp haftası başına kondisyon tazelenmesi (3 hafta ≈ bitkin → tam depo)
   // — Gauge —
   INERTIA: 0.20, INERTIA_ITIBAR: 0.08,
   THRESH: { guvenKriz: 20, taraftarBoykot: 25, maliTahta: 15 },
@@ -15,7 +16,7 @@ export const TUNING = {
   POS_W: { GK: 0.12, DEF: 0.26, MID: 0.30, FWD: 0.32 },
   CLAMP: { uygunluk: [0.65, 1], moral: [0.88, 1.12], form: [0.90, 1.10], kond: [0.82, 1.05] },
   STAR_THRESHOLD: 80, STAR_BONUS_MAX: 8, BALANCE_MIN: 0.85,
-  KIMYA_WEEK: 1.5, KIMYA_TRANSFER: -3, KIMYA_TD: -10, TAKTIK_WEEK: 6, // transfer sarsıntısı −4→−3 (kullanıcı isteği 2026-07-20)
+  KIMYA_WEEK: 1.5, KIMYA_TRANSFER: -1, KIMYA_TD: -10, TAKTIK_WEEK: 6, // transfer sarsıntısı −4→−3→−1 (kullanıcı: "kimyayı toplamak imkansız")
   // — Maç —
   // GÜÇ ETKİSİ (2026-07, kullanıcı isteği): takım gücü galibiyeti daha güçlü belirlesin.
   // K 1.6→3.0 (güç farkı → xG payı dikleşir), LUCK daraldı (şans gücü daha az boğar), gol sabit (2.6).
@@ -33,6 +34,17 @@ export const TUNING = {
   INJURY_BASE: 0.03, FIT_DROP: 12, FIT_REST: 20,
   FORM_D: { W: 8, D: 2, L: -8 }, MORALE_D: { W: 4, D: 0, L: -5 }, RED_CARD_P: 0.08,
   DEV_U24_MAX: 1.15 /*×antrenman sv — gençler DAHA HIZLI gelişsin (kullanıcı isteği: 0.8→1.15)*/, AGE_DECAY_START: 31, DEV_DECAY_RATE: 0.6,
+  // Antrenman tesisi HER SEVİYEDE hissedilir (kullanıcı isteği 2026-07-20 — eski floor(sv/5) yalnız 5 ve 10'da basamaktı):
+  DEV_ANT_HAFTALIK: 0.35, // sezon içi gelişim puanı = sv × bu (kesirli birikir — her yükseltme haftalık hızı artırır)
+  DEV_GEL_ESIK: 20,       // +1 güç için birikmesi gereken puan
+  // GELİŞİM SÜREKLİLİĞİ (2026-07-21, kullanıcı: "sonraki sezonlarda kimse yükselmiyor" — 4 sezon
+  // teşhisi: S1'de 10 artan, S4'te 0; tavanlar 1-2 sezonda doluyordu, 22-23 yaş tümden kapalıydı):
+  DEV_GEC_YAS: 23,        // sezon içi gelişim yaş sınırı 21 → 23 (22-23 = "geç gelişimci")
+  DEV_GEC_CARPAN: 0.5,    // geç gelişimci haftalık puanı ×0.5 (gençten yavaş ama artık büyüyebiliyor; 0.6→0.5 temper)
+  DEV_GEC_CAP: 2,         // geç gelişimci sezon içi tavanı +2 (genç +3/elit +4)
+  POT_ESNEME: { yas: 23, artis: 2, kariyerCap: 4, tavan: 88 }, // tavana vuran ≤23 genç: sezon sonu pot +2 (kariyerde en çok +4, mutlak tavan 88) — determinist, rand YOK
+  DEV_CAP_ELITE_ANT: 8,   // antrenman ≥8 → sezon içi gelişim tavanı +3 yerine +4 (elit tesis farkı)
+  FIT_ANT: 0.25,          // dinlenen oyuncuya maç başına EK kondisyon = antrenman sv × bu ("kondisyon çabuk toparlar" artık gerçek; 0.4→0.25 autoplay bandı için tempered)
   // — Ekonomi —
   WAGE_RATIO_HEALTHY: 0.55, TIER_SCALE: { kucuk: 2, orta: 6, buyuk: 14 },
   TV_BASE: { kucuk: 20, orta: 50, buyuk: 261, dev: 360, efsane: 480 }, TICKET_K: 0.0001, // [kalibre: gelir ölçeği; dev/efsane yalnız oyunla ulaşılır]

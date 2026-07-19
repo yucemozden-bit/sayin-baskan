@@ -51,10 +51,11 @@ setSeed(11);
   const f = playUntilFile(G, 'tfile');
   check('GM pencere içinde ONAY DOSYASI getirdi', !!f, f ? f.t : 'gelmedi');
   check('dosyada gerekçe + sis aralığı var', !!f.file.gerekce && Array.isArray(f.file.range) && f.file.range[0] < f.file.range[1]);
-  const kasa0 = G.economy.kasa, n0 = G.squad.length;
+  const kasa0 = G.economy.kasa, n0 = G.squad.length, kimya0 = G.kimya.kimya;
   const r = A.resolveTransferFile(G, f.id, 'onay');
   check('ONAYLA: oyuncu kadroda + bütçe izlendi', r.ok && G.squad.length === n0 + 1 && (G.termSpent || 0) > 0, `harcanan ${Math.round(G.termSpent)}mn`);
-  check('kimya sarsıldı (transfer etkisi korunur)', G.kimya.kimya < 60);
+  // sarsıntı miktarı TUNING'den (−4→−3→−1 kullanıcı yumuşatmaları sabit eşiği kırıyordu)
+  check('kimya sarsıldı (transfer etkisi korunur)', Math.abs(G.kimya.kimya - (kimya0 + TUNING.KIMYA_TRANSFER)) < 1e-9, `${kimya0.toFixed(1)} → ${G.kimya.kimya.toFixed(1)}`);
 
   // RED yolu
   setSeed(12);

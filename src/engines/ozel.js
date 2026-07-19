@@ -5,6 +5,17 @@
 //  2) DETERMİNİZM KUTSAL: core/rng'ye çekiliş EKLENMEZ — tüm rastgelelik h32 hash (kulüp+sezon+hafta).
 //  3) KÜÇÜK AMA GERÇEK: kulüp etkileri minik (≤0.4 gauge/hafta, ≤2 tek seferlik) ama hissedilir.
 
+// MUTLAK HAFTA (monotonik) — cooldown/vade matematiğinin TEK kaynağı.
+// BUG DERSİ (2026-07-21): eski `sezon×100+hafta` sayacı DÖNEM başında sezonla birlikte
+// sıfırlanıyordu → dönem geçişinde davet/arsa/sponsor-av bekleme süreleri 200+ haftaya
+// fırlıyordu ("takvim dolu (219 hafta)"). Dönem 1'de eski ölçekle BİREBİR aynı (kayıt uyumu);
+// sonraki dönemlerde artmaya devam eder. Eski kayıtlardaki şaşmış değerler negatif kalana
+// düşer → süresi dolmuş sayılır (kendini onarır).
+export function absHafta(G) {
+  const donem = (G.meta?.term || 1) - 1, spt = G.SEASONS_PER_TERM || 3;
+  return (donem * spt + (G.meta?.season || 1)) * 100 + (G.meta?.week || 1);
+}
+
 // Hash — sponsorGen/market ile aynı aile (yerel, seed'den bağımsız)
 export function h32(str) {
   let h = 2166136261 >>> 0;
@@ -40,9 +51,9 @@ export const VARLIK = {
   oto: { ad: 'Otomobil', ik: '🏎️', adlar: ['Lüks Sedan', 'Spor Coupé', 'Grand Tourer', 'Süper Spor'], fiyat: [6, 16, 38, 60], pasif: { sosyal: [0.5, 1, 2, 3] }, model: ['oto1', 'oto2', 'oto3', 'oto4'],
     perk: ['Şehirde tanınırsın', 'Jest yayılımı +1 (kulübe gelişin olay olur)', 'Cemiyette ağırlığın artar (sosyal +2/hafta)', 'Şehir olayı: satın alınca taraftar +2 · sosyal +3/hafta'] },
   tekne: { ad: 'Deniz Aracı', ik: '🛥️', adlar: ['Lüks Tekne', 'Flybridge Yat', 'Mega Yat'], fiyat: [12, 32, 60], pasif: { sosyal: [1, 1.5, 2.5] }, model: ['deniz1', 'deniz2', 'deniz3'],
-    perk: ['Tekne Turu davetleri açılır (iş çevresi)', 'Tekne turunda mali algı etkisi ikiye katlanır', 'Mega Yat: tekne turu takvimi 2 hafta erken açılır'] },
+    perk: ['Tekne Turu davetleri açılır (iş çevresi)', 'Mali algı ×2 · TAKIM TEKNE GÜNÜ: sezon başı kadro morali +4', 'Takvim −2 hafta · takım günü sezon başı moral +6 · form +3'] },
   hava: { ad: 'Hava Aracı', ik: '🚁', adlar: ['Helikopter (pay)', 'Turboprop Uçak (pay)', 'Özel Jet'], fiyat: [20, 45, 90], pasif: { enerji: [1, 2, 3] }, dis: 'Kulüp mesaisi yarı yorar', model: ['hava1', 'hava2', 'hava3'],
-    perk: ['Kulüp mesaisi yarı yorar (akşamlar senin)', 'Scout uçuşları: haftalık sorgu hakkı +1', 'Özel Jet: transfer pazarlığında masaya erken oturursun (+%4 kabul)'] },
+    perk: ['Kulüp mesaisi yarı yorar (akşamlar senin)', 'Scout uçuşları: sorgu +1 · TAKIM CHARTER\'I: deplasman dönüşü kadro kondisyonu +1', 'Özel Jet: pazarlık +%4 · deplasman dönüşü kondisyon +2'] },
   sanat: { ad: 'Sanat', ik: '🖼️', adlar: ['Genç Koleksiyon', 'Usta Tablosu', 'Müze Şaheseri'], fiyat: [8, 24, 50], pasif: {}, dis: 'Hayır Gecesi güçlenir (sv.2+), sv.3: takvim −2', model: ['sanat1', 'sanat2', 'sanat3'],
     perk: ['Koleksiyoner imajı filizlenir', 'Hayır Gecesi etkisi büyür (itibar/taraftar +1)', 'Müze Şaheseri: her sezon başı itibar +1 · hayır takvimi −2'] },
 };
@@ -61,10 +72,12 @@ export function varlikPerkleri(oz) {
   if ((v.oto || 0) >= 2) out.push({ ik: '🏎️', txt: 'jest yayılımı +1' });
   if ((v.tekne || 0) >= 1) out.push({ ik: '⛵', txt: 'tekne turları açık' });
   if ((v.tekne || 0) >= 2) out.push({ ik: '💼', txt: 'tekne turu mali algı ×2' });
-  if ((v.tekne || 0) >= 3) out.push({ ik: '🛥️', txt: 'tekne takvimi −2 hafta' });
+  if ((v.tekne || 0) >= 2) out.push({ ik: '🛥️', txt: (v.tekne || 0) >= 3 ? 'sezon başı takım moral +6 · form +3' : 'sezon başı takım moral +4' });
+  if ((v.tekne || 0) >= 3) out.push({ ik: '🗓', txt: 'tekne takvimi −2 hafta' });
   if ((v.hava || 0) >= 1) out.push({ ik: '🚁', txt: 'mesai yarı yorar' });
   if ((v.hava || 0) >= 2) out.push({ ik: '🔎', txt: 'sorgu hakkı +1/hafta' });
-  if ((v.hava || 0) >= 3) out.push({ ik: '✈️', txt: 'pazarlık +%4' });
+  if ((v.hava || 0) >= 2) out.push({ ik: '✈️', txt: `deplasman dönüşü kondisyon +${(v.hava || 0) >= 3 ? 2 : 1}` });
+  if ((v.hava || 0) >= 3) out.push({ ik: '🤝', txt: 'pazarlık +%4' });
   if ((v.sanat || 0) >= 2) out.push({ ik: '🖼️', txt: 'hayır gecesi güçlü' });
   if ((v.sanat || 0) >= 3) out.push({ ik: '🏺', txt: 'sezon başı itibar +1' });
   return out;

@@ -6,6 +6,7 @@
 // Kadroda OLMAYAN (teklif/piyasa) oyuncu sisli/lite gösterilir: gerçek güç imzadan önce sızmaz.
 import { esc, fmt } from './frame.js';
 import { shownRating } from '../engines/market.js';
+import { absHafta } from '../engines/ozel.js';
 import { KISILIKLER, kisilikOf, klikOf, KLIK_TR } from '../engines/iliski.js';
 
 const POS_TR = { GK: 'Kaleci', DEF: 'Stoper', MID: 'Orta saha', FWD: 'Forvet' };
@@ -261,7 +262,7 @@ export function render(G) {
   const endYil = 2025 + (G.worldSeason ?? G.meta?.season ?? 1) + (p.contractYears ?? 1);
   const renewKilit = (p.contractYears ?? 0) >= 5 || p._renewTerm === (G.meta?.term ?? 1);
   // İLİŞKİ (2.1): jest haftada 1 (tüm kadro), söz oyuncu başına 1 aktif
-  const absW = (G.meta?.season || 1) * 100 + (G.meta?.week || 1);
+  const absW = absHafta(G); // MONOTONİK — jest hakkı dönem geçişinde şaşmaz
   const jestHak = (G.ozel?.seviye ?? 1) >= 5 ? 2 : 1; // Halkın Adamı (sv.5+): haftada 2 jest
   const jestDolu = G.jestH?.hafta === absW && G.jestH.n >= jestHak;
   const sozVar = !!p.relx?.soz;

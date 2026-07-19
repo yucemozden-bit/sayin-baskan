@@ -187,7 +187,18 @@ function render() {
       html = setupUi.render(G); break;
     case 'TERM_SETUP': {
       // M6: YENİ DÖNEM RİTÜELİ — vaatlerden önce tören: defter kartları + kurul önünde vizyon
-      if (G.ritual && !G.ritual.done) { html = shell(G, { content: ritualScene(G), center: true }); break; }
+      // (sb-cinematic tam-ekran — eski shell teması emekli; kullanıcı isteği 2026-07-21)
+      if (G.ritual && !G.ritual.done) {
+        html = `<div class="sb-root sb-cinematic secim-toren">
+          <div class="sb-atmo"></div><div class="sb-vignette"></div>
+          ${cockpit.sbTopbar(G, { phaseChip: `${G.meta.term}. DÖNEM TÖRENİ` })}
+          <div class="sb-body sb-body-col secim-toren-body"><div class="sn-fit">${ritualScene(G)}</div></div>
+          <footer class="sb-bottombar">
+            <div class="sb-bb-l"><span class="sb-bb-k">TÖREN</span><span class="sb-bb-note">Tek cümle vizyon seç — kurul not alacak, dönem o cümleyle anılacak</span></div>
+          </footer>
+        </div>`;
+        break;
+      }
       // v4.3-4: iki adım — 1/2 vaat, 2/2 direktif; buton her adımda sticky (devam-wrap)
       // Her iki adım da (1/2 Sözünü Ver, 2/2 Makam Odası) kendi tam-ekran sb- kabuğunu üretir — shell'siz.
       html = promiseSelect.render(G);
@@ -229,20 +240,13 @@ function render() {
       }
       break;
     case 'SEASON_END':
-      html = shell(G, { content: seasonEnd.render(G), center: true, devam: { label: 'Yeni Sezona Başla ►', pulse: true } }); break;
+      html = seasonEnd.render(G); break;  // sb-cinematic tam-ekran tören (kendi topbar+bottombar; scroll yok)
     case 'CAMPAIGN':
       html = renderCampaign(G); break;    // sb-cinematic tam-ekran (kendi topbar+bottombar)
     case 'DEBATE':
       html = renderDebate(G); break;      // sb-cinematic; cevap butonları sahnede
-    case 'ELECTION_NIGHT': {
-      const e = G.election;
-      const revealing = (e.revealStep ?? 0) <= 6 && !e.counting && !e.done; // 6 karne kartı (Aile dahil)
-      const label = e.done ? (e.kazandi ? 'Yeni Döneme Başla ►' : 'Kariyer Sonu ►')
-        : e.counting ? 'Seçimi Sonlandır ►'
-          : revealing ? (e.revealStep < 6 ? 'Karneyi Aç ►' : 'Rakibi Dinle ►') : 'Oyları Say ►';
-      html = shell(G, { content: electionNight.render(G), center: true, devam: { label, disabled: false, pulse: true } });
-      break;
-    }
+    case 'ELECTION_NIGHT':
+      html = electionNight.render(G); break; // sb-cinematic tam-ekran (kendi topbar+bottombar; DEVAM etiketi sahnede)
     case 'GAME_OVER':
       html = shell(G, { content: gameOver(G), center: true, devam: { label: 'Yeni Kariyer ►', pulse: true } }); break;
     default:
@@ -320,19 +324,24 @@ function fitVaat() {
   }
 }
 
-// sb- ekranlarında da KAYDIRMASIZ GARANTİ: doğal yükseklikli içerik (ör. Finans .fin-root)
-// ayrılan alandan uzunsa fitVaat ile aynı teknikle orantılı küçültülür — kırpılma/taşma yok.
+// sb- ekranlarında da KAYDIRMASIZ GARANTİ: doğal yükseklikli içerik ayrılan alandan uzunsa
+// fitVaat ile aynı teknikle orantılı küçültülür — kırpılma/taşma yok. GENEL LİSTE (taşma
+// taraması dersi): yoğun sezonda kongre/kulüp kartları da taşabiliyordu — kök buraya eklenir.
+// ŞART: kökün İÇİNDE overflow:hidden ara katman olmamalı (yoksa scrollHeight ihtiyacı ölçemez).
+const SB_FIT_ROOTS = ['.fin-root', '.kng-root', '.klub-root', '.sn-fit'];
 function fitSb() {
-  const el = app.querySelector('.fin-root');
-  if (!el) return;
-  el.style.transform = ''; el.style.width = '';
-  const avail = el.clientHeight;           // flex'in bu içeriğe ayırdığı alan
-  const need = el.scrollHeight;            // içeriğin doğal boyu (sponsor paneli artık doğal akar)
-  if (need > avail + 2 && avail > 160) {
-    const s = Math.max(0.55, avail / need);
-    el.style.transformOrigin = 'top left';
-    el.style.transform = `scale(${s})`;
-    el.style.width = `${(100 / s).toFixed(2)}%`;
+  for (const sel of SB_FIT_ROOTS) {
+    const el = app.querySelector(sel);
+    if (!el) continue;
+    el.style.transform = ''; el.style.width = '';
+    const avail = el.clientHeight;           // flex'in bu içeriğe ayırdığı alan
+    const need = el.scrollHeight;            // içeriğin doğal boyu
+    if (need > avail + 2 && avail > 160) {
+      const s = Math.max(0.55, avail / need);
+      el.style.transformOrigin = 'top left';
+      el.style.transform = `scale(${s})`;
+      el.style.width = `${(100 / s).toFixed(2)}%`;
+    }
   }
 }
 

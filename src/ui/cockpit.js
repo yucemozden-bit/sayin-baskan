@@ -4,6 +4,7 @@
 // Not: yaprak bileşenler (gauge/tablo/inbox/vaat) korunur; radikallik DÜZEN + DERİNLİK katmanında.
 import { TUNING } from '../config.js';
 import { standings } from '../engines/league.js';
+import { absHafta } from '../engines/ozel.js';
 import { esc, gaugesBlock, fmt } from './frame.js';
 import { isCriticalWeek, relWord, promiseStatus } from '../actions.js';
 import { DESK_CARDS } from '../engines/director.js';
@@ -242,7 +243,7 @@ export function sbShell(G, { crumb, title, body }) {
   const hazir = (G.hazirlik || 0) > 0;
   const inboxN = (G.inbox || []).filter((x) => x.action && !x.resolved).length;
   // ÖZEL HAYAT sinyali: ikilem bekliyor VEYA bir davetin takvimi BU HAFTA açıldı (cd tam bitti)
-  const ozAbs = ((G.meta?.season || 1) * 100 + (G.meta?.week || 1));
+  const ozAbs = absHafta(G);
   const ozSinyal = !!(G.ozel?.olay || Object.values(G.ozel?.davetCd || {}).some((v) => v === ozAbs));
   const navItems = NAV_SB.map(([id, label, ic]) => {
     const active = (G.nav || 'cockpit') === id;
@@ -435,7 +436,7 @@ function sbAgenda(G, next, meRow, injured) {
   }
   if (G.ozel?.olay) items.push(['warn', 'Özel gündem bekliyor — ailede bir karar var (Özel Hayat)']); // 💗 köprü: ikilem kaçmadan
   else { // davet takvimi bu hafta açıldıysa hatırlat (nokta + gündem çifti — geri çağırma döngüsü)
-    const _abs = ((G.meta?.season || 1) * 100 + (G.meta?.week || 1));
+    const _abs = absHafta(G);
     if (Object.values(G.ozel?.davetCd || {}).some((v) => v === _abs)) items.push(['club', 'Davet takvimi açıldı — yeni bir gece düzenlenebilir (Özel Hayat)']);
   }
   if (!next && (G.hazirlik || 0) === 0) items.push(['club', 'Sezon tamam — kongre defterini kapat']);

@@ -1,6 +1,7 @@
 // src/ui/facilitiesView.js — TESİSLER "kulüp kampüsü" (görsel şölen v2):
 // tam ekran 3×2 pano, SVG ikonlu 3B plakalar, LED seviye şeridi, ihale sahnesi.
 // Kaydırma yok — 6 tesis viewport'u doldurur.
+import { TUNING } from '../config.js';
 import { fmt } from './frame.js';
 import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES } from '../engines/facilities.js';
 import { sbShell } from './cockpit.js';
@@ -10,6 +11,17 @@ const AD = {
   stadyum: 'Stadyum', antrenman: 'Antrenman Tesisi', tibbi: 'Tıbbi Merkez',
   akademi: 'Akademi', scout: 'Gözlemci Ağı', ticari: 'Ticari Ofis',
 };
+// Seviyenin SOMUT karşılığı (kullanıcı isteği: "faydası gözle görülür olsun") — motorla aynı
+// katsayılardan (TUNING) canlı hesaplanır; yükseltmenin ne kazandıracağı ok ile gösterilir.
+function etkiSayilar(f, lvl) {
+  if (f !== 'antrenman') return '';
+  const dev = (n) => (n * TUNING.DEV_ANT_HAFTALIK).toFixed(1);
+  const din = (n) => (n * TUNING.FIT_ANT).toFixed(1);
+  const elit = lvl >= TUNING.DEV_CAP_ELITE_ANT;
+  const sonraki = lvl < 10 ? ` → <b class="pos">Sv.${lvl + 1}: +${dev(lvl + 1)} · +${din(lvl + 1)}</b>` : '';
+  return `<div class="tesis-etki-sayi">Şimdi: genç gelişimi <b>+${dev(lvl)} puan/hafta</b> · dinlenme <b>+${din(lvl)} kond/maç</b>${sonraki}${elit ? ' · <b class="pos">ELİT: sezon içi gelişim tavanı +4</b>' : lvl >= 6 ? ` · Sv.${TUNING.DEV_CAP_ELITE_ANT}'de tavan +4` : ''}</div>`;
+}
+
 const ETKI = {
   stadyum: 'Ev avantajı, kapasite ve isim hakkı geliri (sv≥7). Tribün büyüdükçe şehir arkanda.',
   antrenman: 'Oyuncular hızlı gelişir, kondisyon çabuk toparlar. Formun mutfağı.',
@@ -137,7 +149,7 @@ export function render(G) {
         <span class="tesis-lvl led">${lvl}</span>
       </div>
       <div class="tesis-seviye">${segs}</div>
-      <div class="tesis-etki">${ETKI[f]}</div>
+      <div class="tesis-etki">${ETKI[f]}${etkiSayilar(f, lvl)}</div>
       <div class="tesis-sahne-wrap">${sahne(f, lvl)}</div>
       <div class="tesis-alt">
         ${indirim}

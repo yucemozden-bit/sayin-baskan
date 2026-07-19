@@ -81,6 +81,9 @@ export function postMatch(squad, res, facilities = {}, rng = random01) {
   const played = [];
 
   // 1) Kondisyon/form/moral (oynayanlar düşer, yedekler toparlanır)
+  // Antrenman tesisi dinlenmeyi HIZLANDIRIR ("kondisyon çabuk toparlar" vaadi artık gerçek —
+  // sv başına +FIT_ANT/maç; sv10'da yedek maç başına +4 ekstra toparlar)
+  const antRest = (facilities.antrenman || 0) * (TUNING.FIT_ANT || 0);
   for (const p of squad) {
     if (xi.has(p)) {
       played.push(p);
@@ -88,7 +91,7 @@ export function postMatch(squad, res, facilities = {}, rng = random01) {
       p.form = clamp(p.form + TUNING.FORM_D[res], 0, 100);
       p.morale = clamp(p.morale + TUNING.MORALE_D[res], 0, 100);
     } else {
-      p.fitness = clamp(p.fitness + TUNING.FIT_REST, 0, 100);
+      p.fitness = clamp(p.fitness + TUNING.FIT_REST + antRest, 0, 100);
     }
   }
 

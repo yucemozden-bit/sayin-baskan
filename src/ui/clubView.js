@@ -49,7 +49,9 @@ export function render(G) {
   // sbShell (ortak tam-ekran kabuk): topbar zaten kulüp armasını+adını gösterir,
   // bu yüzden h1 → title'a taşındı. Kimlik kartının zengin içeriği (künye, anlatı
   // etiketi, müze, sözler, kongre, defter, başarım) body içinde AYNEN korunur.
-  const body = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
+  // .klub-root: fitSb ölçek kökü (SB_FIT_ROOTS) — arada overflow:hidden katman YOK ki
+  // scrollHeight gerçek ihtiyacı ölçebilsin; taşma kırpılmaz, orantılı küçültülür.
+  const body = `<div class="klub-root">
     <div class="klub-head">
       <span class="badge klub-tag" data-tip="Kulübün anlatı iklimi: güven + kurul + taraftar + borç durumundan türeyen dönem etiketi">${tag}</span>
     </div>

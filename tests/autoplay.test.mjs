@@ -400,7 +400,15 @@ console.log('\n── HEDEF ──');
 // KONGRE 2.6 (2026-07-20): ultras talep/protesto mektupları inbox akışını yeniden sıralıyor →
 // yönetmen/telefon kelebeği tek kariyer oynatabiliyor (300'de ±1 = ±0.33 puan). Sistematik kanal YOK:
 // bilet kancası Cimri'yi AŞAĞI iter, protesto oy-nötr (tests/delege.test.mjs bit-bit ispat) → tavan 93→94.
-check('tek dönem: iyi oynanan %64-94 bandı', [RESULTS['Cimri'].win, RESULTS['Dengeli'].win].every((w) => w >= 64 && w <= 94), `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
+// İLERLEME BUFF'LARI (2026-07-21, kullanıcı istekleri): kamp kondisyon tazelemesi + antrenman
+// tesisi dinlenme bonusu + genç gelişim görünürlüğü iyi oynanan dönemi meşru ~1 puan kaldırdı;
+// botlar 93-95 bandında seed kaosuyla salınıyor → tavan 94→95. "Garantisiz" ilkesi duruyor
+// (300 dönemde ≥15 kayıp); daha sıkı denge istenirse knob'lar: FIT_ANT · DEV_ANT_HAFTALIK · WIN_LINE.
+// GELİŞİM SÜREKLİLİĞİ (2026-07-21, kullanıcı: "sonraki sezonlarda kimse yükselmiyor — değiştir"):
+// 22-23 geç gelişimci + potansiyel esnemesi → kadro KARİYER BOYU büyür; ölçülen tek dönem C %96/D %93.
+// Bu BİLİNÇLİ tasarım kayması: oyun uzun vadede kolaylaştı (kullanıcı ilerleme istedi). Sıkılaştırma
+// düğmeleri: DEV_GEC_CARPAN · POT_ESNEME.kariyerCap · WIN_LINE/zorluk presetleri. Tavan 95→96.
+check('tek dönem: iyi oynanan %64-96 bandı', [RESULTS['Cimri'].win, RESULTS['Dengeli'].win].every((w) => w >= 64 && w <= 96), `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
 check('tek dönem: Dengeli ≥ Cimri−8', RESULTS['Dengeli'].win >= RESULTS['Cimri'].win - 8, `Dengeli %${RESULTS['Dengeli'].win.toFixed(0)} vs Cimri−8 %${(RESULTS['Cimri'].win - 8).toFixed(0)}`);
 check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D ${areaD.toFixed(0)} vs C×0.7 ${(areaC * 0.7).toFixed(0)}`);
 // Eskalasyon revizyonu (v4.2) hayatta kalma bantları: zor ama efsane mümkün.
@@ -423,7 +431,13 @@ check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D 
 // kulüp artık BİLEREK daha kalıcı: ölçülen eğri her iki botta ~73→53→36. Bantlar yeni dengeye
 // ±gürültüyle taşındı (38-66→55-80, 15-40→35-62, 3-26→18-45). Niyet korunur: her dönem zorlaşır,
 // dönem-4'te koltuk hâlâ 1/3 ihtimal — efsane mümkün, garanti değil.
-const bands2 = [[1, 55, 80], [2, 35, 62], [3, 18, 45]]; // [idx, lo, hi] — dönem 2/3/4
+// KİMYA −3→−1 (2026-07-21, kullanıcı: "kimyayı toplamak imkansız"): transfer sarsıntısı fiilen
+// söndü → transfer-aktif Dengeli'nin kümülatif gücü arttı, uzun-vade eğrisi ~+3 kaydı
+// (ölçülen: D 79→64→48, C 72→45→21). Üst sınırlar 62→66 / 45→50; düşen eğri ilkesi duruyor.
+// GELİŞİM SÜREKLİLİĞİ (2026-07-21): kadro kariyer boyu büyüyünce uzun kariyer BİLEREK kolaylaştı
+// (ölçülen: C 97→81→62→37, D 94→85→70→56). Eğri hâlâ düşer, dönem-4 hâlâ garanti değil;
+// bantlar yeni tasarıma taşındı (55-80→60-88, 35-66→40-74, 18-50→22-60).
+const bands2 = [[1, 60, 88], [2, 40, 74], [3, 22, 60]]; // [idx, lo, hi] — dönem 2/3/4
 for (const [i, lo, hi] of bands2) {
   check(`çok dönem: dönem-${i + 1} hayatta kalma %${lo}-${hi} (her iki bot)`,
     [survival['Cimri'][i], survival['Dengeli'][i]].every((v) => v >= lo && v <= hi),

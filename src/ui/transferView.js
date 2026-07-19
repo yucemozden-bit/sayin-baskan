@@ -75,7 +75,20 @@ export function render(G) {
   // ARKETİP KARTLARI (görsel+dinamik): her kart CANLI hedef okur — yaşlanan/en zayıf hat, bütçeye
   // göre tavan, rakip başkan indirimi. İlan yayındayken şerit büyük nabızlı duruma döner.
   const kelepirDost = ((G.bkRel || {})[G.opponents?.[0]?.id] ?? 50) >= 70;
-  const arama = G.ilan
+  // TAHTA CEZASI GÖRÜNÜR (kullanıcı raporu: "basıyorum hareket etmiyor" — ilanVer sessizce
+  // reddediyordu): FFP cezası varken kartlar yerine kilit şeridi; pencere kapalıysa da aynı.
+  const tahtaBan = (G.flags?.transferBan || 0) > 0;
+  const arama = tahtaBan
+    ? `<div class="tr-ilan-live" style="border-color:var(--neg)" data-tip="FFP ikinci ihlal cezası — bu pencere GM dosya açamaz, ilan verilemez, onay dosyaları imzalanamaz">
+        <span class="tr-live-dot" style="background:var(--neg)"></span>
+        <div class="tr-ilan-id"><b style="color:var(--neg)">🚫 TRANSFER TAHTASI KAPALI</b><i>FFP cezası işliyor — ilan/onay bu pencere kilitli (kalan ${G.flags.transferBan} hafta). Satış serbest.</i></div>
+      </div>`
+    : !G.transferWindow
+      ? `<div class="tr-ilan-live" data-tip="Pencere kapalıyken menajerlere ilan gitmez">
+        <span class="tr-live-dot" style="background:var(--ink-3)"></span>
+        <div class="tr-ilan-id"><b>PENCERE KAPALI</b><i>İlanlar transfer penceresi açılınca verilebilir — hedeflerini kısa listeye ekle, hazırlan.</i></div>
+      </div>`
+      : G.ilan
     ? `<div class="tr-ilan-live" data-tip="Menajerler ellerindekini getirir; kulüpler 1-3 haftada dosya yollar">
         <span class="tr-live-dot"></span>
         <div class="tr-ilan-id"><b>İLAN YAYINDA</b><i>${POS_TR[G.ilan.pos]} aranıyor · "İLAN" rozetli isimler listede · cevap dosyaları Inbox'a düşer</i></div>

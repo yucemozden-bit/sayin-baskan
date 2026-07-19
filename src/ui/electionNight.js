@@ -4,14 +4,29 @@
 import { TUNING } from '../config.js';
 import { esc } from './frame.js';
 import { muhalif } from '../engines/world.js';
+import { sbTopbar } from './cockpit.js';
 
 const NAMES = { sportif: 'Sportif', taraftar: 'Taraftar', mali: 'Mali', itibar: 'İtibar', soz: 'Söz Tutma', aile: 'Aile' };
 const KEYS = ['sportif', 'taraftar', 'mali', 'itibar', 'soz'];          // oy ağırlıklı 5 bileşen (ELECT_W)
 const KART_KEYS = [...KEYS, 'aile'];                                     // karnede 6. kart: Aile (eşikli +2 oy bonusu)
 
+// sb-cinematic KABUK (eski tema dersi — sezon sonu töreniyle aynı format): topbar faz çipi +
+// sahne + bottombar; DEVAM etiketi adım mantığıyla burada üretilir (main.js sadeleşti).
+function kabuk(G, inner, label, not) {
+  return `<div class="sb-root sb-cinematic sn-root">
+    <div class="sb-atmo"></div><div class="sb-vignette"></div>
+    ${sbTopbar(G, { phaseChip: 'KONGRE SEÇİMİ · SANDIK' })}
+    <div class="sb-body sb-body-col secim-toren-body"><div class="sn-fit">${inner}</div></div>
+    <footer class="sb-bottombar">
+      <div class="sb-bb-l"><span class="sb-bb-k">SEÇİM GECESİ</span><span class="sb-bb-note">${esc(not)}</span></div>
+      <button class="sb-btn sb-btn-primary" data-act="devam">${esc(label)}</button>
+    </footer>
+  </div>`;
+}
+
 export function render(G) {
   const e = G.election;
-  if (!e || !e.breakdown) return '<div class="scene"><div class="overline">Seçim Gecesi</div><p class="muted">Sandık kuruluyor…</p></div>'; // savunma: seçim verisi henüz yoksa çökme
+  if (!e || !e.breakdown) return kabuk(G, '<div class="scene"><div class="overline">Seçim Gecesi</div><p class="muted">Sandık kuruluyor…</p></div>', 'DEVAM ▸', 'Sandık kuruluyor…'); // savunma: seçim verisi henüz yoksa çökme
   const b = e.breakdown;
   const step = e.revealStep ?? 0;
 
@@ -43,12 +58,12 @@ export function render(G) {
       ? `<div class="vote led result-won">KAZANDIN</div>
          <div class="donem-damga">${G.meta.term + 1}. DÖNEM</div>
          <div class="muted" style="margin-top:8px">Konfeti, tezahürat, rozet tazelendi.</div>`
-      : `<div class="vote led result-lost">KAYBETTİN</div><div class="muted">Makam odası sessiz. Devir-teslim raporu hazırlanıyor.</div>${yakanBoyut(G)}${farewell(G)}`;
-    // Faz 5: analiz dökümü — ağırlıklı katkılar
+      : `<div class="vote led result-lost">KAYBETTİN</div><div class="muted">Makam odası sessiz. Devir-teslim raporu hazırlanıyor.</div>${yakanBoyut(G)}`;
+    // Faz 5: analiz dökümü — ağırlıklı katkılar; SANDIK AÇILIMI ile YAN YANA (simetri + tek ekran)
     const W = TUNING.ELECT_W;
     const contribs = KEYS.map((k) => ({ k, c: W[k] * b[k] })).sort((x, y) => y.c - x.c);
     const best = contribs[0], worst = contribs[contribs.length - 1];
-    result += `<div class="card" style="max-width:520px;margin:14px auto;text-align:left">
+    const analiz = `<div class="card">
       <div class="overline">Analiz — seni ne ${e.kazandi ? 'seçtirdi' : 'kaybettirdi'}?</div>
       <div class="fin-lines" style="margin-top:6px">
         ${contribs.map((x) => `<div class="l"><span>${NAMES[x.k]}</span><b class="tnum">+${x.c.toFixed(1)}</b></div>`).join('')}
@@ -58,10 +73,11 @@ export function render(G) {
       </div>
       <div class="muted" style="font-size:12px;margin-top:8px">En büyük koz: <b>${NAMES[best.k]}</b> · En zayıf halka: <b>${NAMES[worst.k]}</b></div>
     </div>`;
-    result += blokAcilimi(b);
+    result += `<div class="sn-done-grid">${analiz}${blokAcilimi(b)}</div>`;
+    if (!e.kazandi) result += farewell(G);
   }
 
-  return `<div class="scene secim-sahne ${e.done && !e.kazandi ? 'kaybettin-gri' : ''}" style="max-width:760px">
+  const inner = `<div class="scene secim-sahne ${e.done && !e.kazandi ? 'kaybettin-gri' : ''}" style="max-width:1080px">
     <div class="overline">Seçim Gecesi · Kongre üyeleri oy kullanıyor…</div>
     <h2 style="margin:6px 0">Dönem Karnesi</h2>
     <div class="elect-cards">${cards}</div>
@@ -70,6 +86,13 @@ export function render(G) {
     ${adayBar}
     ${result}
   </div>`;
+  // DEVAM etiketi — adım mantığı (eski main.js shell'inden taşındı; KART_KEYS 6'lı sabitle hizalı)
+  const revealing = step <= KART_KEYS.length && !e.counting && !e.done;
+  const label = e.done ? (e.kazandi ? 'Yeni Döneme Başla ▸' : 'Kariyer Sonu ▸')
+    : e.counting ? 'Seçimi Sonlandır ▸'
+      : revealing ? (step < KART_KEYS.length ? 'Karneyi Aç ▸' : 'Rakibi Dinle ▸') : 'Oyları Say ▸';
+  const not = e.done ? (e.kazandi ? 'Kongre güven tazeledi — rozet yenilendi' : 'Devir-teslim raporu hazırlanıyor') : 'Kongre üyeleri oy kullanıyor…';
+  return kabuk(G, inner, label, not);
 }
 
 // KONGRE 2.6: sandık blok açılımı — hangi seçmen kütlesi ne verdi.

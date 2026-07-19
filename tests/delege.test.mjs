@@ -158,6 +158,25 @@ function talepBekle(G, maxSezon = 6) {
   }
 }
 {
+  // KASA YETMEZKEN kabul: buton KİLİTLİ + uyarı TEK sefer (spam bug'ı — kullanıcı raporu 2026-07-21)
+  const G = fresh(31);
+  G.globalWeek = 0;
+  const g = talepBekle(G);
+  if (!g) { check('kasa-yok senaryosu için talep bulunamadı', false); }
+  else {
+    G.economy.kasa = 0;
+    const m = G.inbox.find((x) => x.action === 'ultras' && x.grup === g.name && !x.resolved);
+    const html = itemActions(G, m);
+    check('kasa yetmiyor → KARŞILA butonu kilitli (disabled + 🔒)', html.includes('disabled') && html.includes('🔒'));
+    check('kabul iki kez denense de reddedilir', A.resolveUltras(G, m.id, 'kabul') === false && A.resolveUltras(G, m.id, 'kabul') === false);
+    const uyari = G.inbox.filter((x) => (x.t || '').includes('Kasa bu jesti kaldırmıyor')).length;
+    check('uyarı mektubu TEK (spam yok)', uyari === 1, `${uyari} adet`);
+    check('talep hâlâ açık + dosya çözülmedi (kasa dolunca karşılanır)', !!g.talep && !m.resolved);
+    G.economy.kasa = 50;
+    check('kasa dolunca kabul işler', A.resolveUltras(G, m.id, 'kabul') === true);
+  }
+}
+{
   // DUVAR GECESİ fırsat kanalı: iliski ≥70 → sezonda 1 bedava koreografi
   const G = fresh(9);
   G.globalWeek = 0;

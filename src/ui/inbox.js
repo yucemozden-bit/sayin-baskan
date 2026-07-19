@@ -36,8 +36,14 @@ export function itemActions(G, m) {
         <button data-act="bankLoan" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET</button>
       </div>`;
     } else if (active && m.action === 'tfile') {
+      // ONAY kilidi GÖRÜNÜR: tahta cezası / peşinat yetersizliği butonda söylenir (sessiz ret
+      // "basıyorum onaylamıyor" karmaşası yaratıyordu — kullanıcı raporu 2026-07-21)
+      const tBan = (G.flags?.transferBan || 0) > 0;
+      const pesinatYok = m.file && (G.economy?.kasa ?? 0) < (m.file.fee || 0) * TUNING.TRANSFER.DEPOSIT;
+      const onayKilit = tBan || pesinatYok;
+      const kilitTip = tBan ? `Tahta kapalı — FFP cezası (kalan ${G.flags.transferBan} hafta); imza atılamaz` : pesinatYok ? `Peşinat yetersiz — en az ${Math.ceil((m.file.fee || 0) * TUNING.TRANSFER.DEPOSIT)}mn kasa gerek` : 'İmzayı at — bedel kasadan (yetmezse borçlanır)';
       opts = `<div class="opts">
-        <button data-act="tfile" data-arg="${m.id}|onay" style="border-color:var(--pos)">ONAYLA</button>
+        <button data-act="tfile" data-arg="${m.id}|onay" ${onayKilit ? 'disabled' : ''} data-tip="${kilitTip}" style="border-color:var(--pos)">ONAYLA${onayKilit ? ' 🔒' : ''}</button>
         <button data-act="tfile" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET</button>
         ${(m.file && (m.file.round || 0) >= 2) ? '' : `<button data-act="tfile" data-arg="${m.id}|sart">${m.file && m.file.round === 1 ? 'ŞARTLI · TUR 2 — "üsteleyelim, %10 daha" (riskli)' : 'ŞARTLI — "pahalı, %20 in"'}</button>`}
         ${m.file && m.file.player ? `<button data-act="pcard" data-arg="${m.file.player.id}" data-tip="Oyuncunun kartını aç — mevki, güç, potansiyel">🔍 Kartı aç</button>` : ''}
@@ -61,8 +67,11 @@ export function itemActions(G, m) {
     } else if (active && m.action === 'ultras') { // 2.6: tribün talebi — karşıla/reddet (yoksayarsan süre dolunca pankart)
       const grp = (G.fanGroups || []).find((x) => x.name === m.grup);
       const maliyet = grp && grp.talep ? TUNING.ULTRAS.TALEPLER[grp.talep.tip]?.maliyet : null;
+      // kasa yetmiyorsa buton KİLİTLİ + gerekçe tooltip'te (aktif buton "basıyorum onaylamıyor"
+      // karmaşası + uyarı mektubu spam'i yaratıyordu — kullanıcı raporu 2026-07-21)
+      const kasaYok = maliyet != null && (G.economy?.kasa ?? 0) < maliyet;
       opts = `<div class="opts">
-        <button data-act="ultras" data-arg="${m.id}|kabul" style="border-color:var(--pos)">KARŞILA${maliyet != null ? ` — ${maliyet}mn` : ''}</button>
+        <button data-act="ultras" data-arg="${m.id}|kabul" ${kasaYok ? 'disabled' : ''} style="border-color:var(--pos)" data-tip="${kasaYok ? `Kasa yetmiyor — ${maliyet}mn gerek (kasa ${Math.round((G.economy?.kasa ?? 0) * 10) / 10}mn)` : 'Talebi karşıla — tribün coşar'}">KARŞILA${maliyet != null ? ` — ${maliyet}mn` : ''}${kasaYok ? ' 🔒' : ''}</button>
         <button data-act="ultras" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET — bütçe yok</button>
       </div>`;
     } else if (active && m.action === 'cfile') {

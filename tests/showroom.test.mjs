@@ -253,5 +253,43 @@ console.log('\n── KİMYA OTURMASI + ARSA KUMAR SONUÇ KARTI + STRES FORMÜL�
   check('4 hafta sonra sonuç INBOX kartı: ARSA VURDU ya da KAYBETTİRDİ', G3.ozel.yatirim === null && G3.inbox.some((m) => (m.t || '').includes('ARSA VURDU') || (m.t || '').includes('KAYBETTİRDİ')));
 }
 
+console.log('\n── VARLIK → TAKIM köprüsü (kullanıcı isteği: aile dışında takıma da yarasın) ──');
+{
+  // TEKNE sv2+: sezon başı TAKIM TEKNE GÜNÜ — kadro morali (sv3: +form) yükselir
+  const G = fresh(61);
+  G.ozel.varlik.tekne = 2;
+  const mo0 = G.squad.map((p) => p.morale);
+  A.afterSeasonEnd ? null : null; // initSeason'a dolaylı gir: endSeason+afterSeasonEnd zinciri
+  while (G.meta.week <= 34 && G.phase === 'SEASON_LOOP') { A.advanceWeek(G); G.pendingMatch = null; A.drainAllPhones && A.drainAllPhones(G); }
+  A.endSeason(G); A.afterSeasonEnd(G);
+  check('tekne sv2: yeni sezon TAKIM TEKNE GÜNÜ manşeti + moral dokunuşu', G.inbox.some((m) => (m.t || '').includes('tekne günü') || (m.t || '').includes('TAKIM GÜNÜ')));
+  const G2 = fresh(62);
+  G2.ozel.varlik.tekne = 3;
+  while (G2.meta.week <= 34 && G2.phase === 'SEASON_LOOP') { A.advanceWeek(G2); G2.pendingMatch = null; A.drainAllPhones && A.drainAllPhones(G2); }
+  const fo0 = G2.squad.map((p) => p.form).reduce((a, b) => a + b, 0);
+  A.endSeason(G2); A.afterSeasonEnd(G2);
+  check('mega yat (sv3): manşet MEGA YATTA + form da yükselir', G2.inbox.some((m) => (m.t || '').includes('MEGA YATTA')));
+
+  // HAVA sv2+: deplasman dönüşü kadro kondisyonu toparlar (kadro YORGUN başlatılır ki
+  // +1 tavana (100) takılıp görünmez olmasın — tam depo kadroda clamp yutar, bu doğru davranış)
+  const G3 = fresh(63);
+  G3.ozel.varlik.hava = 2;
+  const G4 = fresh(63); // ikiz — jet yok
+  for (const p of G3.squad) p.fitness = 40;
+  for (const p of G4.squad) p.fitness = 40;
+  const fitTop = (g) => Math.round(g.squad.reduce((a, p) => a + p.fitness, 0));
+  let dep = false;
+  for (let i = 0; i < 4 && !dep; i++) {
+    A.advanceWeek(G3); G3.pendingMatch = null; A.drainAllPhones && A.drainAllPhones(G3);
+    A.advanceWeek(G4); G4.pendingMatch = null; A.drainAllPhones && A.drainAllPhones(G4);
+    dep = fitTop(G3) > fitTop(G4); // ilk deplasman haftasında jet farkı doğar
+  }
+  check('hava sv2: deplasman dönüşü jet konforu — kadro kondisyonu jet\'siz ikizden yüksek', dep, `jet ${fitTop(G3)} vs ikiz ${fitTop(G4)}`);
+
+  // perk şeridi yeni imtiyazları listeliyor
+  const perkler = varlikPerkleri({ varlik: { tekne: 3, hava: 3 } }).map((p) => p.txt).join(' | ');
+  check('imtiyaz şeridi: takım moral + deplasman kondisyon satırları var', perkler.includes('takım moral') && perkler.includes('deplasman dönüşü kondisyon +2'), perkler);
+}
+
 console.log(`\nSONUÇ: ${pass} geçti, ${fail} kaldı`);
 process.exit(fail ? 1 : 0);

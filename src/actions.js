@@ -18,7 +18,7 @@ import { computeTargets, applyInertia } from './engines/gauges.js';
 import { checkThresholdEvents, tickEventFlags } from './engines/events.js';
 import { selectPromises, decayPromiseHope, judgePromises, isSelectable, addMidPromise } from './engines/promises.js';
 import { eleksiyon } from './engines/election.js';
-import { h32 as ozH32, KADIN_AD, UNVANLAR, seviyeOf, haftalikGelir, VARLIK, DAVETLER, OLAYLAR, ROZETLER, AILE_TEL, varlikPasif } from './engines/ozel.js';
+import { h32 as ozH32, absHafta, KADIN_AD, UNVANLAR, seviyeOf, haftalikGelir, VARLIK, DAVETLER, OLAYLAR, ROZETLER, AILE_TEL, varlikPasif } from './engines/ozel.js';
 import { marketValue as pMarketValue } from './models/player.js';
 import { KISILIKLER, kisilikOf, relDelta, esikDurum, klikOf, KLIK_TR, bkIsim } from './engines/iliski.js';
 import { escalateHedef } from './engines/expectation.js';
@@ -400,6 +400,17 @@ function initSeason(G, opts = {}) {
   G.meta.week = 1;
   G.hazirlik = TUNING.PRESEASON_WEEKS || 0; // sezon başı hazırlık dönemi (UI akışı; ilk maç bundan sonra)
   G.season = { W: 0, D: 0, L: 0, GF: 0, GA: 0 };
+  // VARLIK → TAKIM köprüsü (kullanıcı isteği 2026-07-21): yat sahibi başkan sezonu TAKIM TEKNE
+  // GÜNÜYLE açar — kişisel yatırım soyunma odasına döner. Bilinçli alım şartı (autoplay varlık
+  // almaz → kalibrasyon bantları nötr); determinist, rand YOK.
+  {
+    const tekneLv = G.ozel?.varlik?.tekne || 0;
+    if (tekneLv >= 2 && (G.squad || []).length) {
+      const mBonus = tekneLv >= 3 ? 6 : 4;
+      for (const p of G.squad) { p.morale = clamp(p.morale + mBonus, 0, 100); if (tekneLv >= 3) p.form = clamp(p.form + 3, 0, 100); }
+      pushInbox(G, { cat: 'kulup', t: tekneLv >= 3 ? '🛥️ MEGA YATTA TAKIM GÜNÜ' : '🛥️ Takım tekne günü', sig: 'tekne-gun-' + G.worldSeason, b: `Kamp, başkanın ${tekneLv >= 3 ? 'mega yatında' : 'yatında'} açıldı — soyunma odası güldü (moral +${mBonus}${tekneLv >= 3 ? ' · form +3' : ''}). "Böyle başkanla oynanır" fısıltısı köpüğe karıştı.`, noQueue: true });
+    }
+  }
   G.ticketLetterDone = false;
   G.transferWindow = windowOpen(1);
   if (G.transferWindow) G.market = makeMarket(G);
@@ -465,6 +476,9 @@ export function advanceWeek(G) {
 export function preSeasonWeek(G) {
   const wk = G.meta.week; // sabit — hazırlık, fikstür haftası değildir
   santiyeTick(G); // şantiye kampta da çalışır — işçiler maç beklemez
+  // KAMP TAZELEMESİ (bug fix 2026-07-20): kondisyon sezonlar arası TAŞINIYORDU — yoğun oynatılan
+  // on bir yeni sezona "bitkin" başlıyordu. Kamp haftası herkesi dinlendirir (3 hafta ≈ tam depo).
+  for (const p of G.squad) p.fitness = clamp(p.fitness + TUNING.PRESEASON_FIT, 0, 100);
   G.transferWindow = true; // hazırlık dönemi = transfer masası açık
   if (!G.market) G.market = makeMarket(G);
   G.demecUsed = false;
@@ -823,6 +837,12 @@ function finishWeekTail(G, lateMove) {
   const oncekiSakatlar = new Set(G.squad.filter((p) => p.injuryWeeks > 0).map((p) => p.id)); // K4: yeni sakat tespiti için
   const oncekiCezalar = new Set(G.squad.filter((p) => p.suspensionWeeks > 0).map((p) => p.id)); // B1c: takdir için
   postMatch(G.squad, myRes, G.facilities);
+  // VARLIK → TAKIM köprüsü: hava aracı (sv2+) deplasman dönüşünü konfora çevirir — tüm kadro
+  // (yedekler de uçakta) kondisyon toparlar. Bilinçli alım şartı; determinist, rand YOK.
+  if (!isHome && (G.ozel?.varlik?.hava || 0) >= 2) {
+    const fB = (G.ozel.varlik.hava >= 3 ? 2 : 1);
+    for (const p of G.squad) p.fitness = clamp(p.fitness + fB, 0, 100);
+  }
   // B1c: disiplin ceza süresi TAKDİRİ — gizli hat ±1 hafta (mikro)
   {
     const F = TUNING.MEGA.FED, fed = G.fedIliski ?? F.START;
@@ -1243,14 +1263,24 @@ function finishWeekTail(G, lateMove) {
     if (p.yeniHafta > 0) p.yeniHafta--; // "YENİ" rozeti 3 hafta sonra kalkar
     if (p.okHafta > 0 && --p.okHafta === 0) p.okYon = null;
     const pot = p.potential ?? p.overall;
-    if (p.age <= 21 && p.overall < pot && (p._gelSezon ?? 0) < 3) {
+    // Sezon içi tavan: +3; ELİT antrenman tesisi (sv≥8) tavanı +4'e açar (tesis yatırımı görünür).
+    // 22-23 yaş = GEÇ GELİŞİMCİ: yarı hız + tavan +2 (eskiden ≤21 sınırı bu grubu tümden kapatıyordu
+    // → kadro 2 sezonda "bitmiş ürün"e dönüyordu; 4 sezon teşhisi S4'te SIFIR artan gösterdi)
+    const gec = p.age >= 22;
+    const gelCap = gec ? TUNING.DEV_GEC_CAP : ((G.facilities.antrenman || 0) >= TUNING.DEV_CAP_ELITE_ANT ? 4 : 3);
+    if (p.age <= TUNING.DEV_GEC_YAS && p.overall < pot && (p._gelSezon ?? 0) < gelCap) {
       let puan = 1;                                                 // gençlik kendi başına filizlenir
-      if (xiIds.has(p.id) || G.telkin === 'gencler') puan += 2;     // sahada piştikçe hızlanır
+      // sahada pişen hızlanır (+2); KULÜBEDEKİ genç de idmanda pişer (+1 — kaybeden sezonda
+      // yedek genç tamamen AÇ kalmasın: eskiden haftada 1 puanla sezon boyu ~sabit görünüyordu)
+      puan += (xiIds.has(p.id) || G.telkin === 'gencler') ? 2 : 1;
       if (myRes === 'W') puan += 1;                                 // kazanan soyunma odasında özgüven
-      puan += Math.floor((G.facilities.antrenman || 0) / 5);        // antrenman altyapısı
+      // antrenman altyapısı: HER seviye haftalık hızı artırır (kesirli birikir; eski floor(sv/5)
+      // yalnız 5 ve 10'da basamak yapıyordu — 5→6→7 yükseltmeleri boşa gidiyordu)
+      puan += (G.facilities.antrenman || 0) * TUNING.DEV_ANT_HAFTALIK;
+      if (gec) puan *= TUNING.DEV_GEC_CARPAN;                       // geç gelişimci: gençten yavaş
       p._gel = (p._gel || 0) + puan;
-      if (p._gel >= 20) {
-        p._gel -= 20; p.overall = Math.min(pot, p.overall + 1); p._gelSezon = (p._gelSezon || 0) + 1;
+      if (p._gel >= TUNING.DEV_GEL_ESIK) {
+        p._gel -= TUNING.DEV_GEL_ESIK; p.overall = Math.min(pot, p.overall + 1); p._gelSezon = (p._gelSezon || 0) + 1;
         p.okYon = 'up'; p.okHafta = 3; gelisimOldu = true;
         if (p.refreshValue) p.refreshValue(); else p.marketValue = pMarketValue(p.overall, p.age, pot);
       }
@@ -1590,7 +1620,7 @@ export function sponsorMarketTick(G) {
   // ── SPONSOR AVI: rakip marka İMZALI sponsorunun FESİH BEDELİNİ ÜSTLENİR (kullanıcı isteği) ──
   // "Fesih bedeliniz Xmn — biz karşılayacağız." Hash-determinist (~%9/hafta/slot), global tek aktif
   // dosya + slot başına bekleme; teklif ancak masadakinden belirgin iyiyse gelir (yıllık ≥ ×1.05).
-  const abs = (G.meta?.season || 1) * 100 + wk;
+  const abs = absHafta(G); // MONOTONİK — dönem geçişinde av bekleme süresi şaşmasın
   G._spAvCd = G._spAvCd || {};
   const aktifAv = (G.inbox || []).some((m) => m.action === 'spBuyout' && !m.resolved);
   if (aktifAv) return;
@@ -1622,7 +1652,7 @@ export function resolveSponsorBuyout(G, msgId, choice) {
   m.resolved = true;
   const slot = m.slot, d = G.sponsorDeals?.[slot], o = m.avTeklif;
   G._spAvCd = G._spAvCd || {};
-  const abs = (G.meta?.season || 1) * 100 + (G.meta?.week || 1);
+  const abs = absHafta(G); // MONOTONİK
   if (!d || !o) { pushInbox(G, { cat: 'mali', t: 'Av dosyası kapandı', b: 'Slot bu arada boşalmış — dosyanın konusu kalmadı.', noQueue: true }); return { ok: true }; }
   if (choice === 'kabul') {
     G.sponsorDeals[slot] = { id: o.id, name: o.name, sector: o.sektor, type: o.type, incomeMult: o.incomeMult, weekly: o.weekly, annual: o.annual, pesinat: o.pesinat, fesihCeza: o.fesihCeza, years: o.years, remainingSeasons: o.years, riskProfile: o.riskProfile || null, ik: o.ik };
@@ -2009,9 +2039,18 @@ export function resolveTransferFile(G, msgId, choice) {
     pushInbox(G, { cat: 'transfer', t: 'Rakip kaptı!', b: `${f.player.name} pazarlık sürerken başka kulüple anlaştı.${tur === 2 ? ' İkinci tur ısrarı pahalıya patladı —' : ''} GM: "Bir dahakine hızlı davranalım."` });
     return { ok: true, outcome: 'kapti' };
   }
-  // ONAY: bedel öde (nakit yoksa borç), kadroya kat
-  if (G.flags && G.flags.transferBan > 0) return { ok: false, why: 'Transfer tahtası kapalı' };
-  if (G.economy.kasa < f.fee * TUNING.TRANSFER.DEPOSIT) return { ok: false, why: 'Peşinat yetersiz' };
+  // ONAY: bedel öde (nakit yoksa borç), kadroya kat.
+  // Kilit gerekçeleri ARTIK SESSİZ DEĞİL (buton zaten kilitli — bu son savunma hattı, sig'li teksefer)
+  if (G.flags && G.flags.transferBan > 0) {
+    const sig = 'tfile-ban-' + (G.meta?.season || 1);
+    if (!G.inbox.some((x) => x.sig === sig)) pushInbox(G, { cat: 'transfer', t: 'İmza atılamadı: TAHTA KAPALI', sig, b: `FFP cezası işliyor (kalan ${G.flags.transferBan} hafta) — bu pencere onay dosyası imzalanamaz. Dosya masada bekler.`, noQueue: true });
+    return { ok: false, why: 'Transfer tahtası kapalı' };
+  }
+  if (G.economy.kasa < f.fee * TUNING.TRANSFER.DEPOSIT) {
+    const sig = 'tfile-pesinat-' + m.id;
+    if (!G.inbox.some((x) => x.sig === sig)) pushInbox(G, { cat: 'transfer', t: 'İmza atılamadı: peşinat yetersiz', sig, b: `${f.player.name} için masaya en az ${Math.ceil(f.fee * TUNING.TRANSFER.DEPOSIT)}mn peşinat konmalı — kasa ${fmt1(G.economy.kasa)}mn. Nakit topla, dosya bekler.`, noQueue: true });
+    return { ok: false, why: 'Peşinat yetersiz' };
+  }
   if (G.economy.kasa >= f.fee) G.economy.kasa -= f.fee;
   else { G.economy.borc += f.fee - G.economy.kasa; G.economy.kasa = 0; }
   G.termSpent = (G.termSpent || 0) + f.fee;
@@ -2701,6 +2740,19 @@ export function endSeason(G) {
     if (rand(0, 1) < p) {
       G.staff[role] = null;
       pushInbox(G, { cat: 'kongre', t: `${s.name} ayrıldı (${ROLE_TR[role]})`, b: s.trait === 'egolu' ? 'Egosu kapıya sığmadı — rakip kulüp kaptı. Koltuk boş.' : 'Daha iyi bir teklif aldı. Koltuk boş; yeni aday dosyası isteyebilirsin.' });
+    }
+  }
+  // POTANSİYEL ESNEMESİ (gelişim sürekliliği): tavana vuran ≤23 genç durmaz — "bir sonraki eşiği
+  // gördü": sezon sonu pot +2 (kariyerde en çok +4, mutlak 88). DETERMİNİST — rand YOK; developSquad
+  // ÖNCESİ çalışır ki açılan tavan bu sezonun sıçramasında da kullanılabilsin.
+  {
+    const PE = TUNING.POT_ESNEME;
+    for (const p of G.squad) {
+      const pot = p.potential ?? p.overall;
+      if (p.age <= PE.yas && p.overall >= pot && (p._potEsneme || 0) < PE.kariyerCap && pot < PE.tavan) {
+        p.potential = Math.min(PE.tavan, pot + PE.artis);
+        p._potEsneme = (p._potEsneme || 0) + PE.artis;
+      }
     }
   }
   // Sezon sonu gelişim (Bible-9). Gençlik alımı D4 ile 17. haftaya (Genç Takım Günü sahnesi) taşındı.
@@ -3881,9 +3933,15 @@ function drainAllPhones(G) { let g = 0; while (G.phone && g++ < 12) answerPhone(
 export function ilanVer(G, opts) {
   const { pos, yasMax, tavan } = opts || {}; // ZIRH (uç fuzz): argümansız çağrı fırlatmasın
   if (!['GK', 'DEF', 'MID', 'FWD'].includes(pos) || !Number.isFinite(Number(yasMax)) || !Number.isFinite(Number(tavan))) return { ok: false, why: 'Geçersiz ilan' };
-  if (!G.transferWindow) return { ok: false, why: 'Pencere kapalı' };
-  if (G.ilan) return { ok: false, why: 'Aktif ilan var' };
-  if (G.flags && G.flags.transferBan > 0) return { ok: false, why: 'Tahta kapalı' };
+  // Ret gerekçeleri ARTIK SESSİZ DEĞİL (UI şeritleri de var — bu son savunma hattı, sig'li teksefer)
+  const ilanRet = !G.transferWindow ? 'Pencere kapalı — ilan menajerlere ancak pencere açıkken gider.'
+    : G.ilan ? `Zaten yayında bir ilanın var (${G.ilan.pos} · ${G.ilan.kalan} cevap hakkı) — biri kapanmadan yenisi verilmez.`
+      : (G.flags && G.flags.transferBan > 0) ? `Tahta kapalı — FFP cezası (kalan ${G.flags.transferBan} hafta), ilan verilemez.` : null;
+  if (ilanRet) {
+    const sig = 'ilan-ret-' + (G.meta?.season || 1) + '-' + (G.meta?.week || 1);
+    if (!G.inbox.some((x) => x.sig === sig)) pushInbox(G, { cat: 'transfer', t: 'İlan verilemedi', sig, b: ilanRet, noQueue: true });
+    return { ok: false, why: ilanRet };
+  }
   G.ilan = { pos, yasMax, tavan, kalan: TUNING.MEGA.ILAN.CEVAP_MAX, wk: G.meta.week };
   registerDecision(G, 'ilan:' + pos);
   // İlan tepki üretir: sosyal sızıntı + o mevkideki oyuncuların morali ("yerime mi?")
@@ -4576,7 +4634,7 @@ export function ozelTick(G, myRes, ctx = {}) {
     if (!oz.aile.c1) oz.aile.c1 = KADIN_AD[(hh >> 3) % KADIN_AD.length] === oz.aile.es ? KADIN_AD[(hh + 7) % KADIN_AD.length] : KADIN_AD[(hh >> 3) % KADIN_AD.length];
     if (!oz.aile.c2) oz.aile.c2 = first[(hh >> 5) % first.length];
   }
-  const abs = (G.meta.season || 1) * 100 + (G.meta.week || 1);
+  const abs = absHafta(G); // MONOTONİK — dönem geçişinde sıfırlanmaz (219-hafta cd bug'ı)
   const H = (tag) => ozH32(`${G.club?.name}#oz#${G.meta.season}#${G.meta.week}#${tag}`);
   if (oz._sez !== G.meta.season) {
     oz._sez = G.meta.season; oz.bagisSezon = 0; oz.sezon = { ikilem: 0, kacan: 0, davet: 0, bagis: 0 };
@@ -4767,7 +4825,7 @@ export function ozelKarar(G, idx) {
     }
   }
   if (a.arsa) { // sonuç ŞİMDİ hash'le yazılır (determinist) — 4 hafta sonra açılır. YAZI TURA: %50 (kullanıcı kuralı)
-    const abs = (G.meta.season || 1) * 100 + (G.meta.week || 1);
+    const abs = absHafta(G); // MONOTONİK — dönem geçişinde sıfırlanmaz (219-hafta cd bug'ı)
     oz.yatirim = { vade: abs + 4, tutar: ozH32(`${G.club?.name}#arsa#${abs}`) % 100 < 50 ? 9 : 3 };
   }
   oz.kullanilan.push(o.id); oz.kullanilan = oz.kullanilan.slice(-8);
@@ -4799,7 +4857,7 @@ export function ozelVarlik(G, kat) {
 // Davet — kişisel para + enerji → kulüp-yönlü tek seferlik etki (cooldown'lu)
 export function ozelDavet(G, id) {
   const oz = G.ozel, D = DAVETLER[id]; if (!oz || !D) return { ok: false };
-  const abs = (G.meta.season || 1) * 100 + (G.meta.week || 1);
+  const abs = absHafta(G); // MONOTONİK — dönem geçişinde sıfırlanmaz (219-hafta cd bug'ı)
   if (!D.req(oz, G)) return { ok: false, why: D.reqTxt };
   if ((oz.davetCd[id] || 0) > abs) return { ok: false, why: 'takvim dolu' };
   if (oz.nakit < D.maliyet) return { ok: false, why: 'nakit yetersiz' };
@@ -4887,7 +4945,7 @@ export function relx(G, p) {
 export function playerJest(G, playerId) {
   const p = G.squad.find((x) => String(x.id) === String(playerId));
   if (!p) return { ok: false };
-  const abs = (G.meta.season || 1) * 100 + (G.meta.week || 1);
+  const abs = absHafta(G); // MONOTONİK — dönem geçişinde sıfırlanmaz (219-hafta cd bug'ı)
   // UNVAN PASİFİ (2.9): Halkın Adamı (sv.5+) haftada 2 jest hakkı
   const jestHak = (G.ozel?.seviye ?? 1) >= 5 ? 2 : 1;
   if (G.jestH?.hafta === abs && G.jestH.n >= jestHak) return { ok: false, why: jestHak > 1 ? 'Bu haftanın 2 jest hakkı doldu' : 'Bu hafta bir jest yapıldı — haftada bir' };
@@ -5080,7 +5138,12 @@ export function resolveUltras(G, msgId, cevap) {
   if (!g || !g.talep) { m.resolved = true; return false; }
   const T = U.TALEPLER[g.talep.tip] || { maliyet: 1, ad: 'destek' };
   if (cevap === 'kabul') {
-    if (G.economy.kasa < T.maliyet) { pushInbox(G, { cat: 'kongre', t: 'Kasa bu jesti kaldırmıyor', b: `${T.ad} için ${T.maliyet}mn gerek — dosya masada bekliyor.`, noQueue: true }); return false; }
+    if (G.economy.kasa < T.maliyet) {
+      // TEKRARSIZ uyarı: aynı talep için ikinci kez basılmaz (buton zaten kilitli — bu son savunma hattı)
+      const sig = `ultras-kasa-${g.name}-${g.talep.tip}`;
+      if (!G.inbox.some((x) => x.sig === sig)) pushInbox(G, { cat: 'kongre', t: 'Kasa bu jesti kaldırmıyor', sig, b: `${T.ad} için ${T.maliyet}mn gerek — dosya masada bekliyor; kasa dolunca KARŞILA açılır.`, noQueue: true });
+      return false;
+    }
     m.resolved = true;
     G.economy.kasa -= T.maliyet;
     g.iliski = clamp(g.iliski + U.KABUL.iliski, 0, 100);

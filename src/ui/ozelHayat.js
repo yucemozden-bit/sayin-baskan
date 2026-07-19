@@ -4,7 +4,7 @@
 // Yalnız state OKUR — tüm mutasyonlar actions.js (ozelProg/ozelKarar/ozelVarlik/ozelDavet/ozelBagis).
 import { esc } from './frame.js';
 import { sbShell } from './cockpit.js';
-import { UNVANLAR, SEVIYE_ESIK, VARLIK, DAVETLER, OLAYLAR, ROZETLER, UNVAN_PASIF, varlikDegeri, varlikPasif, varlikPerkleri, haftalikGelir } from '../engines/ozel.js';
+import { UNVANLAR, SEVIYE_ESIK, VARLIK, DAVETLER, OLAYLAR, ROZETLER, UNVAN_PASIF, varlikDegeri, varlikPasif, varlikPerkleri, haftalikGelir, absHafta } from '../engines/ozel.js';
 import { bkIsim } from '../engines/iliski.js';
 
 const fm = (n) => String(Math.round(n * 10) / 10).replace('.', ',');
@@ -152,7 +152,7 @@ function defterTab(G, oz) {
 
 // ── SEKME 2: SERVET & YAŞAM ──
 function servetTab(G, oz) {
-  const abs = (G.meta.season || 1) * 100 + (G.meta.week || 1);
+  const abs = absHafta(G); // MONOTONİK — dönem geçişinde davet takvimi şaşmaz (219-hafta bug'ı)
   const toplam = varlikDegeri(oz) + oz.nakit;
   const gelir = haftalikGelir(oz);
   const bagisKalan = 3 - oz.bagisSezon;
