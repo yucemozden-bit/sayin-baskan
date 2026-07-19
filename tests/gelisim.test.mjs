@@ -76,6 +76,44 @@ console.log('\n── MEKANİK: geç gelişimci + potansiyel esnemesi ──');
   check('kariyer cap dolmuş genç: pot SABİT (sınırsız şişme yok)', !doymus || doymus.potential === 58, doymus ? `pot ${doymus.potential}` : 'aday yok');
 }
 
+console.log('\n── PERFORMANS BAĞI: formdaki genç daha hızlı gelişir (kullanıcı isteği) ──');
+{
+  // aynı koşullarda iki İKİZ genç — tek fark FORM; formda olan daha çok puan biriktirmeli
+  setSeed(33);
+  const G = A.newGame(data, 'normal');
+  A.selectClub(G, 'orta');
+  A.startTerm(G, ['P15'], { budget: 60, line: 'hazir' });
+  const adaylar = G.squad.filter((p) => p.age >= 24).slice(0, 2);
+  const [formda, silik] = adaylar;
+  for (const [p, f] of [[formda, 80], [silik, 40]]) { p.age = 19; p.overall = 50; p.potential = 70; p._gel = 0; p._gelSezon = 0; p.form = f; }
+  while ((G.hazirlik || 0) > 0) A.preSeasonWeek(G);
+  for (let i = 0; i < 6 && G.phase === 'SEASON_LOOP'; i++) {
+    // form her hafta maçla oynar — ikizleri her hafta sabit forma geri sabitle (izole ölçüm)
+    formda.form = 80; silik.form = 40;
+    A.advanceWeek(G); G.pendingMatch = null; A.drainAllPhones && A.drainAllPhones(G);
+  }
+  const fark = (formda._gel + formda._gelSezon * TUNING.DEV_GEL_ESIK) - (silik._gel + silik._gelSezon * TUNING.DEV_GEL_ESIK);
+  check('formdaki ikiz, silik ikizden hızlı birikir (+1/hafta farkı)', fark >= 5, `fark ${fark.toFixed(1)} puan (6 hafta)`);
+}
+
+console.log('\n── ALTYAPI KAHVALTISI: davet genç gelişimini besler (kullanıcı isteği) ──');
+{
+  setSeed(21);
+  const G = A.newGame(data, 'normal');
+  A.selectClub(G, 'orta');
+  A.startTerm(G, ['P15'], { budget: 60, line: 'hazir' });
+  A.initOzel(G);
+  G.ozel.nakit = 10; G.ozel.g.enerji = 80;
+  const genc = G.squad.find((p) => p.age <= 21 && p.overall < (p.potential ?? p.overall));
+  genc.ocak = true; genc._gel = 0;
+  const yasli = G.squad.find((p) => p.age >= 28);
+  yasli.ocak = true; yasli._gel = 0; // sofrada ama gelişim çağı DIŞI — puan almamalı
+  A.ozelDavet(G, 'altyapi');
+  check('sofradaki genç _gel puanı aldı (+KAHVALTI_GELISIM)', genc._gel === TUNING.KAHVALTI_GELISIM, `_gel ${genc._gel}`);
+  check('28+ sofradaki puan ALMAZ (gelişim çağı dışı)', (yasli._gel || 0) === 0);
+  check('manşet gelişim ateşini söylüyor', G.inbox.some((m) => (m.b || '').includes('idman ateşi')));
+}
+
 console.log('\n── DETERMİNİZM ──');
 {
   const a = donemOlc(99).sezonlar, b = donemOlc(99).sezonlar;

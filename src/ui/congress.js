@@ -119,11 +119,13 @@ export function boyutCard(G) {
 function yeniSozCard(G) {
   if (G.phase !== 'SEASON_LOOP') return '';
   const midN = midPromiseCount(G);
-  const opts = midPromiseOptions(G).slice(0, 5);
+  const tumu = midPromiseOptions(G);
+  const opts = tumu.slice(0, 4); // yoğun sezonda kart taşmasın — kalanı sayaçla söylenir
   const inner = midN >= 2
     ? '<div class="kongre-sisli">Bu dönem söz hakkın doldu (2/2) — önce verdiğin sözleri tut.</div>'
     : (opts.length
       ? opts.map((p) => `<button class="cx-btn kongre-soz-btn" data-act="midPromise" data-arg="${p.id}" data-tip="${esc(`Koşul: ${condTr(p) || 'şartları dönem sonunda tartılır'} · zorluk ${p.difficulty}/5 — verirsen tribün coşar; tutarsan söz karnesi ▲, tutmazsan sicile leke + rakibe koz`)}"><span>${esc(p.name)}</span><span class="muted">${'★'.repeat(p.difficulty)}</span></button>`).join('')
+      + (tumu.length > 4 ? `<div class="muted" style="font-size:10.5px;margin-top:4px">+${tumu.length - 4} söz daha kürsüde — biri karara bağlanınca sırası gelir.</div>` : '')
       : '<div class="muted" style="font-size:11px">Verilebilecek uygun söz kalmadı.</div>');
   const sp = G.term?.socialProjects || 0;
   const buHafta = G._sosyalHafta === ((G.meta?.season || 1) + '|' + (G.meta?.week || 1));

@@ -1621,6 +1621,11 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
 .tesis-seviye .seg { flex: 1; height: 9px; border-radius: 4px; background: var(--bg-3); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .55); }
 .tesis-seviye .seg.dolu { background: linear-gradient(180deg, var(--club-2), var(--club)); box-shadow: 0 0 8px rgba(var(--club-rgb), .35), inset 0 1px 0 rgba(255, 255, 255, .35); }
 .tesis-etki { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+.kad-td-ov { margin-right: .35em; flex: none; } /* TD güç rozeti — oyuncu rozet diliyle aynı */
+/* takım gücü kırılımı — en zayıf halka vurgusu (kokpit) */
+.cx-guc-kirilim { margin-top: 6px; font-size: 11px; color: var(--ink-3); }
+.cx-guc-kirilim i { font-style: normal; letter-spacing: 1px; font-size: 9.5px; color: var(--ink-3); }
+.cx-guc-kirilim b { color: var(--warn); font-weight: 700; }
 .tesis-etki-sayi { margin-top: 3px; font-size: 11px; color: var(--ink-3); }
 .tesis-etki-sayi b { color: var(--club-2); font-variant-numeric: tabular-nums; }
 .tesis-etki-sayi b.pos { color: var(--pos); }
@@ -2196,7 +2201,7 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
 .kongre-gauge-line { position: absolute; top: -3px; height: 22px; width: 2px; background: rgba(255, 255, 255, .75); box-shadow: 0 0 6px rgba(255, 255, 255, .5); }
 .kongre-gauge-lbl { display: flex; justify-content: space-between; font-size: 11px; margin-top: 6px; color: var(--ink-2); }
 .kongre-sisli { margin-top: 6px; margin-bottom: 2px; font-size: 11px; color: var(--warn); background: rgba(224, 168, 64, .08); border: 1px solid rgba(224, 168, 64, .25); border-radius: 6px; padding: 4px 8px; }
-.kongre-soz-btn { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 5px; text-align: left; }
+.kongre-soz-btn { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 4px; text-align: left; padding: .45em .7em; }
 .kongre-yenisoz { border-color: var(--club-glow); }
 
 /* ═══ VAAT SAHNESİ FERAH REFORMU — kartlar ekranı doldurur, metin KESİLMEZ ═══ */
@@ -2762,7 +2767,8 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 .sb-gauge-l{ font-family:var(--font-display); font-size:.72em; font-weight:700; letter-spacing:.1em; color:var(--club); }
 .sb-gauge-n{ font-size:.78em; color:var(--ink-2); }
 .sb-agenda{ flex:1; min-height:0; overflow:hidden; }
-.sb-agenda-i{ display:flex; align-items:center; gap:.7em; padding:.5em 0; border-bottom:1px solid var(--border-soft); font-size:.92em; color:var(--ink-2); }
+.sb-agenda-i{ display:flex; align-items:center; gap:.7em; padding:.4em 0; border-bottom:1px solid var(--border-soft); font-size:.88em; color:var(--ink-2); }
+.sb-agenda{ overflow:hidden; } /* son savunma: olağandışı dar hücrede yarım satır yerine temiz kesim */
 .sb-agenda-i:last-child{ border-bottom:0; }
 .sb-adot{ width:.6em; height:.6em; border-radius:50%; flex:none; }
 .sb-adot-warn{ background:var(--warn);} .sb-adot-info{ background:var(--info);} .sb-adot-pos{ background:var(--pos);} .sb-adot-club{ background:var(--club);} .sb-adot-neg{ background:var(--neg);}

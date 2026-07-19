@@ -6,7 +6,8 @@ import { TUNING } from '../config.js';
 import { standings } from '../engines/league.js';
 import { absHafta } from '../engines/ozel.js';
 import { esc, gaugesBlock, fmt } from './frame.js';
-import { isCriticalWeek, relWord, promiseStatus } from '../actions.js';
+import { isCriticalWeek, relWord, promiseStatus, powerCtx } from '../actions.js';
+import { temelBilesenler } from '../engines/power.js';
 import { DESK_CARDS } from '../engines/director.js';
 import { oppColor, clubPalette, rawClubColor } from './theme.js';
 import { rail as inboxRail, itemActions } from './inbox.js';
@@ -217,6 +218,19 @@ export function crestSvg(style = 'kalkan', size = 'md', color = 'var(--club)', i
 
 // Ortak sb- TOPBAR — arma + kulüp + faz çipi + kasa/borç + başkan. back: {label, act, arg?} (setup ekranları için).
 // Kokpit + Sözünü Ver + göç edecek tüm ekranlar bunu paylaşır (tek doğruluk kaynağı).
+// TAKIM GÜCÜ KIRILIMI (kullanıcı bulgusu 2026-07-21: "kadromu 80'lere taşıdım, hâlâ 10.'yum —
+// neden?"): güç tek sayı değil, 7 bileşenli karışım. EN ZAYIF 2 halka vurgulanır ("yatırım buraya"),
+// tooltip'te tam tablo — motorla TEK KAYNAK (temelBilesenler).
+function gucKirilim(G) {
+  let b;
+  try { b = temelBilesenler(powerCtx(G)); } catch { return ''; }
+  const zayif = b.slice().sort((x, y) => x.v - y.v).slice(0, 2);
+  const tip = b.map((x) => `${x.ad} ${Math.round(x.v)} (pay %${Math.round(x.w * 100)})`).join(' · ');
+  return `<div class="cx-guc-kirilim" data-tip="Takım gücü karışımı: ${tip}. Kadro en büyük pay ama tek başına yetmez — hoca, kimya, taktik uyumu ve tesisler de sahaya çıkar.">
+    <i>GÜCÜNÜ TUTAN</i> ${zayif.map((x) => `<b>${x.ad} ${Math.round(x.v)}</b>`).join(' · ')} <span>— yatırım buraya</span>
+  </div>`;
+}
+
 export function sbTopbar(G, { phaseChip = null, back = null } = {}) {
   const m = G.meta || {};
   const hazir = (G.hazirlik || 0) > 0;
@@ -306,6 +320,7 @@ function sbPower(G, p) {
       ${pc('FORM', erken ? 'sezon başı' : wordOf(p.form, N.form, ['formsuz', 'dalgalı', 'formda']), !erken && p.form != null && p.form < N.form - 0.025)}
       ${pc('KONDİSYON', wordOf(p.kond, N.kond, ['bitkin', 'yorgun', 'zinde']), p.kond != null && p.kond < N.kond - 0.025)}
     </div>
+    ${gucKirilim(G)}
   </div>`;
 }
 
@@ -469,10 +484,14 @@ function sbAgenda(G, next, meRow, injured) {
   const achU = G.achUnlocked || {};
   const siradaki = achDefs.find((d) => !achU[d.id]);
   if (siradaki) hedefSatir = `<div class="sb-agenda-i sb-hedef" data-act="nav" data-arg="kulup" data-tip="Başarım duvarına git — ${achDefs.filter((d) => achU[d.id]).length}/${achDefs.length} açık">🎯 SIRADAKİ HEDEF: <b>${esc(siradaki.name)}</b></div>`;
+  // UYARLANABİLİR KAPASİTE (taşma dersi — kullanıcı raporu 2026-07-21): şerit/terfi/hedef satırları
+  // yer kapladıkça madde sayısı KISILIR — panel sabit hücresinde son satır asla yarım kesilmez.
+  const ekSatir = (besMac ? 1 : 0) + (terfiSatir ? 1 : 0) + (hedefSatir ? 1 : 0);
+  const kap = Math.max(1, 4 - ekSatir); // 4-bazlı: şerit+hedef varken 2 madde — panel hücresi asla taşmaz
   return `<div class="sb-panel sb-agenda">
     <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">GÜNDEM</span></div>
     ${besMac}${terfiSatir}${hedefSatir}
-    ${items.slice(0, 5).map(([c, t]) => `<div class="sb-agenda-i"><span class="sb-adot sb-adot-${c}"></span>${esc(t)}</div>`).join('')}
+    ${items.slice(0, kap).map(([c, t]) => `<div class="sb-agenda-i"><span class="sb-adot sb-adot-${c}"></span>${esc(t)}</div>`).join('')}
   </div>`;
 }
 

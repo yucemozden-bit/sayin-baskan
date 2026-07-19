@@ -74,9 +74,18 @@ export function itemActions(G, m) {
         <button data-act="ultras" data-arg="${m.id}|kabul" ${kasaYok ? 'disabled' : ''} style="border-color:var(--pos)" data-tip="${kasaYok ? `Kasa yetmiyor — ${maliyet}mn gerek (kasa ${Math.round((G.economy?.kasa ?? 0) * 10) / 10}mn)` : 'Talebi karşıla — tribün coşar'}">KARŞILA${maliyet != null ? ` — ${maliyet}mn` : ''}${kasaYok ? ' 🔒' : ''}</button>
         <button data-act="ultras" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET — bütçe yok</button>
       </div>`;
+    } else if (active && m.action === 'tdkriz') { // TD kriz dosyası — kov / arkasında dur / pazarı tara
+      opts = `<div class="opts">
+        <button data-act="tdkriz" data-arg="${m.id}|kov" style="border-color:var(--neg)" data-tip="Tazminat + medya fırtınası; aday süreci hemen başlar">GÖNDER — tazminatla</button>
+        <button data-act="tdkriz" data-arg="${m.id}|arkasinda" style="border-color:var(--pos)" data-tip="İlişki +8, kurul −2 · 3 maçlık söz: seri kırılırsa itibar +1, sürerse taraftar −2 kurul −3">ARKASINDAYIM — söz veriyorum</button>
+        <button data-act="tdkriz" data-arg="${m.id}|pazar" data-tip="1mn tarama — 3 aday gücüyle masaya gelir (sezonda 1 hak)">PAZARI TARA</button>
+      </div>`;
     } else if (active && m.action === 'cfile') {
+      // Adaylar GÜÇ + maaşla listelenir (kullanıcı isteği: "TD'nin gücünü görelim, kıyaslayalım")
+      const WT = TUNING.POWER.W_TEKNIK; // motorla TEK KAYNAK (teknikEkip ile aynı karışım)
+      const tdG = (c) => Math.round(WT.taktik * (c.taktik || 0) + WT.oyuncuYonetimi * (c.oyuncuYonetimi || 0) + WT.otorite * (c.otorite || 0) + WT.yardimciEkip * (c.yardimciEkip || 0));
       opts = `<div class="opts">${(G.coachFiles || []).map((c, i) =>
-        `<button data-act="cfile" data-arg="${m.id}|${i}">İmzala: ${esc(c.name)}</button>`).join('')}</div>`;
+        `<button data-act="cfile" data-arg="${m.id}|${i}" data-tip="Taktik ${Math.round(c.taktik || 0)} · Oyuncu yön. ${Math.round(c.oyuncuYonetimi || 0)} · Otorite ${Math.round(c.otorite || 0)} · Yrd. ekip ${Math.round(c.yardimciEkip || 0)}">İmzala: ${esc(c.name)} · <b>GÜÇ ${tdG(c)}</b> · ${(Math.round((c.wage || 0) * 10) / 10)}mn</button>`).join('')}</div>`;
     } else if (active && m.action === 'event') { // D3+K1: olay kartı — seçenek + sonuç fısıltısı (yön, sayı değil)
       opts = `<div class="opts" style="align-items:flex-start">${(m.event.options || []).map((o, i) =>
         `<span style="display:inline-flex;flex-direction:column;gap:2px;margin:2px 6px 2px 0">

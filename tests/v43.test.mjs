@@ -53,7 +53,10 @@ setSeed(77);
   G2.squad.slice(0, 5).forEach((p) => { p.injuryWeeks = 3; });
   A.advanceWeek(G2); G2.pendingMatch = null;
   const rep2 = G2.inbox.find((m) => m.cat === 'rapor');
-  check('4+ sakat → ağır şablon (kalabalık/alarm)', !!rep2 && /(kalabalık|alarmda)/.test(rep2.b), rep2 ? rep2.b.slice(0, 60) + '…' : '');
+  // Havuz 4 şablonlu — rotasyon hangisini seçerse seçsin AĞIR havuzdan olmalı (sabit kelime
+  // denetimi 3. şablonda kırılıyordu; akış kayması rotasyonu oynatabilir — havuz üyeliği denetle)
+  const agirHavuz = (data.media.reports?.uygunluk?.agir) || [];
+  check('4+ sakat → ağır şablon (havuz üyeliği)', !!rep2 && agirHavuz.some((t) => rep2.b.includes(t.slice(0, 25))), rep2 ? rep2.b.slice(0, 60) + '…' : '');
   // Birim: şiddet eşikleri + hafif ASLA ağıra tırmanmaz
   const st = { reportMem: [] };
   const r1 = makeReport(st, data.media, [{ key: 'moral', deficit: 0.02 }], 1);

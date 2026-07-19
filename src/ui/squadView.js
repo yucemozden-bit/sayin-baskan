@@ -3,7 +3,7 @@
 // satış/kiralık/sözleşme orada). Üstte TD şeridi (ilişki + otorite barları + maaş + TD'yi Kov).
 import { TUNING } from '../config.js';
 import { esc, fmt } from './frame.js';
-import { coachDescribe, relWord } from '../actions.js';
+import { coachDescribe, relWord, tdGuc } from '../actions.js';
 import { atakSavunma } from '../engines/power.js';
 import { sbShell } from './cockpit.js';
 import { playerAvatar } from './playerCard.js';
@@ -54,6 +54,7 @@ export function render(G) {
   const rel = clamp(G.tdRelation ?? 70, 0, 100);
   const oto = clamp(G.coach.otorite ?? 60, 0, 100);
   const tdBand = `<div class="sb-panel kad-td-band">
+    <span class="sb-ov ${ovCls(tdGuc(G.coach))} kad-td-ov" data-tip="TD GÜCÜ (oyuncu güç diliyle aynı) — karışım: Taktik ${Math.round(G.coach.taktik || 0)} (%35) · Oyuncu yönetimi ${Math.round(G.coach.oyuncuYonetimi || 0)} (%30) · Otorite ${Math.round(G.coach.otorite || 0)} (%20) · Yardımcı ekip ${Math.round(G.coach.yardimciEkip || 0)} (%15). Takım gücündeki payı %14.">${tdGuc(G.coach)}</span>
     <span class="kad-td-av">${esc((G.coach.name || 'T')[0])}</span>
     <div class="kad-td-id"><div class="kad-td-nm">${esc(G.coach.name)} <span>· TEKNİK DİREKTÖR</span></div><div class="kad-td-desc">${esc(coachDescribe(G.coach))} — takımı sahada o yönetir; sen telkin verirsin, o tartar.</div></div>
     <div class="kad-td-stat"><i>SENİNLE İLİŞKİSİ</i><span class="kad-td-bar"><u style="width:${rel}%;background:var(--pos)"></u></span><b>${relWord(G.tdRelation)}</b></div>
@@ -61,7 +62,12 @@ export function render(G) {
     <div class="kad-td-stat maas"><i>MAAŞ</i><b>${fmt(G.coach.wage || 0)}mn<em>/sezon</em></b></div>
     ${G.coachSearch
     ? '<span class="sb-tag">aday süreci inbox\'ta</span>'
-    : `<button class="sb-btn sb-btn-neg sb-btn-sm" data-act="fireCoach" data-tip="Bedeli: tazminat + medya fırtınası + taraftar tepkisi">TD'yi Kov</button>`}
+    : (() => {
+      const pazarKilit = (G.inbox || []).some((m) => m.action === 'cfile' && !m.resolved) ? 'Masada açık TD dosyası var'
+        : G._tdPazarSezon === (G.meta?.season || 1) ? 'Bu sezon tarandı — pazar sezonda 1 kez' : '';
+      return `<button class="sb-btn sb-btn-sm" data-act="tdPazar" ${pazarKilit ? 'disabled' : ''} data-tip="${pazarKilit || '1mn: menajer ağı 3 aday getirir — güçleriyle kıyasla, istersen imzala (eski hoca tazminatla gider)'}">🎯 TD Pazarı${pazarKilit ? ' 🔒' : ''}</button>
+      <button class="sb-btn sb-btn-neg sb-btn-sm" data-act="fireCoach" data-tip="Bedeli: tazminat + medya fırtınası + taraftar tepkisi">TD'yi Kov</button>`;
+    })()}
   </div>`;
 
   // ── TAKIM NABZI: kadronun genel morali/formu/kondisyonu tek şeritte (kullanıcı isteği) ──

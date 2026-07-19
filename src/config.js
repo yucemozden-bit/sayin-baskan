@@ -37,6 +37,7 @@ export const TUNING = {
   // Antrenman tesisi HER SEVİYEDE hissedilir (kullanıcı isteği 2026-07-20 — eski floor(sv/5) yalnız 5 ve 10'da basamaktı):
   DEV_ANT_HAFTALIK: 0.35, // sezon içi gelişim puanı = sv × bu (kesirli birikir — her yükseltme haftalık hızı artırır)
   DEV_GEL_ESIK: 20,       // +1 güç için birikmesi gereken puan
+  DEV_FORM_ESIK: 65,      // formu bu eşiğin üstündeki genç haftada +1 ek gelişim puanı alır (performans→gelişim bağı; kullanıcı isteği 2026-07-21)
   // GELİŞİM SÜREKLİLİĞİ (2026-07-21, kullanıcı: "sonraki sezonlarda kimse yükselmiyor" — 4 sezon
   // teşhisi: S1'de 10 artan, S4'te 0; tavanlar 1-2 sezonda doluyordu, 22-23 yaş tümden kapalıydı):
   DEV_GEC_YAS: 27,        // sezon içi gelişim yaş sınırı (22-27 = "geç gelişimci"; kullanıcı isteği 2026-07-21: gelişim 27'ye kadar sürsün)
@@ -45,9 +46,12 @@ export const TUNING = {
   POT_ESNEME: { yas: 27, artis: 2, kariyerCap: 4, tavan: 88 }, // tavana vuran ≤27 oyuncu: sezon sonu pot +2 (kariyerde en çok +4, mutlak tavan 88) — determinist, rand YOK
   LIG_GELISIM: 0.4,       // KARŞI AĞIRLIK: rakip güçleri sezon başına +0.4 — oyuncu kadroları artık kariyer boyu büyüyor (27 yaş sınırı); lig yerinde sayarsa uzun kariyer bedavaya döner. (0.6 denendi: transfersiz oyunu fazla eziyordu.) Determinist, rand YOK.
   DEV_CAP_ELITE_ANT: 8,   // antrenman ≥8 → sezon içi gelişim tavanı +3 yerine +4 (elit tesis farkı)
+  KAHVALTI_GELISIM: 7,    // Altyapı Kahvaltısı: sofradaki gelişim çağı oyunculara _gel puanı (~2 hafta idman; kullanıcı isteği — davet genç gelişimini de beslesin)
   FIT_ANT: 0.25,          // dinlenen oyuncuya maç başına EK kondisyon = antrenman sv × bu ("kondisyon çabuk toparlar" artık gerçek; 0.4→0.25 autoplay bandı için tempered)
   // — Ekonomi —
-  WAGE_RATIO_HEALTHY: 0.55, TIER_SCALE: { kucuk: 2, orta: 6, buyuk: 14 },
+  // TIER_SCALE: mali hedef/karne borç normalizasyonu — 5 KADEMENİN TAMAMI (dev/efsane eksikti:
+  // DEV'e terfi eden kariyer maliHedef=NaN üretip güven/mali gauge'larını zehirliyordu — maraton D8 avı 2026-07-21)
+  WAGE_RATIO_HEALTHY: 0.55, TIER_SCALE: { kucuk: 2, orta: 6, buyuk: 14, dev: 24, efsane: 36 },
   TV_BASE: { kucuk: 20, orta: 50, buyuk: 261, dev: 360, efsane: 480 }, TICKET_K: 0.0001, // [kalibre: gelir ölçeği; dev/efsane yalnız oyunla ulaşılır]
   ATTEND: { base: 0.45, taraftarDiv: 200, sportifDiv: 300, priceSlope: 0.25, min: 0.30 },
   AUTO_DEBT_PENALTY: 0.03, INFLATION: [0.06, 0.14], RATE_DRIFT: [-0.03, 0.06],
@@ -139,6 +143,7 @@ export const TUNING = {
     INJURY_DUR_MIN: 1,
     RED_SUSP: [1, 3],          // kırmızı kart → 1..3 hafta ceza
     AI_STAD: 5, AI_TARAFTAR: 50, // lig sim'inde AI ev avantajı varsayılanı (q≈0.5)
+    AI_EFEKTIF: 0.93, // SİMETRİ (2026-07-21 efektif-güç düzeltmesi): maç artık EFEKTİF güçle oynanıyor; AI'nin moral/kond katmanı yok → rakip gücüne sağlıklı kadronun tipik maç-günü oranı (ölçülen ort. 0.936) uygulanır. Nötr yönetimde denge eski kalibrasyonla aynı; iyi/kötü kadro yönetimi gerçek uç yaratır (0.64–1.11).
     PTS: { W: 3, D: 1, L: 0 }, // puanlama G3/B1/M0 (Bible-7)
   },
 
@@ -405,7 +410,7 @@ export const TUNING = {
     FED: {
       START: 50,
       ATESLI: -2, LOBI: -3, SAKIN: 0, CEZA_DISIPLIN: 0.5, SESSIZ: 1, // kalibrasyon: rutin demeç hattı beslemez — hat yalnız GERÇEK jestlerle oynar
-      VAR_BIAS: 0.02,        // kalibrasyon: 500-sim Δ2.35 puan ölçüldü → küçültüldü (şart: ≤±2)        // maç gücüne ±%3 tavanlı yön
+      VAR_BIAS: 0.01,        // kalibrasyon: 500-sim Δ2.35 → 0.02; EFEKTİF-GÜÇ (2026-07-21) form/moral geri beslemesi küçük avantajları amplifiye ediyor (0.02'de Δ5.2!) → 0.01 ("gizli hat MİKRO kalır" ilkesi)
       CEZA_TAKDIR_HI: 70, CEZA_TAKDIR_LO: 35, // kırmızı ceza süresi ±1 hafta takdiri
       YAZI_LO: 35, YAZI_HI: 70, YAZI_MAX: 2,  // Ozan Kaptan istatistik yazısı (tek kanal)
     },

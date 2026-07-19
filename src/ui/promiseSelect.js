@@ -355,7 +355,7 @@ export function condTr(p) {
     P19: 'Kulüp müzesini aç',
     P20: 'Yurt dışında bir ofis aç',
     P21: 'Pencerede 80+ güç bir isim al',
-    P22: 'Başına 75+ kalibre bir teknik ekip kur',
+    P22: 'Dönem sonunda GÜÇ 75+ teknik direktör görevde olsun (TD Pazarı yolu açık)',
     P23: 'Dönem boyu küme hattına düşme',
     P24: 'Dönem boyu bilete zam yapma',
   }[p.id]) || '';

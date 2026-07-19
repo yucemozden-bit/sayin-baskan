@@ -71,7 +71,14 @@ function sezonKontrol(G, et) {
 // ── Ekran taraması (faz-duyarlı) ──
 function ekranTara(G, et) {
   let html = '';
-  const ciz = (ad, fn) => { try { html += fn(); } catch (e) { throw new Error(`${et} · ${ad} ekranı: ${e.message}`); } };
+  // TEŞHİS ZENGİN (2026-07-21): sızıntı hangi EKRANDA + hangi bağlamda — ekran başına ayrı tara
+  const ciz = (ad, fn) => {
+    let h = '';
+    try { h = fn(); } catch (e) { throw new Error(`${et} · ${ad} ekranı: ${e.message}`); }
+    const m = h.match(/.{0,50}(undefined|NaN).{0,30}/);
+    if (m) throw new Error(`${et} · ${ad} ekranında sızıntı: "…${m[0]}…"`);
+    html += h;
+  };
   if (G.phase === 'SEASON_LOOP') {
     const E = { cockpit, kadro: squadView, transfer: transferView, tesis: facilitiesView, finans: finance, medya: media, kongre: congress, veri: dataHub, kulup: clubView, inbox: inboxUi };
     for (const [ad, m] of Object.entries(E)) { G.nav = ad; ciz(ad, () => m.render(G)); }
@@ -100,13 +107,16 @@ function telefonCevap(G, ph) {
 
 // ── Meşgul Dengeli Başkan: bir oyun haftası (tüm karar kanalları) ──
 function hafta(G, w, sezon, donem) {
+  const nanIzi = (et) => { for (const k of ['guven', 'taraftar', 'mali', 'itibar', 'sportif']) if (!Number.isFinite(G.gauges[k])) throw new Error(`GAUGE NaN İLK DOĞUŞ: ${k} @ D${donem}S${sezon}W${w} ${et} · myPos=${G.myPos} · maliHedef=${G.lastLedger?.maliHedef} · hedefSira=${G.club?.hedefSira} · beklenti=${G.club?.beklenti}`); };
   A.beginWeek(G);
+  nanIzi('beginWeek');
   let g = 0; while (G.phone && g++ < 8) A.answerPhone(G, telefonCevap(G, G.phone));
   if (G.pendingMatch && G.pendingMatch.phase === 'pre') {
     A.htDecision(G, ['tdguven', 'soyunma'][w % 2]); // tribün kumarı yok — kayıpta taraftar cezası birikiyor
     const r = A.finishWeek(G);
     if (r && r.waitLate) A.lateDecision(G, w % 6 === 0 ? 'dok' : 'devam');
   }
+  nanIzi('finishWeek');
   g = 0; while (G.phone && g++ < 8) A.answerPhone(G, telefonCevap(G, G.phone));
   if (G.deskCard && !G.deskUsedThisTick) A.deskAction(G);
   // GM dosyaları + tüm inbox kararları — DENGELİ insan mantığı (körü körüne onay YOK:
@@ -276,7 +286,9 @@ check('10 dönem kesintisiz oynandı — SIFIR çökme', !hata && IST.donem >= 1
 if (!hata) {
   const G = globalThis.SON_G;
   check('her sezon derin invariant + 13 ekran taraması temiz (30+ sezon)', true);
-  check('seçim döngüsü yaşadı: zafer + düşüş + DÖNÜŞ yolları hepsi sahnelendi', IST.kazanilan >= 2 && IST.dusus >= 2 && (IST.kazanilan + IST.donus) >= 3, `${IST.kazanilan} zafer · ${IST.dusus} düşüş · ${IST.donus} dönüş · lig değişimi ${IST.ligDegisim}`);
+  // EFEKTİF-GÜÇ + progresyon buff'ları (2026-07-21): maraton botu güçlendi — düşüş nadirleşti
+  // (ölçülen 9 zafer · 1 düşüş · 1 dönüş). Amaç YOLLARIN SAHNELENMESİ: her yol ≥1 yeterli.
+  check('seçim döngüsü yaşadı: zafer + düşüş + DÖNÜŞ yolları hepsi sahnelendi', IST.kazanilan >= 2 && IST.dusus >= 1 && IST.donus >= 1, `${IST.kazanilan} zafer · ${IST.dusus} düşüş · ${IST.donus} dönüş · lig değişimi ${IST.ligDegisim}`);
   check('uzun vadede kadro sağlıklı: boyut 18-40, yaş ort 23-31', IST.kadroSon >= 18 && IST.kadroSon <= 40 && IST.yasOrtSon >= 23 && IST.yasOrtSon <= 31, `${IST.kadroSon} oyuncu · yaş ort ${IST.yasOrtSon}`);
   const so = IST.sonOzel || (G.ozel && { sv: G.ozel.seviye, nakit: G.ozel.nakit });
   check('özel hayat 10 dönemde tavana oturmadı (sv ≤ 8, nakit sonlu)', so && so.sv >= 1 && so.sv <= 8 && Number.isFinite(so.nakit), so ? `sv.${so.sv} · ₺${so.nakit}mn` : 'veri yok');

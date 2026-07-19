@@ -620,6 +620,8 @@ function dispatch(act, arg) {
     case 'kayyum': { const [id, c] = arg.split('|'); A.kayyumPaket(G, id, c); break; }        // #3 kurtuluş paketi
     case 'ultras': { const [id, c] = arg.split('|'); A.resolveUltras(G, id, c); break; }      // 2.6 tribün talebi (karşıla/reddet)
     case 'delegeYemek': A.delegeYemek(G, arg); break;                                         // 2.6 blok sofrası
+    case 'tdPazar': A.tdPazar(G); break;                                                      // TD pazarı — kovmadan aday tarat
+    case 'tdkriz': { const [id, c] = arg.split('|'); A.resolveTdKriz(G, id, c); break; }      // TD kriz dosyası (kov/arkasında/pazar)
     case 'megaProje': A.megaProjeBaslat(G); break;                                            // #8 stadyum kompleksi
     case 'spBuyout': { const [id, c] = arg.split('|'); A.resolveSponsorBuyout(G, id, c); break; } // sponsor avı — fesih bedelini rakip öder
     // BUG DERSİ: bu case eskiden 'vitrin' adındaydı ve aşağıdaki satış-listesi 'vitrin' case'ini

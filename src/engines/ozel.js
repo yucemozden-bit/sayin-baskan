@@ -88,7 +88,7 @@ export const DAVETLER = {
   // KRİZ SOFRASI (kullanıcı isteği): üst üste mağlubiyette başkan CEBİNDEN takımı ağırlar —
   // moral+form toparlar. req G'yi de alır (magSeri maç motorundan sayılır); kapı kapalıyken görünür kalır.
   moral: { ad: 'Takım Moral Gecesi', ik: '🍖', req: (oz, G) => (G?.magSeri || 0) >= 2, reqTxt: 'Üst üste 2 mağlubiyet sonrası açılır (kriz sofrası)', maliyet: 2, enerji: 2, cd: 4, konuk: 'Tüm kadro · teknik ekip', ozet: 'Moral +8 · form +4 · başkana güven ▲ — seri kırma sofrası' },
-  altyapi: { ad: 'Altyapı Kahvaltısı', ik: '🥐', req: () => true, reqTxt: '', maliyet: 1, enerji: 2, cd: 6, konuk: 'Ocak çocukları · akademi hocaları', ozet: 'Ocak/genç oyuncularda başkana güven ▲' },
+  altyapi: { ad: 'Altyapı Kahvaltısı', ik: '🥐', req: () => true, reqTxt: '', maliyet: 1, enerji: 2, cd: 6, konuk: 'Ocak çocukları · akademi hocaları', ozet: 'Ocak/genç güven ▲ · genç gelişimi ▲' },
   yemek: { ad: 'Yalıda Akşam Yemeği', ik: '🍽️', req: (oz) => oz.varlik.konut >= 2 && !oz.flags?.bosandi, reqTxt: 'Köşk/Yalı gerek (Konut sv.2+)', maliyet: 2, enerji: 2, cd: 4, konuk: 'Eş · kurul üyeleri', ozet: 'Kurul sadakati +2 · Ev +4' },
   tekne: { ad: 'Tekne Turu', ik: '⛵', req: (oz) => oz.varlik.tekne >= 1, reqTxt: 'Tekne gerek (Deniz Aracı sv.1+)', maliyet: 4, enerji: 3, cd: 6, konuk: 'Rıfat Bey · iş çevresi', ozet: 'Mali algı +1 · Sosyal +6' },
   hayir: { ad: 'Hayır Gecesi', ik: '🕯️', req: () => true, reqTxt: '', maliyet: 6, enerji: 3, cd: 8, konuk: 'Basın · sponsorlar · dernekler', ozet: 'İtibar +2 · Taraftar +1 · manşet (sanat sv.2+: etki büyür)' },

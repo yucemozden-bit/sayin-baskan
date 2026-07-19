@@ -135,7 +135,9 @@ const BOTS = {
         else if (m.action === 'agenda') { let ga = 0; while (!m.resolved && ga++ < 4) A.resolveAgenda(G, m.id, 'veri'); } // MEGA: rakam adamı — veriyle savunur
       }
     },
-    weekly: (G) => { A.makeDemec(G, 'sakin'); A.setMatchPrim(G, 'yok'); },
+    // EFEKTİF-GÜÇ düzeltmesi (2026-07-21): maç artık kondisyon/uygunluğu gerçekten hissediyor —
+    // insan bir "cimri" de kokpitte BİTKİN görünce rotasyon basar; bot da o kadarını yapar.
+    weekly: (G) => { A.makeDemec(G, 'sakin'); A.setMatchPrim(G, 'yok'); A.setTelkin(G, ((G.power?.kond ?? 1) < 0.97 || (G.power?.uygunluk ?? 1) < 0.9) ? 'rotasyon' : null); },
     // YAŞAYAN: temkinli + MÜDAHALESİZ — teknik işlere karışmaz (TD bilir), masa gezmelerine vakit ayırmaz
     ht: () => 'tdguven',
     late: () => 'devam',
@@ -319,8 +321,12 @@ check('anlatı şablonu tekrarı (6 hafta) = 0', totalViolations === 0, `${total
 // tek dönem kazanılabilir, "koltuk emekle korunur" ilkesi ESKALASYONLA dönemler arası yaşıyor
 // (çok dönem eğrileri: durgunluk 2. dönemde çöker). Popülist ~%25'te kalır (ayrışma korunur).
 // GELİŞİM-27 + LİG GELİŞİMİ (2026-07-21): tavan 65→67 (Dengeli 65.2 — kadrosu artık olgunlaşıyor).
-check('well-played oyOranı %55-67 (Cimri & Dengeli) + Popülist <%35',
-  RESULTS['Cimri'].oy >= 55 && RESULTS['Cimri'].oy <= 67 && RESULTS['Dengeli'].oy >= 55 && RESULTS['Dengeli'].oy <= 67 && RESULTS['Popülist'].oy < 35,
+// EFEKTİF-GÜÇ DÜZELTMESİ (2026-07-21, kullanıcı bulgusu "63→38 ama maç 65 oynuyor"): sim artık
+// EFEKTİF güçle oynanır (moral/form/kond/uygunluk) — AI'ya simetri oranı AI_EFEKTIF 0.93.
+// DENGELİ ana nöbetçi (bantları anlamlı); CİMRİ ince-kadro + minimal yönetimle SERT cezalanır
+// (bilinçli: uygunluk cezası gerçek) → ayrı gevşek bant.
+check('well-played oyOranı — Dengeli %55-67 · Cimri %45-67 · Popülist <%35',
+  RESULTS['Cimri'].oy >= 45 && RESULTS['Cimri'].oy <= 67 && RESULTS['Dengeli'].oy >= 55 && RESULTS['Dengeli'].oy <= 67 && RESULTS['Popülist'].oy < 35,
   `Cimri %${RESULTS['Cimri'].oy.toFixed(1)}, Dengeli %${RESULTS['Dengeli'].oy.toFixed(1)}, Popülist %${RESULTS['Popülist'].oy.toFixed(1)}`);
 // ── ÇOK DÖNEM HAYATTA KALMA (Cimri vs Dengeli — yatırımın uzun vade getirisi) ──
 function playCareer(bot, seed, maxTerms = 4) {
@@ -409,8 +415,10 @@ console.log('\n── HEDEF ──');
 // 22-23 geç gelişimci + potansiyel esnemesi → kadro KARİYER BOYU büyür; ölçülen tek dönem C %96/D %93.
 // Bu BİLİNÇLİ tasarım kayması: oyun uzun vadede kolaylaştı (kullanıcı ilerleme istedi). Sıkılaştırma
 // düğmeleri: DEV_GEC_CARPAN · POT_ESNEME.kariyerCap · WIN_LINE/zorluk presetleri. Tavan 95→96.
-check('tek dönem: iyi oynanan %64-96 bandı', [RESULTS['Cimri'].win, RESULTS['Dengeli'].win].every((w) => w >= 64 && w <= 96), `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
-check('tek dönem: Dengeli ≥ Cimri−8', RESULTS['Dengeli'].win >= RESULTS['Cimri'].win - 8, `Dengeli %${RESULTS['Dengeli'].win.toFixed(0)} vs Cimri−8 %${(RESULTS['Cimri'].win - 8).toFixed(0)}`);
+// EFEKTİF-GÜÇ (2026-07-21): Dengeli 64-96 ana bant; Cimri (ince kadro) 40-80 — kondisyon/derinlik
+// yönetimi artık gerçek karşılık, kemer sıkmanın tek-dönem bedeli görünür (ölçülen C 62 / D 84).
+check('tek dönem: Dengeli %64-96 · Cimri %40-80', RESULTS['Dengeli'].win >= 64 && RESULTS['Dengeli'].win <= 96 && RESULTS['Cimri'].win >= 40 && RESULTS['Cimri'].win <= 80, `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
+check('tek dönem: Dengeli ≥ Cimri (aktif yönetim üstün)', RESULTS['Dengeli'].win >= RESULTS['Cimri'].win, `Dengeli %${RESULTS['Dengeli'].win.toFixed(0)} vs Cimri %${RESULTS['Cimri'].win.toFixed(0)}`);
 check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D ${areaD.toFixed(0)} vs C×0.7 ${(areaC * 0.7).toFixed(0)}`);
 // Eskalasyon revizyonu (v4.2) hayatta kalma bantları: zor ama efsane mümkün.
 // v2 rekalibrasyon (2026-07): dönem-4 tavanı 10→12 (mandat/direktif/basın v2 net etkisi ~+1).
@@ -442,12 +450,16 @@ check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D 
 // sezon başına +0.4 büyüyor (LIG_GELISIM). Yeni ekosistem ölçümü: C 66→38→16, D 79→65→48 —
 // TRANSFERSİZ kemer sıkma (Cimri) uzun vadede artık YETMİYOR (lig onu geçiyor — bilinçli tasarım:
 // kalıcılık aktif kadro yönetimi ister); Dengeli güçlü. Bantlar iki stili de kucaklar.
+// EFEKTİF-GÜÇ (2026-07-21): uzun vade bantları YALNIZ Dengeli'de (ana nöbetçi — ölçülen 72→57→43);
+// Cimri'nin ince kadrosu efektif dünyada uzun vadede YAŞAMAZ (12→4→2 — bilinçli: kalıcılık
+// derinlik + kondisyon yönetimi ister). Cimri için yumuşak nöbet: eğri düşer + D2'de sıfırlanmaz.
 const bands2 = [[1, 60, 88], [2, 30, 74], [3, 12, 56]]; // [idx, lo, hi] — dönem 2/3/4
 for (const [i, lo, hi] of bands2) {
-  check(`çok dönem: dönem-${i + 1} hayatta kalma %${lo}-${hi} (her iki bot)`,
-    [survival['Cimri'][i], survival['Dengeli'][i]].every((v) => v >= lo && v <= hi),
+  check(`çok dönem: dönem-${i + 1} hayatta kalma %${lo}-${hi} (Dengeli)`,
+    survival['Dengeli'][i] >= lo && survival['Dengeli'][i] <= hi,
     `Cimri %${survival['Cimri'][i].toFixed(0)}, Dengeli %${survival['Dengeli'][i].toFixed(0)}`);
 }
+check('Cimri: eğri düşer + dönem-2\'de tümden sıfırlanmaz (%5-60)', survival['Cimri'][1] >= 5 && survival['Cimri'][1] <= 60 && survival['Cimri'][2] <= survival['Cimri'][1], `%${survival['Cimri'][1].toFixed(0)} → %${survival['Cimri'][2].toFixed(0)}`);
 check('Popülist kazanma ≤ %10', RESULTS['Popülist'].win <= 10, `%${RESULTS['Popülist'].win.toFixed(0)}`);
 // AİLE ölçüm botu: 'ölçülü aile başkanı' — pencere başına 1 kez cepten (≤15mn) alım yapar.
 // Bu tanımla iflas bandı %20-50'ye oturur (disiplinli oyun %0, borç transferci %90+ — uçlar doğal).

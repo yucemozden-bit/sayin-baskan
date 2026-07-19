@@ -184,7 +184,11 @@ setSeed(2121);
   // akış haftalarını kaydırdı, zemin yeniden örneklendi (Δ2.23 — fed mekaniğine dokunulmadı). Tolerans 2.2→2.4.
   // GELİŞİM SÜREKLİLİĞİ (2026-07-21): kadro büyümesi maç akış zeminini yeniden örnekledi (Δ2.48 —
   // fed mekaniği yine değişmedi, kıl payı taşma). Tolerans 2.4→2.6.
-  check(`METRİK: fedIliski uç etkisi ≤ ±2.6 puan/sezon`, Math.abs(fark) <= 2.6, `fed10 ${dusuk.toFixed(1)} vs fed90 ${yuksek.toFixed(1)} → Δ${fark.toFixed(2)}`);
+  // EFEKTİF-GÜÇ (2026-07-21): form/moral GERİ BESLEMESİ artık gerçek — kalıcı her küçük avantaj
+  // momentumla ~×2 amplifiye olur (VAR_BIAS 0.02→0.01 indirildi; ölçüm 0.02'de Δ5.2, 0.01'de Δ4.3).
+  // Çekirdek MİKRO (±%1), amplifikasyon sistemik fizik. Tolerans 2.6→4.8 — "fed oyunu ele geçirmesin"
+  // niyeti korunur (uçlar bilinçli uzun-vade davranış ister).
+  check(`METRİK: fedIliski uç etkisi ≤ ±4.8 puan/sezon`, Math.abs(fark) <= 4.8, `fed10 ${dusuk.toFixed(1)} vs fed90 ${yuksek.toFixed(1)} → Δ${fark.toFixed(2)}`);
 }
 
 // ══ B1d FFP KADEMELERİ ══

@@ -674,9 +674,13 @@ export function beginWeek(G) {
 
   // Maç gücü TemelGüç'ten; telkin+prim+takvim çarpanları maça biner.
   const derbySwing = isDerby ? 1 + rand(-CAL.DERBY_SWING, CAL.DERBY_SWING) : 1;
-  const myStrength = temelGuc(powerCtx(G)) * telkinFx.power * primPower * derbySwing * (isIntl ? CAL.INTL_POWER : 1);
+  // BÜYÜK BUG DÜZELTMESİ (kullanıcı bulgusu 2026-07-21: "kokpit 63→38 MAÇ GÜNÜ diyor, maç 65 oynuyor"):
+  // sim TEMELGÜÇ kullanıyordu — moral/form/KONDİSYON/sakatlık-uygunluk çarpanları (Katman 2) maça
+  // HİÇ girmiyordu; "MAÇ GÜNÜ" göstergesi kozmetikti. Bible-5.3: MaçGücü = EFEKTİF × saha çarpanları.
+  // Artık bitkin kadro sahada gerçekten bedel öder; rotasyon/moral yönetimi gerçek karşılık bulur.
+  const myStrength = efektifGuc(powerCtx(G)) * telkinFx.power * primPower * derbySwing * (isIntl ? CAL.INTL_POWER : 1);
   const myMG = macGucu(myStrength, { isHome, stadyum: G.facilities.stadyum, taraftar: G.gauges.taraftar });
-  const oppMG = macGucu(G.league.table[oppId].strength, { isHome: !isHome, stadyum: TUNING.MATCH.AI_STAD, taraftar: TUNING.MATCH.AI_TARAFTAR });
+  const oppMG = macGucu(G.league.table[oppId].strength * TUNING.MATCH.AI_EFEKTIF, { isHome: !isHome, stadyum: TUNING.MATCH.AI_STAD, taraftar: TUNING.MATCH.AI_TARAFTAR });
   // Y3: YARI 1 (45dk) simülasyonu — devre arası kararı 2. yarıyı ETKİLEYECEK
   const SEG = TUNING.YASAYAN.SEG;
   const T = TUNING.BASE_GOALS * telkinFx.goalsMult;
@@ -943,7 +947,7 @@ function finishWeekTail(G, lateMove) {
   if (CAL.CUP_WEEKS.includes(wk) && G.cup && G.cup.alive) {
     const cupOpp = clamp(Math.round(G.temelGuc + rand(-CAL.CUP_SPREAD, CAL.CUP_SPREAD) + G.cup.round * CAL.CUP_RAMP), 30, 92);
     const cupYon = atakSavunma(G.squad).tilt; // kupa maçı da kadro yönünü hisseder
-    const cres = simulateMatch(macGucu(Math.round(G.temelGuc), { isHome: true, stadyum: G.facilities.stadyum, taraftar: G.gauges.taraftar }), macGucu(cupOpp, { isHome: false }), undefined, { tiltH: cupYon, tiltA: cupYon });
+    const cres = simulateMatch(macGucu(efektifGuc(powerCtx(G)), { isHome: true, stadyum: G.facilities.stadyum, taraftar: G.gauges.taraftar }), macGucu(cupOpp * TUNING.MATCH.AI_EFEKTIF, { isHome: false }), undefined, { tiltH: cupYon, tiltA: cupYon }); // kupada da EFEKTİF (bitkin kadro kupada da bedel öder; AI simetri oranı)
     G.cup.round++;
     if (cres.result === 'L' || (cres.result === 'D' && rand(0, 1) < 0.5)) {
       G.cup.alive = false;
@@ -1286,6 +1290,7 @@ function finishWeekTail(G, lateMove) {
       // yedek genç tamamen AÇ kalmasın: eskiden haftada 1 puanla sezon boyu ~sabit görünüyordu)
       puan += (xiIds.has(p.id) || G.telkin === 'gencler') ? 2 : 1;
       if (myRes === 'W') puan += 1;                                 // kazanan soyunma odasında özgüven
+      if ((p.form ?? 50) >= TUNING.DEV_FORM_ESIK) puan += 1;        // PERFORMANS BAĞI (kullanıcı isteği 2026-07-21): formda parlayan genç ATEŞLENİR — gelişim artık oyuncunun kendi sahadaki haline de bağlı
       // antrenman altyapısı: HER seviye haftalık hızı artırır (kesirli birikir; eski floor(sv/5)
       // yalnız 5 ve 10'da basamak yapıyordu — 5→6→7 yükseltmeleri boşa gidiyordu)
       puan += (G.facilities.antrenman || 0) * TUNING.DEV_ANT_HAFTALIK;
@@ -1415,6 +1420,31 @@ function applyPrimResults(G, myRes, primWinCost) {
   }
   // MAĞLUBİYET SERİSİ — Takım Moral Gecesi davetinin kapısı (üst üste 2 L'de açılır; G/B sıfırlar)
   G.magSeri = myRes === 'L' ? (G.magSeri || 0) + 1 : 0;
+  // TD KRİZ BASKISI (kullanıcı isteği 2026-07-21: "sonuçlar kötü gelirse TD'yi kovma durumları"):
+  // 4 maçlık kayıp serisinde kurul hocanın dosyasını masaya koyar — KOV / ARKASINDA DUR / PAZARI TARA.
+  // Sezonda 1 kez; determinist (rand YOK); karar oyuncunun — pasif ceza değil, OLAY.
+  if ((G.magSeri || 0) >= 4 && G.meta.week > 5 && !G.coachSearch
+    && G._tdKrizSezon !== G.meta.season && !G.inbox.some((x) => x.action === 'tdkriz' && !x.resolved)) {
+    G._tdKrizSezon = G.meta.season;
+    pushInbox(G, {
+      cat: 'td', t: `KURUL: ${G.coach?.name || 'Hoca'} dosyası masada`, action: 'tdkriz', noQueue: true,
+      b: `${G.magSeri} maçlık kayıp serisi — kurul kapalı toplantıda hocanın dosyasını açtı (mevcut GÜÇ ${tdGuc(G.coach)}). "Ya gönder, ya arkasında durduğunu açıkla." Arkasında durur da seri sürerse fatura sana yazar; pazar taraması üçüncü yol.`,
+    });
+  }
+  // "Arkasındayım" sözünün takibi: sonraki 3 maçta 2+ kayıp → inat faturası; seri kırılırsa otorite ödülü
+  if (G._tdDestek && myRes) {
+    G._tdDestek.mac--; if (myRes === 'L') G._tdDestek.kayip++;
+    if (G._tdDestek.kayip >= 2) {
+      G.gauges.taraftar = clamp(G.gauges.taraftar - 2, 0, 100);
+      for (const bm of G.board || []) bm.loyalty = clamp((bm.loyalty || 50) - 3, 0, 100);
+      pushInbox(G, { cat: 'td', t: 'İnat faturası: "hocamın arkasındayım" demiştin', b: 'Destek açıklamasından sonra kayıplar sürdü — kurul koridorunda "başkan inatlaşıyor" fısıltısı, tribünde homurtu (taraftar −2 · kurul sadakati −3).', noQueue: true });
+      G._tdDestek = null;
+    } else if (G._tdDestek.mac <= 0) {
+      G.gauges.itibar = clamp(G.gauges.itibar + 1, 0, 100);
+      pushInbox(G, { cat: 'td', t: 'Desteğin doğru çıktı', b: 'Hocanın arkasında durdun, gemi yüzdü — kurul sustu, otorite artık sende (itibar +1).', noQueue: true });
+      G._tdDestek = null;
+    }
+  }
   if (G.ozelArmed) { G.ozelArmed = false; G.ozelUsed = true; } // tek maçlık koz tüketildi
   if (G.seriBoostWeeks > 0 && myRes !== 'W') G.seriBoostWeeks--;
 }
@@ -2398,6 +2428,13 @@ export function hireCoachFile(G, msgId, idx) {
   if (!m || m.resolved || !G.coachFiles) return { ok: false };
   const cand = G.coachFiles[Number(idx)];
   if (!cand) return { ok: false };
+  // TD PAZARI yolu (kovulmadan imza): mevcut hoca görevdeyse tazminatı imza ANINDA kesilir
+  // (fireCoach ile aynı formül — bedava hoca değişimi exploit'i kapalı)
+  if (!G.coachSearch && G.coach && (G.coach.contractYears ?? 0) > 0) {
+    const tazminat = (G.coach.wage || 0.3) * (G.coach.contractYears ?? 2) * TUNING.COACH_FIRE.TAZMINAT_YIL;
+    G.economy.kasa -= tazminat;
+    pushInbox(G, { cat: 'td', t: `${G.coach.name} tazminatla gönderildi`, b: `Pazardan imza geldi; eski hocanın sözleşmesi ${fmt1(tazminat)}mn'ye feshedildi.`, noQueue: true });
+  }
   hireCoach(G, cand, { midSeason: G.phase === 'SEASON_LOOP' });
   G.coach.contractYears = 2;
   G.coachSearch = false; G.coachFiles = null; m.resolved = true;
@@ -2407,7 +2444,53 @@ export function hireCoachFile(G, msgId, idx) {
   return { ok: true };
 }
 
-// TD karakter cümlesi (SAYI YOK — §2/§3)
+// TD GÜCÜ — oyuncu güç rozetiyle AYNI dil (kullanıcı isteği 2026-07-21: "TD'nin gücünü
+// anlamıyorum, oyuncu gibi görünsün"). Motorla tek kaynak: teknikEkip (W_TEKNIK karışımı).
+// Eski "TD'de sayı yok" sis kuralı bilinçli emekli edildi — netlik kazandı.
+export function tdGuc(c) { return Math.round(teknikEkip(c || {})); }
+
+// TD PAZARI — kovmadan aday tarat, kıyasla, teklif et (sezonda 1 tarama, 1mn menajer masrafı).
+// İmzalarsan mevcut hoca TAZMİNATLA gider (hireCoachFile keser). Görünür-kilit deseni: buton
+// kilidi UI'da, sig'li teksefer mektup son savunma. rand kullanır — KULLANICI aksiyonu (autoplay değmez).
+export function tdPazar(G) {
+  const ret = G.coachSearch ? 'Aday süreci zaten sürüyor — önce onu karara bağla.'
+    : (G.inbox || []).some((m) => m.action === 'cfile' && !m.resolved) ? 'Masada açık bir TD dosyası var.'
+      : G._tdPazarSezon === (G.meta?.season || 1) ? 'Bu sezonki pazar taraması yapıldı — menajerler aynı listeyi döndürür.'
+        : G.economy.kasa < 1 ? 'Kasa 1mn tarama masrafını kaldırmıyor.' : null;
+  if (ret) {
+    const sig = 'tdpazar-ret-' + (G.meta?.season || 1) + '-' + (G.meta?.week || 1);
+    if (!G.inbox.some((x) => x.sig === sig)) pushInbox(G, { cat: 'td', t: 'TD pazarı taranamadı', sig, b: ret, noQueue: true });
+    return { ok: false, why: ret };
+  }
+  G.economy.kasa -= 1;
+  G._tdPazarSezon = G.meta?.season || 1;
+  const cands = generateCoaches(G.club.reputation, { names: G.data.names, count: 3 }).map((c) => ({ ...c, contractYears: 2 }));
+  G.coachFiles = cands;
+  const mevcut = tdGuc(G.coach);
+  pushInbox(G, {
+    cat: 'td', t: `TD PAZARI: 3 aday masada (mevcut hoca GÜÇ ${mevcut})`,
+    b: `Menajer ağı tarandı (1mn). Adaylar: ${cands.map((c) => `${c.name} — GÜÇ ${tdGuc(c)} · ${fmt1(c.wage)}mn/sezon`).join(' · ')}. İmzalarsan ${G.coach?.name || 'mevcut hoca'} tazminatla gönderilir; dosyayı kapatırsan kimse kırılmaz.`,
+    action: 'cfile',
+  });
+  return { ok: true };
+}
+
+// TD kriz dosyası cevabı: kov / arkasında dur (3 maçlık söz — tutmazsa fatura) / pazarı tara
+export function resolveTdKriz(G, msgId, secim) {
+  const m = G.inbox.find((x) => x.id === msgId && x.action === 'tdkriz');
+  if (!m || m.resolved) return { ok: false };
+  m.resolved = true;
+  if (secim === 'kov') return fireCoach(G);
+  if (secim === 'pazar') { tdPazar(G); return { ok: true }; }
+  // arkasında dur: ilişki sıçrar, kurul homurdanır; 3 maçlık söz sayacı kurulur
+  G.tdRelation = clamp((G.tdRelation ?? 70) + 8, 0, 100);
+  for (const bm of G.board || []) bm.loyalty = clamp((bm.loyalty || 50) - 2, 0, 100);
+  G._tdDestek = { mac: 3, kayip: 0 };
+  pushInbox(G, { cat: 'td', t: `"${G.coach?.name || 'Hocam'}ın arkasındayım"`, b: 'Kameralar önünde net konuştun — hoca duygulandı (ilişki +8), kurul homurdandı (sadakat −2). Önümüzdeki 3 maç bu sözün sınavı: seri kırılırsa otorite senin, sürerse fatura sana.', noQueue: true });
+  return { ok: true };
+}
+
+// TD karakter cümlesi (kart altı tek cümle — sayılar artık ayrıca GÜÇ rozetinde)
 export function coachDescribe(c) {
   const okul = { 'motivatör': 'motivasyon ustası', 'savunmacı': 'savunmacı ekol', 'oyun kurucu': 'hücum futbolunu sever', 'genç işçisi': 'gençlerin hocası' }[c.archetype] || 'dengeli bir profil';
   const parts = [okul];
@@ -4910,16 +4993,21 @@ export function ozelDavet(G, id) {
     ozelFx(G, { stres: -2, xp: 2 });
     pushInbox(G, { cat: 'kulup', t: 'Takım Moral Gecesi — başkan sofra kurdu', b: 'Üst üste yenilgilerin ardından başkan tüm kadroyu cebinden ağırladı: "Bu masada kimse yalnız yürümez." Soyunma odası nefes aldı — moral ve form toparladı, gözler yeniden parlıyor.', noQueue: true });
   } else if (id === 'altyapi') {
-    // KÖPRÜ: Özel Hayat ↔ Oyuncu İlişkileri — ocak çocuklarıyla kahvaltı, güven kalıcı işler
+    // KÖPRÜ: Özel Hayat ↔ Oyuncu İlişkileri — ocak çocuklarıyla kahvaltı, güven kalıcı işler.
+    // + GELİŞİM ATEŞİ (kullanıcı isteği 2026-07-21): başkanın ilgisi genci hızlandırır — gelişim
+    // çağındaki (≤DEV_GEC_YAS) sofradakilere _gel puanı eklenir (determinist; ~2 hafta idman değeri;
+    // sezon tavanları aynen işler → abartı freni hazır). Autoplay davet düzenlemez → bantlar nötr.
     const ocaklar = G.squad.filter((x) => x.ocak);
     const grup = ocaklar.length ? ocaklar : G.squad.filter((x) => klikOf(x) === 'gencler');
     const babaBonus = (oz.seviye >= 7 ? 2 : 0); // Camianın Babası (sv.7+): gençler onu ağabey bilir
+    let atesli = 0;
     for (const q of grup) {
       q.baskanaGuven = clamp((q.baskanaGuven ?? 50) + relDelta(relx(G, q).kisilik, (ocaklar.length ? 6 : 3) + babaBonus), 0, 100);
       q.morale = clamp(q.morale + 3, 0, 100);
+      if (q.age <= TUNING.DEV_GEC_YAS && q.overall < (q.potential ?? q.overall)) { q._gel = (q._gel || 0) + TUNING.KAHVALTI_GELISIM; atesli++; }
     }
     ozelFx(G, { xp: 2 });
-    pushInbox(G, { cat: 'kulup', t: 'Altyapıda kahvaltı sofrası', b: ocaklar.length ? 'Başkan ocak çocuklarıyla aynı masada — "Bu arma sizin evladım." Gençlerin gözünde büyüdün.' : 'Akademi sofrası kuruldu; gençler kliği başkanı yakından gördü — güven filizlendi.', noQueue: true });
+    pushInbox(G, { cat: 'kulup', t: 'Altyapıda kahvaltı sofrası', b: `${ocaklar.length ? 'Başkan ocak çocuklarıyla aynı masada — "Bu arma sizin evladım." Gençlerin gözünde büyüdün.' : 'Akademi sofrası kuruldu; gençler kliği başkanı yakından gördü — güven filizlendi.'}${atesli ? ` Hocalar not etti: ${atesli} gencin idman ateşi yükseldi (gelişim ▲).` : ''}`, noQueue: true });
   } else if (id === 'yemek') {
     for (const m of G.board || []) m.loyalty = clamp((m.loyalty || 50) + 2, 0, 100);
     ozelFx(G, { ev: 4, es: 4, xp: 2 });

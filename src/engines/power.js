@@ -128,6 +128,23 @@ export function temelGuc(ctx) {
   );
 }
 
+// TEMEL GÜÇ KIRILIMI (kullanıcı bulgusu 2026-07-21: "kadromu 80'lere taşıdım, hâlâ 10.'yum —
+// neden?"): her bileşenin HAM değeri + ağırlığı — UI "gücünü ne tutuyor" cevabını buradan verir.
+// temelGuc ile AYNI hesap (tek kaynak); değişirse ikisi birlikte değişmeli.
+export function temelBilesenler(ctx) {
+  const W = TUNING.W_TEMEL;
+  const f = ctx.facilities || {};
+  return [
+    { k: 'kadro', ad: 'Kadro', w: W.kadro, v: kadroKalitesi(ctx.squad) },
+    { k: 'teknik', ad: 'Teknik ekip', w: W.teknik, v: teknikEkip(ctx.coach) },
+    { k: 'kimya', ad: 'Kimya', w: W.kimya, v: kimyaTecrube(ctx.kimya) },
+    { k: 'taktik', ad: 'Taktik uyum', w: W.taktik, v: taktikUyum(ctx.taktik) },
+    { k: 'tesis', ad: 'Tesisler', w: W.tesis, v: tesisTabani(f) },
+    { k: 'derinlik', ad: 'Derinlik', w: W.derinlik, v: derinlik(ctx.squad) },
+    { k: 'altyapi', ad: 'Altyapı', w: W.altyapi, v: altyapi(f.akademi) },
+  ];
+}
+
 // ═══════════════════════ KATMAN 2 — EfektifGüç ═══════════════════════
 
 // Uygunluk saf çekirdeği (Bible-5.2). tibbi düzeltmesi clamp DIŞINDA eklenir
