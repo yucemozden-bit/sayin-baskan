@@ -2133,6 +2133,13 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
 .panel-sayfa .card { break-inside: avoid; margin-bottom: 14px; }
 
 /* ═══ KONGRE & SEÇİM — panel derinliği + oy göstergesi ═══ */
+/* kng-root: sb kabuğu içinde AÇIK 3 sütunlu grid (eski .panel-sayfa çok-sütunu sb-main'de
+   tek dar sütuna çöküp kartları kırpıyordu — yerleşim artık belirtik, kırpma yok) */
+.kng-root { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-content: start; max-width: 1560px; width: 100%; margin-inline: auto; overflow: hidden; }
+.kng-root .kongre-gauge { grid-column: 1 / -1; }
+.kng-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; min-height: 0; }
+.kng-col .card { margin-top: 0 !important; }
+@media (max-width: 1100px) { .kng-root { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kongre > h2 { font-size: 22px; }
 .kongre .card {
   background: linear-gradient(180deg, rgba(20, 29, 48, .5), var(--bg-1));
@@ -3528,11 +3535,12 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 .md-loca { text-align: center; font-size: .72em; letter-spacing: .08em; color: #e88aa8; padding: .2em 0 0; opacity: .9; }
 .md-loca.soguk { color: var(--ink-3); }
 /* davet */
-.oz-davet { display: flex; justify-content: space-between; align-items: center; gap: .8em; padding: .4em 0; border-bottom: 1px solid var(--line); }
+/* TEK SATIR davet (taşma dersi): ad+bedel+özet yan yana, özet ellipsis — 5 davet her pencerede sığar */
+.oz-davet { display: flex; align-items: center; gap: .6em; padding: .28em 0; border-bottom: 1px solid var(--line); }
 .oz-davet:last-child { border-bottom: 0; }
-.oz-davet-b { min-width: 0; }
-.oz-davet-b b { font-size: .88em; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.oz-davet-b i { font-size: .7em; color: var(--ink-3); font-style: normal; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oz-dv-ad { flex: none; font-size: .82em; white-space: nowrap; max-width: 11em; overflow: hidden; text-overflow: ellipsis; }
+.oz-dv-meta { flex: none; font-size: .66em; color: var(--ink-3); font-style: normal; white-space: nowrap; }
+.oz-davet .oz-davet-oz { flex: 1; min-width: 0; font-size: .66em; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .oz-davet-oz { color: #e88aa8 !important; }
 .oz-davet button { cursor: pointer; white-space: nowrap; padding: .45em .8em; font-size: .76em; font-weight: 800; letter-spacing: .04em; border-radius: var(--radius-s); border: 1px solid rgba(232, 138, 168, .4); background: rgba(217, 106, 144, .1); color: var(--ink-1); }
 .oz-davet button:disabled { opacity: .35; cursor: default; }
@@ -3893,9 +3901,9 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 /* ═══ VARLIK MAĞAZASI v2.2 — SIĞDIRMA (kullanıcı: "yine kesiliyor") ═══
    Sabit-em tahmini terk: 2×2 ızgara HER seçimde 2 sıra → doğal yükseklik zaten sabit.
    Kompaktlaştır + kalan alanı alttaki panel emsin; kesilme biter, iskelet yine oynamaz. */
-.oz-vk-liste { height: auto; flex: none; gap: .35em; }
+.oz-vk-liste { height: auto; flex: none; gap: .3em; }
 .oz-vk2.acik { flex: none; }
-.oz-vk2-bas { padding: .34em .55em; gap: .5em; }
+.oz-vk2-bas { padding: .28em .55em; gap: .5em; }
 .oz-vk-id b { font-size: .78em; }
 .oz-vk-id i { font-size: .63em; }
 .oz-vk2-sag { font-size: .64em; }

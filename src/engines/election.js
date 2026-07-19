@@ -67,6 +67,30 @@ export function rakipCekiciligi(state, { tutulmayanVaat = 0, sportif, taraftar, 
   return clamp(W.zayif * zayifHane + W.ceza * ceza + W.pozisyon * pozisyon + birikim, 0, 100);
 }
 
+// ── KONGRE 2.6: DELEGE BLOKLARI ──
+// Blok oyu = bileşenlerin blok-ağırlıklı toplamı − rakip cezası + (iliski−50)×K.
+// TUNING.DELEGE.BLOK pay-ağırlıklı toplamı ELECT_W'ye birebir eşit kurulduğu için
+// tüm iliski=50 iken blokların pay-ortalaması eski genel oyla aynıdır (nötrlük garantisi).
+export function blokOylari(comps, delege) {
+  const D = TUNING.DELEGE, out = {};
+  for (const [key, B] of Object.entries(D.BLOK)) {
+    const iliski = (delege?.bloklar?.[key]) ?? 50;
+    const taban = B.W.sportif * comps.sportif + B.W.taraftar * comps.taraftar + B.W.mali * comps.mali
+      + B.W.itibar * comps.itibar + B.W.soz * comps.soz - comps.rival * TUNING.RIVAL_FACTOR;
+    out[key] = { oy: clamp(taban + (iliski - 50) * D.ILISKI_K, 0, 100), iliski: Math.round(iliski) };
+  }
+  return out;
+}
+
+// Blok ilişkilerinin genel oya net katkısı (oy PUANI, ±). Tüm iliski=50 → TAM 0 döner
+// (her terim tam 0 → toplam tam 0) — nötr durumda oy hesabı bit-bit eskisiyle aynı kalır.
+export function delegeEtki(delege) {
+  const D = TUNING.DELEGE;
+  let sum = 0;
+  for (const [key, B] of Object.entries(D.BLOK)) sum += B.pay * ((((delege?.bloklar?.[key]) ?? 50) - 50) * D.ILISKI_K);
+  return clamp(sum, -10, 10);
+}
+
 // Oy oranı çekirdek formülü (Bible-16). Bileşenler 0-100; döner 0-1.
 export function oyOrani({ sportif, taraftar, mali, itibar, soz, rival }) {
   const W = TUNING.ELECT_W;
@@ -93,6 +117,10 @@ export function eleksiyon(state, { baslangicBorc, tutulmayanVaat = 0 } = {}) {
   const bosandi = !!state.ozel?.flags?.bosandi;
   const aile = R ? Math.round(bosandi ? (R.c1 + R.c2) / 2 : (R.es + R.c1 + R.c2) / 3) : 0;
   const aileBonus = aile >= 70 ? 0.02 : 0;
-  const oy = clamp(oyOrani({ sportif, taraftar, mali, itibar, soz, rival }) + aileBonus, 0, 1);
-  return { oyOrani: oy, kazandi: oy > TUNING.WIN_LINE, breakdown: { sportif, taraftar, mali, itibar, soz, rival, aile, aileBonus } };
+  // KONGRE 2.6: delege blok ilişkileri sandığa ek terim olarak biner (nötrde TAM 0 — bkz. delegeEtki)
+  const comps = { sportif, taraftar, mali, itibar, soz, rival };
+  const dEtki = state.delege ? delegeEtki(state.delege) : 0;
+  const bloklar = state.delege ? blokOylari(comps, state.delege) : null;
+  const oy = clamp(oyOrani(comps) + aileBonus + dEtki / 100, 0, 1);
+  return { oyOrani: oy, kazandi: oy > TUNING.WIN_LINE, breakdown: { sportif, taraftar, mali, itibar, soz, rival, aile, aileBonus, dEtki, bloklar } };
 }

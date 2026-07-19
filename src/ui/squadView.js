@@ -4,6 +4,7 @@
 import { TUNING } from '../config.js';
 import { esc, fmt } from './frame.js';
 import { coachDescribe, relWord } from '../actions.js';
+import { atakSavunma } from '../engines/power.js';
 import { sbShell } from './cockpit.js';
 import { playerAvatar } from './playerCard.js';
 
@@ -79,14 +80,32 @@ export function render(G) {
     ${nb('GENEL MORAL', nMoral, kelime(nMoral, 'COŞKULU', 'DALGALI', 'DİPTE'), 'Kadro moral ortalaması — sonuçlar, primler ve jestlerle oynar; maç gücüne işler')}
     ${nb('GENEL FORM', nForm, kelime(nForm, 'FORMDA', 'DALGALI', 'DÜŞÜK'), 'Kadro form ortalaması — oynadıkça ve kazandıkça açılır')}
     ${nb('KONDİSYON', nKond, kelime(nKond, 'ZİNDE', 'NORMAL', 'YORGUN'), 'Fiziksel hazırlık — tam kadro baskısı yorar, rotasyon dinlendirir')}
-    ${nb('KİMYA', nKimya, kelime(nKimya, 'OTURMUŞ', 'KARIŞIK', 'DAĞINIK'), 'Takım uyumu — her transfer sarsar (−4); birlikte oynadıkça oturur (+0.1/maç), galibiyet hızlandırır (+0.5); prim izli galibiyet +1')}
+    ${nb('KİMYA', nKimya, kelime(nKimya, 'OTURMUŞ', 'KARIŞIK', 'DAĞINIK'), `Takım uyumu — her transfer sarsar (${TUNING.KIMYA_TRANSFER}); birlikte oynadıkça oturur (+0.1/maç), galibiyet hızlandırır (+0.5); prim izli galibiyet +1`)}
     ${nb('BAŞKANA GÜVEN', nGuven, kelime(nGuven, 'ARKANDA', 'KARARSIZ', 'SOĞUK'), 'Soyunma odasının sana bakışı — jestler, sözler ve kriz sofraları yazar')}
+    ${yonHucre(G)}
     <div class="kad-nb kad-nb-revir" data-tip="${sakatlar ? 'Revirdeki oyuncu sayısı — tıbbi merkez süreleri kısaltır' : 'Revir boş — kadro tam'}">
       <i>REVİR</i><b style="color:${sakatlar ? 'var(--warn)' : 'var(--pos)'}">${sakatlar ? sakatlar + ' sakat' : 'boş ✓'}</b>
     </div>
     ${(G.magSeri || 0) >= 2 ? '<button class="kad-nb-moral" data-act="nav" data-arg="ozel" data-tip="Üst üste mağlubiyet — Takım Moral Gecesi düzenlenebilir (Özel Hayat · ₺2mn kişisel)">🍖 Moral Gecesi açık ▸</button>' : ''}
   </div>`;
 
+  return sonuc(G, tdBand, nabiz, cols, h);
+}
+
+// KADRO YÖNÜ hücresi: hücum/savunma hat dengesi maçların açıklığını belirler (power.atakSavunma
+// ile AYNI kaynak) — transferin BÖLGESİ burada anlam kazanır: forvet alırsan gol patlar,
+// stoper/kaleci alırsan kapanırsın.
+function yonHucre(G) {
+  const y = atakSavunma(G.squad);
+  const fark = y.atak - y.savunma;
+  const soz = fark >= 2.5 ? 'HÜCUMA DÖNÜK' : fark <= -2.5 ? 'SAVUNMACI' : 'DENGELİ';
+  const renk = fark >= 2.5 ? 'var(--neg)' : fark <= -2.5 ? 'var(--info)' : 'var(--pos)';
+  return `<div class="kad-nb" data-tip="Hücum hattı ${Math.round(y.atak)} (OS+FV) · Savunma hattı ${Math.round(y.savunma)} (KL+DF) — savunmacı kadro KAPALI maç oynar (az gol yer, az atar), hücumcu kadro AÇIK maç (çok atar, biraz açık verir). Transferin bölgesi bunu şekillendirir.">
+    <i>KADRO YÖNÜ</i><b style="color:${renk}">${soz} · H${Math.round(y.atak)}/S${Math.round(y.savunma)}</b>
+  </div>`;
+}
+
+function sonuc(G, tdBand, nabiz, cols, h) {
   const yasOrt = (G.squad.reduce((a, p) => a + p.age, 0) / Math.max(G.squad.length, 1)).toFixed(1).replace('.', ',');
   const toplamDeger = fmt(Math.round(G.squad.reduce((a, p) => a + (p.marketValue || 0), 0)));
   return sbShell(G, {

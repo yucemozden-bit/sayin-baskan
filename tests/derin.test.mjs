@@ -298,7 +298,9 @@ function rtRitual(G, tag) { kaosWeek(G, tag); } // aynı deterministik ritüel i
   check('roundtrip: yüklenen kayıtla invaryantlar sağlam', invariants(GB, 'rt').length === 0);
   // REHİDRASYON: yüklenen oyuncular Player metotlarını geri kazanmalı (Devam Et → sezon
   // sonu developSquad crash'i bu kontrol yüzünden bir daha dönemez)
-  check('roundtrip: yüklenen kadro rehidre (refreshValue çalışır)', GB.squad.every((p) => typeof p.refreshValue === 'function'));
+  const plainler = GB.squad.filter((p) => typeof p.refreshValue !== 'function');
+  check('roundtrip: yüklenen kadro rehidre (refreshValue çalışır)', plainler.length === 0,
+    plainler.map((p) => `${p.name} [${p.pos} ${p.age}] ocak:${!!p.ocak} aileOgul:${!!p.aileOgul} loanIn:${!!p.loanIn}`).join(' · '));
   // SEZON SINIRI: yükleme sonrası sezon sonu + yeni sezon patlamadan geçmeli
   let rtErr = null;
   try {

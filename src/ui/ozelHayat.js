@@ -183,13 +183,13 @@ function servetTab(G, oz) {
     const tiers = V.adlar.map((ad, i) => {
       const durum = i < lv ? 'sahip' : i === lv ? 'sirada' : 'kilit';
       const sag = i < lv ? '✓ sahipsin' : i === lv ? `₺${V.fiyat[i]}mn` : '🔒 kilitli';
-      return `<button class="oz-vt ${durum} ${acik && vIdx === i ? 'aktif' : ''}" data-act="vitrin" data-arg="${k}|${i}" data-tip="${esc(ad)} — ${i < lv ? 'vitrinde izle' : i === lv ? 'sıradaki yükseltme · vitrinde izle' : 'önce alt kademe gerekir'}">
+      return `<button class="oz-vt ${durum} ${acik && vIdx === i ? 'aktif' : ''}" data-act="ozVitrin" data-arg="${k}|${i}" data-tip="${esc(ad)} — ${i < lv ? 'vitrinde izle' : i === lv ? 'sıradaki yükseltme · vitrinde izle' : 'önce alt kademe gerekir'}">
         <span class="oz-vt-ust"><i class="oz-vt-nokta"></i><span class="oz-vt-ad">${esc(ad)}</span></span>
         <b>${sag}</b>
       </button>`;
     }).join('');
     return `<div class="oz-vk2 ${acik ? 'acik' : ''}">
-      <div class="oz-vk2-bas" data-act="vitrin" data-arg="${k}|${Math.min(lv, V.adlar.length - 1)}" data-tip="${acik ? esc(V.ad) + ' vitrinde' : esc(V.ad) + ' koleksiyonunu aç'}">
+      <div class="oz-vk2-bas" data-act="ozVitrin" data-arg="${k}|${Math.min(lv, V.adlar.length - 1)}" data-tip="${acik ? esc(V.ad) + ' vitrinde' : esc(V.ad) + ' koleksiyonunu aç'}">
         <span class="oz-mag-ik">${V.ik}</span>
         <div class="oz-vk-id"><b>${V.ad}</b><i>${lv ? 'Sv.' + lv + ' · ' + esc(V.adlar[lv - 1]) : 'henüz yok'}</i></div>
         <span class="oz-vk2-sag">${lv}/${V.adlar.length}${acik ? '' : ' ▸'}</span>
@@ -209,8 +209,12 @@ function servetTab(G, oz) {
   const davetler = Object.entries(DAVETLER).map(([id, D]) => {
     const cdKalan = Math.max(0, (oz.davetCd[id] || 0) - abs);
     const olmaz = !D.req(oz, G) ? D.reqTxt : cdKalan > 0 ? `takvim dolu (${cdKalan} hafta)` : oz.nakit < D.maliyet ? 'nakit yetersiz' : oz.g.enerji < 15 ? 'takat yok' : '';
-    return `<div class="oz-davet">
-      <div class="oz-davet-b"><b>${D.ik} ${esc(D.ad)}</b><i>₺${D.maliyet}mn · Enerji −${D.enerji} · ${esc(D.konuk)}</i><i class="oz-davet-oz">${esc(D.ozet)}</i></div>
+    // TEK SATIR (taşma dersi): ad + bedel + özet yan yana, özet ellipsis'li (tam metni satır
+    // tooltip'inde) — eski 3 satırlı düzen kısa pencerede panel dibinde kırpılıyordu
+    return `<div class="oz-davet" data-tip="${esc(D.ozet)}">
+      <b class="oz-dv-ad">${D.ik} ${esc(D.ad)}</b>
+      <i class="oz-dv-meta">₺${D.maliyet}mn · Enerji −${D.enerji} · ${esc(D.konuk)}</i>
+      <i class="oz-davet-oz">${esc(D.ozet)}</i>
       <button data-act="ozelDavet" data-arg="${id}" ${olmaz ? 'disabled' : ''} data-tip="${olmaz || 'Düzenle — etkisi hemen işler'}">DÜZENLE ›</button>
     </div>`;
   }).join('');

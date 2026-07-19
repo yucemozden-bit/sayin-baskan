@@ -333,7 +333,8 @@ function personAvatar(name, kind) {
 }
 
 // Sözün koşulu — İNSAN cümlesi (kod anahtarı/dev-speak yok). Hepsi kapsanır; boş fallback.
-function condTr(p) {
+// EXPORT: kongre "Kürsüye Çık" butonlarının tooltip'i de AYNI sözlüğü kullanır (tek kaynak).
+export function condTr(p) {
   return ({
     P01: 'Bir lig şampiyonluğu kaldır',
     P02: 'Borcu yarıya indir',

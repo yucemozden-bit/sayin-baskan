@@ -397,7 +397,10 @@ console.log('\n── HEDEF ──');
 // (kullanıcı isteği: "borç yoksa mali çok yükselsin"). Borç eriten Cimri/Dengeli botun tek-dönem oyu ~+2-3 arttı.
 // GÜÇ ETKİSİ (2026-07): SHARPNESS_K 1.6→3.0 (kullanıcı isteği — takım gücü galibiyeti daha çok belirlesin).
 // İyi kurulan kadro ligde daha istikrarlı yüksek bitirince tek-dönem oyu ~+2 arttı → tavan 88→93.
-check('tek dönem: iyi oynanan %64-93 bandı', [RESULTS['Cimri'].win, RESULTS['Dengeli'].win].every((w) => w >= 64 && w <= 93), `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
+// KONGRE 2.6 (2026-07-20): ultras talep/protesto mektupları inbox akışını yeniden sıralıyor →
+// yönetmen/telefon kelebeği tek kariyer oynatabiliyor (300'de ±1 = ±0.33 puan). Sistematik kanal YOK:
+// bilet kancası Cimri'yi AŞAĞI iter, protesto oy-nötr (tests/delege.test.mjs bit-bit ispat) → tavan 93→94.
+check('tek dönem: iyi oynanan %64-94 bandı', [RESULTS['Cimri'].win, RESULTS['Dengeli'].win].every((w) => w >= 64 && w <= 94), `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
 check('tek dönem: Dengeli ≥ Cimri−8', RESULTS['Dengeli'].win >= RESULTS['Cimri'].win - 8, `Dengeli %${RESULTS['Dengeli'].win.toFixed(0)} vs Cimri−8 %${(RESULTS['Cimri'].win - 8).toFixed(0)}`);
 check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D ${areaD.toFixed(0)} vs C×0.7 ${(areaC * 0.7).toFixed(0)}`);
 // Eskalasyon revizyonu (v4.2) hayatta kalma bantları: zor ama efsane mümkün.

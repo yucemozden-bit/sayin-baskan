@@ -22,12 +22,14 @@ export function poisson(lambda, rng = random01) {
 
 // Ana motor (Bible-6): iki MaçGücü'nden xG paylaşımı + Poisson skor.
 // opts.baseGoals: toplam gol beklentisi override (v4.1 "kalemizi koruyalım" telkini T×0.7 kullanır).
+// opts.tiltH / opts.tiltA: KADRO YÖNÜ çarpanı (power.atakSavunma) — o tarafın ATTIĞI xG'yi ölçekler.
+// Varsayılan 1 → AI-AI lig maçları ve eski çağrılar birebir eski davranış.
 export function simulateMatch(homeMG, awayMG, rng = random01, opts = {}) {
   const k = TUNING.SHARPNESS_K, T = opts.baseGoals ?? TUNING.BASE_GOALS;
   const hp = Math.pow(Math.max(homeMG, 0), k);
   const ap = Math.pow(Math.max(awayMG, 0), k);
   const hShare = hp / Math.max(hp + ap, 1e-9);
-  const xgH = T * hShare, xgA = T * (1 - hShare);
+  const xgH = T * hShare * (opts.tiltH ?? 1), xgA = T * (1 - hShare) * (opts.tiltA ?? 1);
   const gH = poisson(xgH, rng), gA = poisson(xgA, rng);
   return { gH, gA, xgH, xgA, result: gH > gA ? 'W' : gH < gA ? 'L' : 'D' };
 }

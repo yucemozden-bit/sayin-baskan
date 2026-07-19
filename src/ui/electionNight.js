@@ -58,6 +58,7 @@ export function render(G) {
       </div>
       <div class="muted" style="font-size:12px;margin-top:8px">En büyük koz: <b>${NAMES[best.k]}</b> · En zayıf halka: <b>${NAMES[worst.k]}</b></div>
     </div>`;
+    result += blokAcilimi(b);
   }
 
   return `<div class="scene secim-sahne ${e.done && !e.kazandi ? 'kaybettin-gri' : ''}" style="max-width:760px">
@@ -68,6 +69,26 @@ export function render(G) {
     <div class="vote led tnum ${e.counting ? 'sayim' : ''}" style="color:${e.done ? '' : 'var(--club-2)'}">${voteTxt}</div>
     ${adayBar}
     ${result}
+  </div>`;
+}
+
+// KONGRE 2.6: sandık blok açılımı — hangi seçmen kütlesi ne verdi.
+// KART_KEYS'e DOKUNMAZ (6'lı revealStep sabiti aynı); eski kayıt sonuçlarında bloklar yoksa boş döner.
+function blokAcilimi(b) {
+  if (!b || !b.bloklar) return '';
+  const D = TUNING.DELEGE;
+  const rows = Object.entries(D.BLOK).map(([k, B]) => {
+    const blk = b.bloklar[k];
+    if (!blk) return '';
+    return `<div class="l"><span>${B.ad} <span class="muted">(%${Math.round(B.pay * 100)})</span></span>
+      <b class="tnum">${Math.round(blk.oy)} <span class="muted" style="font-weight:400">· ilişki ${blk.iliski}</span></b></div>`;
+  }).join('');
+  const d = b.dEtki || 0;
+  return `<div class="card" style="max-width:520px;margin:10px auto;text-align:left">
+    <div class="overline">Sandık Açılımı — Delege Blokları</div>
+    <div class="fin-lines" style="margin-top:6px">${rows}
+      <div class="l"><span>Blok ilişkilerinin net etkisi</span><b class="tnum ${d > 0 ? 'pos' : d < 0 ? 'neg' : ''}">${d > 0 ? '+' : ''}${d.toFixed(1)} puan</b></div>
+    </div>
   </div>`;
 }
 

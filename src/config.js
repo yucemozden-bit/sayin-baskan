@@ -15,7 +15,7 @@ export const TUNING = {
   POS_W: { GK: 0.12, DEF: 0.26, MID: 0.30, FWD: 0.32 },
   CLAMP: { uygunluk: [0.65, 1], moral: [0.88, 1.12], form: [0.90, 1.10], kond: [0.82, 1.05] },
   STAR_THRESHOLD: 80, STAR_BONUS_MAX: 8, BALANCE_MIN: 0.85,
-  KIMYA_WEEK: 1.5, KIMYA_TRANSFER: -4, KIMYA_TD: -10, TAKTIK_WEEK: 6,
+  KIMYA_WEEK: 1.5, KIMYA_TRANSFER: -3, KIMYA_TD: -10, TAKTIK_WEEK: 6, // transfer sarsıntısı −4→−3 (kullanıcı isteği 2026-07-20)
   // — Maç —
   // GÜÇ ETKİSİ (2026-07, kullanıcı isteği): takım gücü galibiyeti daha güçlü belirlesin.
   // K 1.6→3.0 (güç farkı → xG payı dikleşir), LUCK daraldı (şans gücü daha az boğar), gol sabit (2.6).
@@ -23,6 +23,10 @@ export const TUNING = {
   // bu dik eğriyi vaat ediyordu — artık gerçek sonuç ona UYUYOR (önce vaat fazla, sim yatıktı).
   // NOT: k'yı daha yükseltmek (4.2) seçimleri idealde %97-99'a taşıyıp determinizmi bozuyordu → 3.0 tutuldu.
   BASE_GOALS: 2.6, SHARPNESS_K: 3.0, HOME_ADV: [0.03, 0.08], LUCK: [0.95, 1.05],
+  // — Kadro YÖNÜ (hücum/savunma ayrışması): tilt = 1 + (atakHat − savunmaHat) × YON.K, BANT'a kırpılır.
+  // Savunma ağırlıklı kadro → düşük skorlu maçlar (az yer, az atar) · hücum ağırlıklı → açık maçlar.
+  // W/M/G olasılık ORANI değişmez (xG paylaşımına dokunmaz — abartı sonuç freni BANT ±%12).
+  YON: { K: 0.012, BANT: [0.88, 1.12] },
   SIGMOID_DIV: 25, DRAW_BASE: 0.28, DRAW_WIDTH: 18,
   MOTIV_UNDERDOG: 0.04, BIGMATCH_HIDDEN: 0.05,
   // — Oyuncu —
@@ -478,6 +482,41 @@ export const TUNING = {
     BROKEN_CEZA: 8,             // tutulmayan vaat başına rakip cezası
     POS_TITLE: 6,              // kupasız 3 sezon → şampiyonluk_vaadi gücü [kalibre]
     POS_PRICE_THRESH: 1.3, POS_PRICE_SCALE: 60, // bilet>1.3 → taraftar_dostu
+  },
+
+  // — Kongre 2.6: DELEGE BLOKLARI —
+  // KRİTİK DEĞİŞMEZ: blokların pay-ağırlıklı W toplamı ELECT_W'ye BİREBİR eşittir
+  // (Σ pay×W[k] = ELECT_W[k]) → tüm ilişkiler nötr 50'deyken oy oranı eski formülle
+  // bit-bit aynı çıkar (autoplay/kalibrasyon bantları OYNAMAZ). W satırı değişecekse
+  // bu toplam korunmak ZORUNDA (tests/delege.test.mjs bunu ispatlar).
+  DELEGE: {
+    ILISKI_K: 0.2,             // blok oyu: (iliski−50) × K puan; toplam etki Σ pay×(iliski−50)×K
+    YEMEK: { maliyet: 1, artis: 6, hak: 3 }, // dönemde 3 blok yemeği (1mn, iliski +6)
+    BLOK: {
+      eski:   { ad: 'Eski Tüfekler',     kim: 'kurucu aileler, eski yöneticiler', pay: 0.25, W: { sportif: 0.20, taraftar: 0.10, mali: 0.20, itibar: 0.35, soz: 0.15 } },
+      is:     { ad: 'İş Kanadı',         kim: 'sanayici ve esnaf delegeleri',     pay: 0.25, W: { sportif: 0.20, taraftar: 0.05, mali: 0.45, itibar: 0.20, soz: 0.10 } },
+      tribun: { ad: 'Tribün Delegeleri', kim: 'tribünden yetişen delegeler',      pay: 0.25, W: { sportif: 0.45, taraftar: 0.40, mali: 0.00, itibar: 0.05, soz: 0.10 } },
+      taban:  { ad: 'Üye Tabanı',        kim: 'mahalle ve aidat üyeleri',         pay: 0.25, W: { sportif: 0.35, taraftar: 0.25, mali: 0.15, itibar: 0.00, soz: 0.25 } },
+    },
+  },
+
+  // — Kongre 2.6: ULTRAS (taraftar grupları — mevcut fanGroups üstüne iliski+talep katmanı) —
+  // İhmal yolu SANDIĞA DOKUNMAZ (autoplay-nötr): protesto manşet + grup iliski'sidir;
+  // blok/gauge etkisi yalnız BİLİNÇLİ cevapla (karşıla/reddet) işler.
+  ULTRAS: {
+    TALEP_HAFTA: [5, 29],      // talep doğabilecek hafta bandı
+    TALEP_P: { radikal: 9, ilimli: 6 }, // hash yüzdesi/hafta (~sezonda 1-2 talep/grup)
+    SURE: 4,                   // cevap süresi (hafta) — dolarsa protesto olayı
+    CD: 8,                     // talep sonrası bekleme (hafta)
+    KABUL: { iliski: 8, taraftar: 1, tribunBlok: 2 },
+    RED: { iliski: -6, tribunBlok: -2 },
+    PROTESTO: { iliski: -10 },
+    DUVAR_ESIK: 70, DUVAR_P: 12, // iliski≥70 → sezonda 1 bedava koreografi gecesi (hash)
+    TALEPLER: {                 // maliyetler mn
+      koreografi: { maliyet: 2,   ad: 'Dev koreografi malzemesi' },
+      deplasman:  { maliyet: 1.5, ad: 'Deplasman konvoyu otobüsleri' },
+      lokal:      { maliyet: 1,   ad: 'Taraftar lokali tadilatı' },
+    },
   },
 };
 

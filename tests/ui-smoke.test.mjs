@@ -92,5 +92,23 @@ try {
 }
 check('kariyer boyunca runtime hatası yok', threw === null, threw ? (threw.stack || threw.message) : '');
 
+// DİSPATCH ÇARPIŞMA KİLİDİ: main.js switch'inde aynı case etiketi İKİ KEZ tanımlanamaz.
+// (Yaşanmış bug: showroom 'vitrin' case'i, oyuncu kartının satış-listesi 'vitrin' case'ini
+// gölgeledi — JS'te ilk eşleşen kazanır, buton sessizce ölür. Bu denetim onu anında yakalar.)
+{
+  const mainSrc = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  // yalnız AKSİYON dispatch switch'i: `switch (act)` → bir sonraki `switch (`e kadar
+  // (faz yönlendirici switch'ler aynı etiketi meşru olarak iki kez kullanır)
+  const bas = mainSrc.indexOf('switch (act)');
+  const kalan = mainSrc.slice(bas + 1);
+  const son = kalan.indexOf('switch (');
+  const dispatchSrc = son >= 0 ? kalan.slice(0, son) : kalan;
+  check('dispatch switch bulundu', bas >= 0);
+  const cases = [...dispatchSrc.matchAll(/^\s*case '([^']+)':/gm)].map((m) => m[1]);
+  const gorulen = new Set(), cift = new Set();
+  for (const c of cases) { if (gorulen.has(c)) cift.add(c); gorulen.add(c); }
+  check('dispatch: duplicate case YOK (gölgeleme bug kilidi)', cift.size === 0, cift.size ? [...cift].join(', ') : `${gorulen.size} benzersiz case`);
+}
+
 console.log(`\n${'─'.repeat(48)}\nSONUÇ: ${pass} geçti, ${fail} kaldı\n`);
 process.exit(fail ? 1 : 0);

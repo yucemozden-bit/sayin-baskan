@@ -32,10 +32,10 @@ export function yildizBonus(squad) {
   return clamp(sum(stars.map((s) => (s.overall - STAR_THRESHOLD) * pt)), 0, STAR_BONUS_MAX);
 }
 
-// KadroKalitesi (Bible-5.1). Hat seçimi injury+suspension filtreler (milli görev HARİÇ değil).
-export function kadroKalitesi(squad) {
+// Hat ortalamaları (tek kaynak): kadroKalitesi ve atakSavunma AYNI seçimi kullanır
+// (sakat+cezalı filtreli, mevki başına ideal-XI kadar en iyi oyuncu).
+export function hatOrtalamalari(squad) {
   const { IDEAL_XI, MISSING_LINE } = TUNING.POWER;
-  const W = TUNING.POS_W;
   const hatOrt = {};
   for (const pos of POSITIONS) {
     const best = squad
@@ -44,9 +44,32 @@ export function kadroKalitesi(squad) {
       .slice(0, IDEAL_XI[pos]);
     hatOrt[pos] = best.length ? avg(best.map((x) => x.overall)) : MISSING_LINE;
   }
+  return hatOrt;
+}
+
+// KadroKalitesi (Bible-5.1). Hat seçimi injury+suspension filtreler (milli görev HARİÇ değil).
+export function kadroKalitesi(squad) {
+  const W = TUNING.POS_W;
+  const hatOrt = hatOrtalamalari(squad);
   const mevkiOrt = W.GK * hatOrt.GK + W.DEF * hatOrt.DEF + W.MID * hatOrt.MID + W.FWD * hatOrt.FWD;
   const enZayif = Math.min(hatOrt.GK, hatOrt.DEF, hatOrt.MID, hatOrt.FWD);
   return clamp(mevkiOrt * dengeCarpani(mevkiOrt, enZayif) + yildizBonus(squad), 0, 100);
+}
+
+// ── KADRO YÖNÜ (hücum/savunma ayrışması) ──
+// atakHat = MID+FWD (POS_W oranlı) · savunmaHat = GK+DEF (POS_W oranlı).
+// tilt = 1 + (atak − savunma) × MATCH.YON.K, BANT'a kırpılır (abartı freni).
+// Maçta: attığın xG × tilt, yediğin xG × tilt → savunma kadrosu az yer/az atar (kapalı maç),
+// hücum kadrosu çok atar/biraz açık verir. xG PAYLAŞIMI değişmez → kazanma oranı bantları oynamaz.
+// Dengeli kadroda (atak≈savunma) tilt≈1 → eski davranış. Determinist — rand YOK.
+export function atakSavunma(squad) {
+  const W = TUNING.POS_W, Y = TUNING.YON;
+  const h = hatOrtalamalari(squad);
+  const savW = W.GK + W.DEF, atkW = W.MID + W.FWD;
+  const savunma = (W.GK * h.GK + W.DEF * h.DEF) / savW;
+  const atak = (W.MID * h.MID + W.FWD * h.FWD) / atkW;
+  const tilt = clamp(1 + (atak - savunma) * Y.K, Y.BANT[0], Y.BANT[1]);
+  return { atak, savunma, tilt };
 }
 
 // TeknikEkip skoru (Bible-5.1). coach: {taktik, oyuncuYonetimi, otorite, yardimciEkip} 0-100.

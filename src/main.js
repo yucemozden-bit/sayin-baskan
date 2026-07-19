@@ -609,9 +609,13 @@ function dispatch(act, arg) {
     case 'tfile': { const [id, c] = arg.split('|'); A.resolveTransferFile(G, id, c); break; } // §1 onay dosyası
     case 'sfile': { const [id, c] = arg.split('|'); A.resolveSaleFile(G, id, c); break; }     // §1 satış aynası
     case 'kayyum': { const [id, c] = arg.split('|'); A.kayyumPaket(G, id, c); break; }        // #3 kurtuluş paketi
+    case 'ultras': { const [id, c] = arg.split('|'); A.resolveUltras(G, id, c); break; }      // 2.6 tribün talebi (karşıla/reddet)
+    case 'delegeYemek': A.delegeYemek(G, arg); break;                                         // 2.6 blok sofrası
     case 'megaProje': A.megaProjeBaslat(G); break;                                            // #8 stadyum kompleksi
     case 'spBuyout': { const [id, c] = arg.split('|'); A.resolveSponsorBuyout(G, id, c); break; } // sponsor avı — fesih bedelini rakip öder
-    case 'vitrin': { const [k, i] = arg.split('|'); G._vitrin = { kat: k, idx: +i || 0 }; break; } // showroom 3D vitrin seçimi (salt UI)
+    // BUG DERSİ: bu case eskiden 'vitrin' adındaydı ve aşağıdaki satış-listesi 'vitrin' case'ini
+    // GÖLGELİYORDU (duplicate case — ilk eşleşen kazanır, oyuncu kartı "Satış listesi" ölmüştü).
+    case 'ozVitrin': { const [k, i] = arg.split('|'); G._vitrin = { kat: k, idx: +i || 0 }; break; } // showroom 3D vitrin seçimi (salt UI)
     case 'cfile': { const [id, i] = arg.split('|'); A.hireCoachFile(G, id, i); break; }       // §2 TD imza
     case 'fireCoach': A.fireCoach(G); break;                                                   // §2 kovma
     case 'dirBudget': G._dir = { ...(G._dir || { line: 'hazir' }), budgetKey: arg }; break;    // §1 direktif

@@ -1,6 +1,7 @@
 // src/ui/inbox.js — Inbox (V3-C2/A1): haber akışı + aksiyonlu kararlar.
 // Aksiyonlar: bilet mektubu · TRANSFER ONAY DOSYASI · SATIŞ TEKLİFİ · TD ADAY DOSYASI (§1-2).
 // Y8: KARAR mesajları en üste sabitlenir + hafta gruplamaları + tıklanabilir imzalar.
+import { TUNING } from '../config.js';
 import { esc } from './frame.js';
 import { sbShell } from './cockpit.js';
 
@@ -56,6 +57,13 @@ export function itemActions(G, m) {
       opts = `<div class="opts">
         <button data-act="kayyum" data-arg="${m.id}|sat" style="border-color:var(--pos)">PAKETİ SAT — ${m.tutar}mn borca</button>
         <button data-act="kayyum" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET — kadroyu koru</button>
+      </div>`;
+    } else if (active && m.action === 'ultras') { // 2.6: tribün talebi — karşıla/reddet (yoksayarsan süre dolunca pankart)
+      const grp = (G.fanGroups || []).find((x) => x.name === m.grup);
+      const maliyet = grp && grp.talep ? TUNING.ULTRAS.TALEPLER[grp.talep.tip]?.maliyet : null;
+      opts = `<div class="opts">
+        <button data-act="ultras" data-arg="${m.id}|kabul" style="border-color:var(--pos)">KARŞILA${maliyet != null ? ` — ${maliyet}mn` : ''}</button>
+        <button data-act="ultras" data-arg="${m.id}|red" style="border-color:var(--neg)">REDDET — bütçe yok</button>
       </div>`;
     } else if (active && m.action === 'cfile') {
       opts = `<div class="opts">${(G.coachFiles || []).map((c, i) =>

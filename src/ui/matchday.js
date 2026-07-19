@@ -64,6 +64,14 @@ export function render(G) {
   return post(G, m);
 }
 
+// KADRO YÖNÜ eğilim notu (maçın açıklığı) — matchCtx.yonT'den okunur, belirgin sapmada görünür
+function yonNotu(G) {
+  const yt = G.matchCtx?.yonT || 1;
+  if (yt >= 1.03) return '<div class="muted" style="text-align:center;font-size:11px;margin-top:4px">⚔ Kadro hücuma dönük — açık maç eğilimi (çok gol atarsın, biraz açık verirsin)</div>';
+  if (yt <= 0.97) return '<div class="muted" style="text-align:center;font-size:11px;margin-top:4px">🛡 Kadro savunmacı — kapalı maç eğilimi (az gol yersin, gol de zor gelir)</div>';
+  return '';
+}
+
 // ── PRE: tünel/karşılaşma — krestler yüz yüze, güç, gerçekçi tahmin, TD planı ──
 function pre(G, m) {
   return `<div class="md-scene md-pre ${m.isDerby ? 'derbi' : ''}">
@@ -76,6 +84,7 @@ function pre(G, m) {
     </div>
     ${oddsBar(m.tahmin)}
     <div class="md-plan">🎙 ${esc(m.plan)} <span class="muted">— ${esc(G.coach.name)}</span></div>
+    ${yonNotu(G)}
     ${m.protokol && !m.protokol.done ? `<div class="md-protokol">
       <div class="overline">Protokol tüneli · ${esc(m.protokol.baskan)} elini uzattı</div>
       <div class="btnrow" style="margin-top:6px;justify-content:center">
