@@ -73,6 +73,12 @@ export const TUNING = {
     '1_mahalle_8000', '1_mahalle_8000', '2_ilce_13000', '3_modern_18000', '4_ulusal_30000',
     '5_super_55000', '6_mega_75000', 'stadyum_90000_1', 'stadyum_90000_1', 'stadyum_90000_1', 'stadyum_90000_1',
   ] },
+  // ANTRENMAN 3D (2026-07-21): tesis panelinde seviyeye göre gerçek 3D antrenman tesisi (assets/antrenman/).
+  // Seviye 0..10 → 8 model (8 görsel kademe). İlk model 2 seviye kaplar, son model üst seviyeleri kaplar.
+  ANTRENMAN_3D: { DIR: 'assets/antrenman/', BY_LVL: [
+    'antrenman_1', 'antrenman_1', 'antrenman_2', 'antrenman_3', 'antrenman_4_1',
+    'antrenman_5', 'antrenman_6_2', 'antrenman_7_1', 'antrenman_8', 'antrenman_8', 'antrenman_8',
+  ] },
   // KONFOR (kullanıcı tasarımı 2026-07-22: "stadyum kalitesi doluluğu etkilesin"): stadyum
   // seviyesi = konfor. Sv.5 nötr; her seviye doluluk ±%1.2 (sv0 −%6 köhne, sv10 +%6 modern).
   // Kapasite ayrı hikâye: tier + MEGA kompleks (×1.2) — kalite yüzdeyi, kompleks koltuğu büyütür.

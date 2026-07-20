@@ -54,3 +54,10 @@ export function stadModel(lvl) {
   const sv = Math.max(0, Math.min(arr.length - 1, lvl | 0));
   return M.DIR + arr[sv] + '.html';
 }
+
+// ANTRENMAN 3D: seviye → model dosya yolu (assets/antrenman/…html). stadModel ile aynı kurgu.
+export function antrenmanModel(lvl) {
+  const M = TUNING.ANTRENMAN_3D, arr = M.BY_LVL;
+  const sv = Math.max(0, Math.min(arr.length - 1, lvl | 0));
+  return M.DIR + arr[sv] + '.html';
+}

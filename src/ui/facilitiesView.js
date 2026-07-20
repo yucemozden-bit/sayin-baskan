@@ -3,7 +3,7 @@
 // Kaydırma yok — 6 tesis viewport'u doldurur.
 import { TUNING } from '../config.js';
 import { fmt } from './frame.js';
-import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES, stadKapasite, stadModel } from '../engines/facilities.js';
+import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES, stadKapasite, stadModel, antrenmanModel } from '../engines/facilities.js';
 import { sbShell } from './cockpit.js';
 import { MEGA, TESIS_BAKIM } from '../actions.js';
 import { bilet as ecoBilet } from '../engines/economy.js';
@@ -91,8 +91,8 @@ function sahne(f, lvl) {
   const S = SCENE[f]; return S ? S(dolu) : '';
 }
 
-// 3D VİTRİN — hangi tesisin SEVİYEYE göre 3D modeli var? (şimdilik yalnız stadyum; antrenman/ticari gelince eklenir)
-const FAC_3D = { stadyum: (lvl) => stadModel(lvl) };
+// 3D VİTRİN — hangi tesisin SEVİYEYE göre 3D modeli var? (stadyum + antrenman; ticari gelince eklenir)
+const FAC_3D = { stadyum: (lvl) => stadModel(lvl), antrenman: (lvl) => antrenmanModel(lvl) };
 // 3D vitrin paneli (1. sıra). Model varsa canlı iframe; yoksa mevcut SVG sahne + "3D yakında" etiketi.
 function panel3D(G, f) {
   const lvl = G.facilities[f], title = AD[f] || f, mk = FAC_3D[f];
@@ -113,13 +113,22 @@ function tender3DPanels(G, t) {
   const A = TUNING.ATTEND, kf = (lvl) => (lvl - A.KONFOR_NOTR) * A.KONFOR_SV * 100;
   const tr = (n) => n.toLocaleString('tr-TR');
   const statOf = (lvl, karsi) => {
-    if (t.tesis !== 'stadyum') return '';
-    const dk = karsi != null ? kap(lvl) - kap(karsi) : 0, dkon = karsi != null ? kf(lvl) - kf(karsi) : 0;
-    const artisKap = dk > 0 ? ` <span class="ihale-3d-artis">▲ +${tr(dk)}</span>` : '';
-    const artisKon = dkon > 0 ? ' <span class="ihale-3d-artis">▲</span>' : '';
-    const kilit = karsi != null && lvl >= 7 && karsi < 7 ? ' · <span class="ihale-3d-kilit">🔓 İsim hakkı geliri</span>'
-      : (karsi != null && lvl >= 10 && karsi < 10 ? ' · <span class="ihale-3d-kilit">🔓 MEGA kompleks</span>' : '');
-    return `<div class="ihale-3d-stat">🎟 Kapasite <b>${tr(kap(lvl))}</b> koltuk${artisKap} · Konfor <b>%${kf(lvl) >= 0 ? '+' : ''}${kf(lvl).toFixed(1)}</b>${artisKon}${kilit}</div>`;
+    if (t.tesis === 'stadyum') {
+      const dk = karsi != null ? kap(lvl) - kap(karsi) : 0, dkon = karsi != null ? kf(lvl) - kf(karsi) : 0;
+      const artisKap = dk > 0 ? ` <span class="ihale-3d-artis">▲ +${tr(dk)}</span>` : '';
+      const artisKon = dkon > 0 ? ' <span class="ihale-3d-artis">▲</span>' : '';
+      const kilit = karsi != null && lvl >= 7 && karsi < 7 ? ' · <span class="ihale-3d-kilit">🔓 İsim hakkı geliri</span>'
+        : (karsi != null && lvl >= 10 && karsi < 10 ? ' · <span class="ihale-3d-kilit">🔓 MEGA kompleks</span>' : '');
+      return `<div class="ihale-3d-stat">🎟 Kapasite <b>${tr(kap(lvl))}</b> koltuk${artisKap} · Konfor <b>%${kf(lvl) >= 0 ? '+' : ''}${kf(lvl).toFixed(1)}</b>${artisKon}${kilit}</div>`;
+    }
+    if (t.tesis === 'antrenman') {
+      const dev = (n) => n * TUNING.DEV_ANT_HAFTALIK, din = (n) => n * TUNING.FIT_ANT;
+      const artis = karsi != null && dev(lvl) > dev(karsi) ? ' <span class="ihale-3d-artis">▲</span>' : '';
+      const kilit = karsi != null && lvl >= TUNING.DEV_CAP_ELITE_ANT && karsi < TUNING.DEV_CAP_ELITE_ANT
+        ? ' · <span class="ihale-3d-kilit">🔓 Elit: gelişim tavanı +4</span>' : '';
+      return `<div class="ihale-3d-stat">🏃 Gelişim <b>+${dev(lvl).toFixed(1)}</b> puan/hafta${artis} · Dinlenme <b>+${din(lvl).toFixed(1)}</b> kond/maç${kilit}</div>`;
+    }
+    return '';
   };
   const panel = (lvl, cls, etiket, stat) => `<div class="ihale-3d">
     <div class="ihale-3d-bar"><span class="ihale-3d-durum ${cls}">${etiket}</span><b>Seviye ${lvl}</b></div>
