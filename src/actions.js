@@ -1991,14 +1991,20 @@ function gmMakeFile(G, budgetLeft) {
   const line = G.directive?.line || 'hazir';
   const base = Math.round(G.temelGuc);
   const wantStar = line === 'yildiz' || (G.promises || []).some((p) => p.id === 'P21' && p.kept === null && !G.term.starBought);
+  // GM PROJEKSİYON GÜCÜ: genç oyuncunun potansiyeli hattı bugünden kısmen güçlü sayılır —
+  // yoksa yıldız genç kaleci alınca bile GM aynı mevkiyi "en zayıf" görüp üstüne oyuncu önerir (bkz. kaleci geri dönüşü).
+  const gmGuc = (p) => {
+    const pot = p.potential || p.overall;
+    return (p.age < 24 && pot > p.overall) ? p.overall + (pot - p.overall) * TUNING.GM_POT_W : p.overall;
+  };
   const need = { GK: 1, DEF: 4, MID: 4, FWD: 2 }, la = {};
   for (const pos of ['GK', 'DEF', 'MID', 'FWD']) {
-    const b = G.squad.filter((x) => x.pos === pos).sort((a, c) => c.overall - a.overall).slice(0, need[pos]);
-    la[pos] = b.length ? b.reduce((s, x) => s + x.overall, 0) / b.length : 0;
+    const b = G.squad.filter((x) => x.pos === pos).sort((a, c) => gmGuc(c) - gmGuc(a)).slice(0, need[pos]);
+    la[pos] = b.length ? b.reduce((s, x) => s + gmGuc(x), 0) / b.length : 0;
   }
   const weakest = Object.entries(la).sort((a, b) => a[1] - b[1])[0][0];
-  // Y8: bağlam satırı — o mevkideki en iyimizle kıyas (aralıklı, yaşıyla)
-  const enIyi = G.squad.filter((x) => x.pos === weakest).sort((a, b) => b.overall - a.overall)[0];
+  // Y8: bağlam satırı — o mevkideki en iyimizle kıyas (projeksiyon gücüyle; genç yıldız burada "en iyi" çıkar)
+  const enIyi = G.squad.filter((x) => x.pos === weakest).sort((a, b) => gmGuc(b) - gmGuc(a))[0];
   const fogB = Math.max(1, Math.ceil((TUNING.FOG_BASE - G.facilities.scout) / 3));
   const baglam = enIyi ? ` Bu mevkideki en iyimiz: ${enIyi.name || '—'} (${enIyi.overall - fogB}-${enIyi.overall + fogB}), ${enIyi.age} yaşında.` : '';
   let ov, age, pos = weakest, gerekce;

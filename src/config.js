@@ -91,6 +91,9 @@ export const TUNING = {
   FAC_COST: { stadyum: 8, antrenman: 3.5, tibbi: 3, akademi: 3, scout: 2.5, ticari: 3 }, FAC_EXP: 1.5, // [kalibre: orta 3 sezonda 1 tesis +2 yapabilsin → P06/P08 tutulabilir]
   // — Sis/scout —
   FOG_BASE: 10, FOG_PER_SCOUT: 1,
+  // GM kadro analizinde genç oyuncunun POTANSİYELİ bugünden kısmen sayılır (zayıf hat + "en iyimiz" için).
+  // Yoksa yıldız genç kaleci alınca bile GM o mevkiyi "en zayıf" görüp üstüne oyuncu önerir. 0.5 = potansiyel farkının yarısı.
+  GM_POT_W: 0.5,
   // — Vaat & seçim —
   MAX_PROMISES: 3, HOPE_MULT: 4, HOPE_DECAY: 0.20, P02_MIN_BORC: 20, // borç<20 ise P02 seçilemez
   KEPT: { soz: 3, taraftar: 5, guven: 3 }, BROKEN: { soz: 5, taraftar: 6, guven: 4, rakip: 4 },
