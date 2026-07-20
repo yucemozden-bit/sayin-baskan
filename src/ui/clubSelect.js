@@ -66,7 +66,7 @@ export function render(G) {
     const scs = ((G.data.scenarios && G.data.scenarios.scenarios) || []);
     body = `<div class="sb-club-grid">${scs.map((sc) => `<button class="sb-club-card sb-club-senaryo" data-act="selectScenario" data-arg="${sc.id}" style="--tc:var(--neg)">
       <div class="sb-cc-strip"></div>
-      <div class="sb-cc-head"><span class="sb-cc-badge">${esc((sc.ad || 'D')[0])}</span><div class="sb-cc-title"><b>${esc(sc.ad)}</b><i>${ETIKET[sc.tier] || (sc.tier || '').toUpperCase()} · Ağır Dosya</i></div><span class="sb-cc-etiket" style="color:var(--neg)">DOSYA</span></div>
+      <div class="sb-cc-head"><span class="sb-cc-badge">${esc((sc.ad || 'D')[0])}</span><div class="sb-cc-title"><b>${esc(sc.ad)}</b><i>${ETIKET[sc.tier] || (sc.tier || '').toUpperCase()} · Ağır Senaryo</i></div><span class="sb-cc-etiket" style="color:var(--neg)">SENARYO</span></div>
       <p class="sb-cc-lore">${esc(sc.tanitim)}</p>
       <div class="sb-cc-hedef">◎ Hedef: <b>${esc(sc.hedef.metin)}</b></div>
     </button>`).join('')}</div>`;
@@ -113,7 +113,7 @@ export function render(G) {
       <div class="sb-gate-bar">${savedBar}${modBtns}</div>
       <div class="sb-gate-tabs">
         <button class="sb-tab ${tab === 'kulup' ? 'is-active' : ''}" data-act="selTab" data-arg="kulup">Kulüpler</button>
-        <button class="sb-tab ${tab === 'senaryo' ? 'is-active' : ''}" data-act="selTab" data-arg="senaryo">Dosyalar</button>
+        <button class="sb-tab ${tab === 'senaryo' ? 'is-active' : ''}" data-act="selTab" data-arg="senaryo">Senaryolar</button>
         <span class="sb-muted sb-gate-tabnote">${esc(MODES[mode].tanitim)}</span>
       </div>
       <div class="sb-gate-body">${body}</div>
