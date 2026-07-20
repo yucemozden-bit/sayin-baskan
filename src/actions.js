@@ -26,7 +26,7 @@ import { assignPersonalities, spreadMorale, hierarchy, katman } from './engines/
 import { computeSentiment } from './engines/social.js';
 import { generateCoaches, hireCoach, generateStaff, describeStaff, staffQualityWord, cfoNoiseRange, ROLE_TR, STAFF_TRAITS } from './models/staff.js';
 import { generateMarket, transferFee, saleOffer, canBuy, windowOpen } from './engines/transfer.js';
-import { canUpgrade, effectiveUpgradeCost, stadKapasite } from './engines/facilities.js';
+import { canUpgrade, effectiveUpgradeCost, stadKapasite, upgradeCost } from './engines/facilities.js';
 import { selectTag, makeHeadline, updateMediaTone, makeReport } from './engines/narrative.js';
 import { applyDemec } from './engines/press.js';
 import { rand, randint } from './core/rng.js';
@@ -155,6 +155,7 @@ export function selectClub(G, tier, identity = null, opts = {}) {
   if (G.data && G.data.names) G.coach.name = coachAdi(G.data.names, (G.club.name || tier) + tier);
   G.sponsorDeals = { gogus: null, naming: null, kol: null }; // imzalı sponsor slotları (forma/saha/kol)
   G.facilities = { ...c.fac };
+  G.club.ticariBaz = G.facilities.ticari; // ticari gelir çarpanı NÖTR referansı (başlangıç seviyesi = ×1.00)
   G.kimya = { kimya: 60, bigMatchExp: c.bigExp, kaptanVar: true };
   G.taktik = { uyumHafta: 12, rolUygunlugu: 1.0 };
   G.usedNames = {}; // v4.3: ad+soyad tekilliği (kadro + lig üretimi genelinde)
@@ -2926,21 +2927,31 @@ export function endSeason(G) {
       }
     }
   }
-  // TESİS YIPRANMASI (kullanıcı kuralı 2026-07-22): stadyum hariç, 3 sezondur dokunulmayan
-  // tesis 1 seviye düşer. Sayaç düşüşte sıfırlanır (3 sezon daha ihmal → yine düşer).
+  // TESİS YIPRANMASI (2026-07 YUMUŞATMA): stadyum hariç, BAKIM.SEZON sezondur dokunulmayan tesis.
+  // Eskiden hepsi AYNI sezon birden düşüyordu (nakit-fakir kulüpte 4 seviye şoku). Artık: sezonda
+  // EN İHMAL EDİLEN 1 tesis işlenir; NAKİT varsa küçük bakım ücreti ödenip seviye KORUNUR, batıksa
+  // 1 seviye düşer. Baskı sürer (perpetual ihmal ya ücret ya seviye yer) ama şok/oynanamazlık gider.
   {
     const ws = G.worldSeason ?? 1;
+    const B = TUNING.ECONOMY.BAKIM;
     G.tesisBakim = G.tesisBakim || {};
-    const yipranan = [];
-    for (const t of TESIS_BAKIM) {
-      if ((G.facilities[t] || 0) <= 0) { G.tesisBakim[t] = ws; continue; } // sv0'ın yıpranacağı yok — sayaç boşa işlemesin
-      if (ws - (G.tesisBakim[t] ?? ws) >= 3) {
-        G.facilities[t] -= 1;
-        G.tesisBakim[t] = ws;
-        yipranan.push(`${TESIS_TR[t]} Sv.${G.facilities[t] + 1} → ${G.facilities[t]}`);
+    for (const t of TESIS_BAKIM) if ((G.facilities[t] || 0) <= 0) G.tesisBakim[t] = ws; // sv0'ın yıpranacağı yok
+    const overdue = TESIS_BAKIM
+      .filter((t) => (G.facilities[t] || 0) > 0 && ws - (G.tesisBakim[t] ?? ws) >= B.SEZON)
+      .sort((a, b) => (G.tesisBakim[a] ?? ws) - (G.tesisBakim[b] ?? ws)); // en ihmal edilen önce
+    if (overdue.length) {
+      const t = overdue[0]; // STAGGER: sezonda yalnız 1 tesis işlenir → 4-birden-çökme yok
+      const ucret = Math.max(B.UCRET_MIN, Math.round(upgradeCost(t, G.facilities[t]) * B.UCRET_ORAN));
+      const kalan = overdue.length - 1;
+      const kalanNot = kalan > 0 ? ` Sırada ${kalan} tesis daha bakım bekliyor.` : '';
+      if (G.economy.kasa >= ucret) {
+        G.economy.kasa -= ucret; G.tesisBakim[t] = ws;
+        pushInbox(G, { cat: 'tesis', t: `${TESIS_TR[t]} bakımı yapıldı`, b: `Rutin bakım −${fmt1(ucret)}mn — Sv.${G.facilities[t]} korundu. (Yükseltme daha kalıcıdır.)${kalanNot}`, noQueue: true });
+      } else {
+        G.facilities[t] -= 1; G.tesisBakim[t] = ws;
+        pushInbox(G, { cat: 'tesis', t: `⚠ ${TESIS_TR[t]} yıprandı`, b: `Kasa bakıma yetmedi (${fmt1(ucret)}mn gerekti) — ${TESIS_TR[t]} Sv.${G.facilities[t] + 1} → ${G.facilities[t]}. Nakit toparlayınca yükselt.${kalanNot}`, noQueue: true });
       }
     }
-    if (yipranan.length) pushInbox(G, { cat: 'tesis', t: `⚠ Tesis yıpranması: ${yipranan.length} tesis seviye kaybetti`, b: `${yipranan.join(' · ')} — 3 sezondur çivi çakılmadı; beton da ekip de yaşlanır. Bakımın yolu yeni ihale.`, noQueue: true });
   }
   // Sezon sonu gelişim (Bible-9). Gençlik alımı D4 ile 17. haftaya (Genç Takım Günü sahnesi) taşındı.
   developSquad(G.squad, G.facilities);
@@ -4131,6 +4142,8 @@ export function migrateLoaded(G) {
   (G.loanedOut || []).forEach(canlandir);
   for (const m of G.inbox || []) if (m.file && m.file.player) canlandir(m.file.player);
   if (G.delayedFile && G.delayedFile.player) canlandir(G.delayedFile.player);
+  // Ticari gelir çarpanı: eski kayıtta ticariBaz yok → MEVCUT seviyeye eşitle (×1.00, retroaktif bozulma yok).
+  if (G.club && G.club.ticariBaz == null) G.club.ticariBaz = G.facilities?.ticari ?? TUNING.ECONOMY.TICARI.BAZ_DEFAULT;
   // stfile ONARIMI: adaylar eskiden global G.staffCands'te (tek role) tutuluyordu → çoklu açık dosyada
   // butonlar boş kalıp seçim yapılamıyordu. Her dosyanın adaylarını gövdeden geri kur (mesaja bağla).
   for (const m of G.inbox || []) {

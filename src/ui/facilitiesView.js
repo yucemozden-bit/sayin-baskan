@@ -33,12 +33,23 @@ function etkiSayilar(f, lvl, G) {
     return `<div class="tesis-etki-sayi">Kapasite <b>${kap}</b> koltuk · konfor etkisi doluluğa <b>%${kf(lvl) >= 0 ? '+' : ''}${kf(lvl).toFixed(1)}</b>${sonraki} · şu an doluluk <b data-tip="${dolulukTip}">%${Math.round(b.doluluk * 100)}</b>${kapali ? ' · <b class="pos">🎫 KAPALI GİŞE — kapasite yetmiyor, kompleksin vakti</b>' : ''}${lvl >= 7 ? '' : ` · Sv.7'de isim hakkı geliri açılır`}</div>`;
   }
   if (f === 'akademi') {
-    // GENÇLİK KADEMESİ (2026-07-22): seviyenin genç mahsulüne somut karşılığı — motorla tek kaynak
+    // GENÇLİK KADEMESİ (2026-07-22): seviyenin genç mahsulüne somut karşılığı — motorla tek kaynak.
+    // Tier-içi seviye potansiyel tavanını yükseltir (ara seviye ölü değil) — motorla aynı formül.
     const kdm = (n) => [...(TUNING.SQUADGEN.YOUTH_LADDER || [])].reverse().find((k) => n >= k.min);
-    const yaz = (k) => k ? `${k.n} genç · güç ${k.band[0]}-${k.band[1]}${k.super ? ' · ★ süperstar adayı' : ''}` : 'genç çıkmaz';
+    const potB = (n) => { const k = kdm(n); return k ? Math.max(0, n - k.min) * (TUNING.SQUADGEN.YOUTH_LEVEL_POT || 0) : 0; };
+    const yaz = (k, n) => k ? `${k.n} genç · güç ${k.band[0]}-${k.band[1]}${potB(n) ? ` · potansiyel +${potB(n)}` : ''}${k.super ? ' · ★ süperstar adayı' : ''}` : 'genç çıkmaz';
     const su = kdm(lvl), so = lvl < 10 ? kdm(lvl + 1) : null;
-    const sonraki = so && (!su || so.n !== su.n || so.band[0] !== su.band[0]) ? ` → <b class="pos">Sv.${lvl + 1}: ${yaz(so)}</b>` : '';
-    return `<div class="tesis-etki-sayi">Şimdi: yılda <b>${yaz(su)}</b>${sonraki}</div>`;
+    const artis = (so && (!su || so.n !== su.n || so.band[0] !== su.band[0])) || potB(lvl + 1) > potB(lvl);
+    const sonraki = lvl < 10 && artis ? ` → <b class="pos">Sv.${lvl + 1}: ${yaz(so, lvl + 1)}</b>` : '';
+    return `<div class="tesis-etki-sayi">Şimdi: yılda <b>${yaz(su, lvl)}</b>${sonraki}</div>`;
+  }
+  if (f === 'ticari') {
+    // TİCARİ GELİR KALDIRACI (2026-07): seviye sponsor/forma/üyelik gelirini çarpar — motorla aynı formül.
+    const Tc = TUNING.ECONOMY.TICARI || {};
+    const baz = G.club?.ticariBaz ?? Tc.BAZ_DEFAULT ?? 3;
+    const m = (n) => Math.max(Tc.LO ?? 0.8, Math.min(Tc.HI ?? 1.5, 1 + (n - baz) * (Tc.SLOPE ?? 0.05)));
+    const sonraki = lvl < 10 ? ` → <b class="pos">Sv.${lvl + 1}: ×${m(lvl + 1).toFixed(2)}</b>` : '';
+    return `<div class="tesis-etki-sayi">Ticari gelir çarpanı <b>×${m(lvl).toFixed(2)}</b> (başlangıç sv${baz} = ×1.00)${sonraki}</div>`;
   }
   if (f !== 'antrenman') return '';
   const dev = (n) => (n * TUNING.DEV_ANT_HAFTALIK).toFixed(1);
@@ -52,11 +63,17 @@ function etkiSayilar(f, lvl, G) {
 // ceza SESSİZ gelmez: 2. bakımsız sezondan itibaren sayaç burada görünür.
 function bakimUyari(G, f, lvl) {
   if (!TESIS_BAKIM.includes(f) || lvl <= 0) return '';
+  const B = TUNING.ECONOMY.BAKIM;
   const ws = G.worldSeason ?? 1;
   const n = ws - ((G.tesisBakim || {})[f] ?? ws);
-  if (n < 2) return '';
-  const kalan = 3 - n;
-  return `<div class="tesis-bakim-uyari" data-tip="Stadyum hariç tesisler 3 sezon dokunulmazsa 1 seviye yıpranır — bakımın yolu yeni ihale">⚠ ${n} sezondur bakımsız${kalan <= 0 ? ' — BU SEZON SONU SEVİYE DÜŞER' : ` — ${kalan} sezon sonra seviye düşer`}</div>`;
+  if (n < B.SEZON - 1) return '';
+  const ucret = Math.max(B.UCRET_MIN, Math.round(upgradeCost(f, lvl) * B.UCRET_ORAN));
+  const dolu = n >= B.SEZON, yeter = (G.economy.kasa ?? 0) >= ucret;
+  const tip = `Bakımsız tesis: her sezon EN ihmal edilen 1 tesis işlenir. Kasa yeterse ~${fmt(ucret)}mn bakım kesilir (seviye korunur); yetmezse 1 seviye düşer. Yükseltme sayacı tamamen sıfırlar.`;
+  const metin = dolu
+    ? (yeter ? `⚠ ${n} sezondur bakımsız — ~${fmt(ucret)}mn bakım kesilecek` : `⚠ ${n} sezondur bakımsız — kasa yetmezse seviye düşer`)
+    : `⚠ ${n} sezondur bakımsız — sonraki sezon bakım/yıpranma`;
+  return `<div class="tesis-bakim-uyari" data-tip="${tip}">${metin}</div>`;
 }
 
 const ETKI = {

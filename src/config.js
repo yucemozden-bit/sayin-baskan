@@ -135,6 +135,10 @@ export const TUNING = {
     ],
     YOUTH_POT_LUCK: [0, 16], YOUTH_SUPER_BAND: [74, 82], YOUTH_SUPER_POT: [86, 93],
     YOUTH_AGE_RANGE: [17, 19],
+    // TIER-İÇİ AKADEMİ ÖDÜLÜ (2026-07): ladder sayı/bandı kademeli — ara seviyeler (ör. sv3→4→5)
+    // aynı bandı verip ölü kalıyordu. Her tier-içi seviye gençlerin POTANSİYEL tavanını +bu kadar
+    // yükseltir (post-gen additive → RNG akışı/çekiliş sayısı DEĞİŞMEZ; güç aynı, ceiling artar).
+    YOUTH_LEVEL_POT: 2,
   },
 
   // — Takım gücü 3 katman (Bible-5) —
@@ -196,8 +200,17 @@ export const TUNING = {
     SPONSOR_REP_DIV: 150,      // sponsor geliri ×(1 + itibar/150)
     FORMA_K: 0.0000001, FORMA_SPORTIF_DIV: 200, // [kalibre]
     UYELIK_K: 0.0000001,       // [kalibre]
+    // TİCARİ OFİS geliri kaldıracı (2026-07): tesis seviyesi sponsor/forma/üyelik gelirini büyütür.
+    // BAŞLANGIÇ seviyesine göre NÖTR (club.ticariBaz) → mevcut denge birebir korunur; yükseltmek ödül.
+    // "sessiz ortak" — ikincil ama gerçek gelir kaldıracı (eskiden seviyesi hiçbir şey yapmıyordu).
+    TICARI: { SLOPE: 0.05, LO: 0.8, HI: 1.5, BAZ_DEFAULT: 3 },
     TEKNIK_MULT: 1.4,          // teknikEkip = coach.wage/52 × 1.4
-    BAKIM_K: 0.02,             // tesisBakim = Σsv × 0.02
+    BAKIM_K: 0.02,             // tesisBakim = Σsv × 0.02 (haftalık işletme gideri)
+    // TESİS YIPRANMASI YUMUŞATMASI (2026-07): eskiden 3 sezon dokunulmayan TÜM tesisler AYNI sezon
+    // birden düşüyordu → nakit-fakir kulüp (borç öderken) 4 seviye birden kaybediyordu (sıkıcı ceza).
+    // Artık: sezonda EN FAZLA 1 tesis işlenir; NAKİT varsa küçük bakım ücreti (upgrade×ORAN) ödenip
+    // seviye KORUNUR, gerçekten batıksa 1 seviye düşer. Baskı sürer ama şok/oynanamazlık gider.
+    BAKIM: { SEZON: 3, UCRET_ORAN: 0.2, UCRET_MIN: 2 },
     IDARI_BASE: 0.15, IDARI_FAN_K: 0.00000005,
     MALI_DEFICIT_MULT: 3,      // maliHedef: açık cezası ×3
     // BORÇSUZ KULÜP: borç sıfırlanınca mali disiplin uçar + o an diğer disiplinlere coşku dalgası

@@ -169,8 +169,9 @@ console.log('\n── SEZON SONU KADRO TAVANI (görünür fesih — 2026-07-22 b
   check('kaptan korundu', !kaptan || G.squad.some((p) => p.id === kaptan.id));
 }
 
-console.log('\n── TESİS YIPRANMASI (2026-07-22 kural kilidi: 3 sezon ihmal → −1 seviye, stadyum muaf) ──');
+console.log('\n── TESİS YIPRANMASI YUMUŞATMA (2026-07: sezonda 1 tesis; nakit varsa bakım ücreti, batıksa −1 seviye, stadyum muaf) ──');
 {
+  // (a) NAKİT VAR → bakım ücreti öder, seviye KORUNUR (4-birden-çökme şoku yok)
   const G = fresh(31);
   while ((G.hazirlik || 0) > 0) A.preSeasonWeek(G);
   G.facilities.akademi = 4; G.facilities.stadyum = 5; G.facilities.tibbi = 0;
@@ -179,13 +180,25 @@ console.log('\n── TESİS YIPRANMASI (2026-07-22 kural kilidi: 3 sezon ihmal 
   G.facilities.ticari = 0; // sv0 → yıpranacak şeyi yok
   const stad0 = G.facilities.stadyum, ant0 = G.facilities.antrenman;
   while (G.meta.week < G.SEASON_WEEKS && G.phase === 'SEASON_LOOP') { A.advanceWeek(G); G.pendingMatch = null; }
+  G.economy.kasa = 100; // bakım ücreti karşılanabilir
   A.endSeason(G);
-  check('3 sezon ihmal → akademi 1 seviye düştü', G.facilities.akademi === 3, `akademi ${G.facilities.akademi}`);
-  check('düşüş MEKTUPLA bildirildi', G.inbox.some((m) => (m.t || '').includes('Tesis yıpranması')));
+  check('nakit varsa: akademi seviye KORUNUR (bakım ödendi)', G.facilities.akademi === 4, `akademi ${G.facilities.akademi}`);
+  check('bakım MEKTUPLA bildirildi + ücret kesildi', G.inbox.some((m) => (m.t || '').includes('bakımı yapıldı')) && G.economy.kasa < 100);
   check('stadyum MUAF (hiç düşmez)', G.facilities.stadyum === stad0);
-  check('bakımlı tesis düşmez (antrenman sayacı taze)', G.facilities.antrenman === ant0);
+  check('bakımlı tesis dokunulmaz (antrenman sayacı taze)', G.facilities.antrenman === ant0);
   check('sv0 tesis negatife inmez', G.facilities.ticari === 0 && G.facilities.tibbi === 0, `ticari ${G.facilities.ticari} tibbi ${G.facilities.tibbi}`);
-  check('düşen tesisin sayacı sıfırlandı (art arda her sezon düşmez)', G.tesisBakim.akademi === (G.worldSeason ?? 1));
+  check('işlenen tesisin sayacı sıfırlandı (art arda her sezon işlenmez)', G.tesisBakim.akademi === (G.worldSeason ?? 1));
+  // (b) NAKİT YOK → 1 seviye DÜŞER (ceza gerçekten batıkken kalır)
+  const G2 = fresh(31);
+  while ((G2.hazirlik || 0) > 0) A.preSeasonWeek(G2);
+  G2.facilities.akademi = 4;
+  const ws2 = G2.worldSeason ?? 1;
+  G2.tesisBakim = { antrenman: ws2, tibbi: ws2, akademi: ws2 - 3, scout: ws2, ticari: ws2 };
+  while (G2.meta.week < G2.SEASON_WEEKS && G2.phase === 'SEASON_LOOP') { A.advanceWeek(G2); G2.pendingMatch = null; }
+  G2.economy.kasa = 0; // bakıma para yok
+  A.endSeason(G2);
+  check('nakit yoksa: akademi 1 seviye DÜŞER', G2.facilities.akademi === 3, `akademi ${G2.facilities.akademi}`);
+  check('düşüş MEKTUPLA bildirildi', G2.inbox.some((m) => (m.t || '').includes('yıprandı')));
 }
 
 console.log('\n── STADYUM KONFORU (2026-07-22 kural kilidi: seviye doluluğu yazar, kapasite MEGA işi) ──');

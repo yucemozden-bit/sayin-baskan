@@ -119,6 +119,9 @@ export function youthIntake(facilities, { rng = rand, names = null, used = null 
   const akademi = facilities.akademi || 0;
   const kademe = [...(G.YOUTH_LADDER || [])].reverse().find((k) => akademi >= k.min);
   if (!kademe) return [];
+  // TIER-İÇİ SEVİYE ÖDÜLÜ: aynı kademedeki üst seviyeler gençlerin potansiyel TAVANINI yükseltir
+  // (post-gen additive → rand çekilişleri/sırası değişmez; güç aynı, ceiling artar → ara seviye ölü kalmaz).
+  const potBonus = Math.max(0, akademi - kademe.min) * (G.YOUTH_LEVEL_POT || 0);
   const POS = ['GK', 'DEF', 'MID', 'FWD'];
   const youths = [];
   for (let i = 0; i < kademe.n; i++) {
@@ -130,7 +133,7 @@ export function youthIntake(facilities, { rng = rand, names = null, used = null 
     // "biri süperstar gibi ÇIKABİLİR" (garanti değil). Zarlar koşulsuz çekilir (sayı sabit).
     const superPot = sup ? randint(G.YOUTH_SUPER_POT[0], G.YOUTH_SUPER_POT[1]) : 0;
     const cevher = sup ? rand(0, 1) < 0.5 : false;
-    const potential = clamp(cevher ? Math.max(overall + potLuck, superPot) : overall + potLuck, overall, 95);
+    const potential = clamp((cevher ? Math.max(overall + potLuck, superPot) : overall + potLuck) + potBonus, overall, 95);
     const age = randint(G.YOUTH_AGE_RANGE[0], G.YOUTH_AGE_RANGE[1]);
     const y = new Player({
       id: 'y' + i, name: uniqueName(names, used, rng), pos: POS[randint(0, 3)],

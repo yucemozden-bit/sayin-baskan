@@ -1638,7 +1638,7 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
 .tesis-seviye { display: flex; gap: 5px; }
 .tesis-seviye .seg { flex: 1; height: 9px; border-radius: 4px; background: var(--bg-3); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .55); }
 .tesis-seviye .seg.dolu { background: linear-gradient(180deg, var(--club-2), var(--club)); box-shadow: 0 0 8px rgba(var(--club-rgb), .35), inset 0 1px 0 rgba(255, 255, 255, .35); }
-.tesis-etki { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+.tesis-etki { font-size: 12px; color: var(--ink-2); line-height: 1.42; flex: none; }
 .kad-td-ov { margin-right: .35em; flex: none; } /* TD güç rozeti — oyuncu rozet diliyle aynı */
 /* takım gücü kırılımı — en zayıf halka vurgusu (kokpit) */
 .cx-guc-kirilim { margin-top: 6px; font-size: 11px; color: var(--ink-3); }
@@ -1648,7 +1648,10 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
 .tesis-etki-sayi b { color: var(--club-2); font-variant-numeric: tabular-nums; }
 .tesis-etki-sayi b.pos { color: var(--pos); }
 /* Prosedürel sahne — kartın boş göbeğini "fotoğraf" gibi doldurur (seviyeye tepkili) */
-.tesis-sahne-wrap { flex: 1; min-height: 74px; margin: 8px -18px -2px; position: relative; overflow: hidden; border-top: 1px solid var(--line); }
+/* Dekoratif sahne: kalan boşluğu doldurur ama YER KALMAYINCA 0'a çöker → İHALE AÇ butonu asla
+   kartın dışına taşmaz (uzun etki metinlerinde bile). min-height 74→0 (buton önceliği). */
+.tesis-sahne-wrap { flex: 1 1 0; min-height: 0; margin: 8px -18px -2px; position: relative; overflow: hidden; border-top: 1px solid var(--line); }
+.tesis-alt { flex: none; }
 .tesis-sahne-wrap::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,21,34,.35) 0%, transparent 35%); pointer-events: none; }
 .tesis-sahne { width: 100%; height: 100%; display: block; }
 .tesis-alt { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }

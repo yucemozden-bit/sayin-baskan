@@ -48,24 +48,35 @@ export function sponsorSlotWeekly(state, slot) {
   if (slot === 'naming') return (state.facilities.stadyum >= E.NAMING_MIN_STAD ? base * E.SPONSOR_NAMING : 0) * mult;
   return 0;
 }
+// TİCARİ OFİS ÇARPANI: tesis seviyesi ticari geliri büyütür. BAŞLANGIÇ seviyesine (club.ticariBaz)
+// göre NÖTR → mevcut denge korunur, yükseltmek ödüllendirir (kartın "sponsor/forma geliri büyür" vaadi).
+export function ticariMult(state) {
+  const T = TUNING.ECONOMY.TICARI || {};
+  const lvl = state.facilities?.ticari ?? T.BAZ_DEFAULT ?? 3;
+  // ticariBaz yoksa (manuel kurulmuş durum) MEVCUT seviyeye düş → çarpan ×1.00 (nötr). Gerçek oyunda
+  // ticariBaz selectClub + migrateLoaded'da HEP set edilir → başlangıç seviyesine göre ödül işler.
+  const baz = state.club?.ticariBaz ?? lvl;
+  return clamp(1 + (lvl - baz) * (T.SLOPE ?? 0.05), T.LO ?? 0.8, T.HI ?? 1.5);
+}
+
 export function sponsor(state) {
   // İmzalı anlaşma varsa o slotun SABİT haftalık geliri (sözleşmede kilitli) kullanılır; yoksa baz gelir.
-  // Anlaşma yokken toplam = baz formülle birebir aynı (geriye uyum).
+  // Anlaşma yokken toplam = baz formülle birebir aynı (geriye uyum). Ticari ofis seviyesi çarpar.
   const d = state.sponsorDeals || {};
   let total = 0;
   for (const slot of ['gogus', 'kol', 'naming']) {
     total += (d[slot] && d[slot].weekly != null) ? d[slot].weekly : sponsorSlotWeekly(state, slot);
   }
-  return total;
+  return total * ticariMult(state);
 }
 
 export function forma(state) {
   const E = TUNING.ECONOMY;
-  return state.club.fanCount * E.FORMA_K * (1 + state.gauges.sportif / E.FORMA_SPORTIF_DIV);
+  return state.club.fanCount * E.FORMA_K * (1 + state.gauges.sportif / E.FORMA_SPORTIF_DIV) * ticariMult(state);
 }
 
 export function uyelik(state) {
-  return state.club.fanCount * TUNING.ECONOMY.UYELIK_K;
+  return state.club.fanCount * TUNING.ECONOMY.UYELIK_K * ticariMult(state);
 }
 
 // Haftalık toplam gelir. isHomeMatch değilse bilet 0; isSeasonWeek false ise (sezon dışı)

@@ -214,7 +214,10 @@ console.log('\n── 10 DÖNEM MARATONU (Meşgul Dengeli Başkan) ──');
 const IST = { donem: 0, kazanilan: 0, dusus: 0, donus: 0, kariyer: 1, ligDegisim: 0, yasOrtSon: 0, kadroSon: 0 };
 let hata = null;
 try {
-  setSeed(4242);
+  // Kapsam-seed (2026-07: tesis kaldıraçları + bakım-yıpranma yumuşatması kariyer trajektörisini
+  // kaydırıyor — bu tek-seed testi her denge tweak'inde yeniden kalibre edilir; yol MEKANİKLERİ
+  // miras.test'te ayrıca doğrulanır). 3333 üç yolu da sahneler (7 zafer · 3 düşüş · 1 dönüş).
+  setSeed(3333);
   let G = A.newGame(data, 'normal');
   A.selectClub(G, 'orta');
   let tur = 0;

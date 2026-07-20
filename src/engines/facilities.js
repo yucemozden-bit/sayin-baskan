@@ -1,14 +1,15 @@
 // src/engines/facilities.js — Tesisler (Bible-9)
-// Yükseltme maliyeti = baseCost × L^1.6. MVP: yükseltme anında biter (inşaat süresi
-// Bible-9 detayı, TAM katmana ertelendi). State mutasyonu actions.js'te.
+// Yükseltme maliyeti = baseCost × max(1,L)^FAC_EXP (FAC_EXP=1.5). MVP: yükseltme anında biter
+// (inşaat süresi Bible-9 detayı, TAM katmana ertelendi). State mutasyonu actions.js'te.
 
 import { TUNING } from '../config.js';
 
 export const FACILITIES = ['stadyum', 'antrenman', 'tibbi', 'akademi', 'scout', 'ticari'];
 
-// L → L+1 yükseltme maliyeti (mn) — Bible-9
+// L → L+1 yükseltme maliyeti (mn) — Bible-9. max(1,L): L0→1 de tam bedelli (0^1.5=0 bedava değil;
+// bakım yıpranmasıyla tesis 1→0'a düşse bile yeniden yükseltme istismarı olmasın).
 export function upgradeCost(tesis, level) {
-  return TUNING.FAC_COST[tesis] * Math.pow(level, TUNING.FAC_EXP);
+  return TUNING.FAC_COST[tesis] * Math.pow(Math.max(1, level), TUNING.FAC_EXP);
 }
 
 // Efektif indirim çarpanı (1 = indirim yok · 0.7 = %30 ucuz). İki kaynak birleşir:
