@@ -474,9 +474,9 @@ function sbAgenda(G, next, meRow, injured) {
   if ((G.lig || 1) === 2 && G.league) {
     const tb = standings(G.league);
     const ben = tb.findIndex((r) => r.id === 'ME') + 1;
-    const benP = tb.find((r) => r.id === 'ME')?.pts ?? 0;
-    const ucP = tb[2]?.pts ?? 0;
-    terfiSatir = `<div class="sb-terfi" data-tip="2. Lig tek hedef: ilk 3 = TERFİ. Çizgideki takım: ${esc(tb[2]?.name || '?')}">⬆ TERFİ YARIŞI · ${ben}. sıradasın · çizgiye ${ben <= 3 ? `<b class="pos">+${benP - (tb[3]?.pts ?? 0)} puan önde</b>` : `<b class="neg">${Math.max(0, ucP - benP)} puan</b>`}</div>`;
+    const benP = tb.find((r) => r.id === 'ME')?.Pts ?? 0;
+    const ucP = tb[2]?.Pts ?? 0;
+    terfiSatir = `<div class="sb-terfi" data-tip="2. Lig tek hedef: ilk 3 = TERFİ. Çizgideki takım: ${esc(tb[2]?.name || '?')}">⬆ TERFİ YARIŞI · ${ben}. sıradasın · çizgiye ${ben <= 3 ? `<b class="pos">+${benP - (tb[3]?.Pts ?? 0)} puan önde</b>` : `<b class="neg">${Math.max(0, ucP - benP)} puan</b>`}</div>`;
   }
   // 🎯 SIRADAKİ HEDEF (motivasyon): en yakın kilitli başarım hep gözde — tıkla → başarım duvarı
   let hedefSatir = '';

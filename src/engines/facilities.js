@@ -47,3 +47,10 @@ export function stadKapasite(state) {
   const sv = Math.max(0, Math.min(K.TABLO.length - 1, state.facilities?.stadyum ?? 0));
   return Math.round(K.TABLO[sv] * (state.megaStad ? K.MEGA : 1) / 100) * 100;
 }
+
+// STADYUM 3D: seviye → model dosya yolu (assets/stadiums/…html). İlk model 2 seviye (1-2 aynı stat).
+export function stadModel(lvl) {
+  const M = TUNING.STAD_3D, arr = M.BY_LVL;
+  const sv = Math.max(0, Math.min(arr.length - 1, lvl | 0));
+  return M.DIR + arr[sv] + '.html';
+}

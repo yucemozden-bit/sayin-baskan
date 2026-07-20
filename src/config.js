@@ -66,11 +66,20 @@ export const TUNING = {
   // dört çıpa tek eğriye sığmaz → AÇIK TABLO (aralar geometrik ara değer; ileride tek sayı oynanır).
   // MEGA kompleks ×1.2 (sv10'da 96.000). Kapasiteyi SEVİYE belirler; tier yalnız başlangıç seviyesi.
   STAD_KAP: { TABLO: [5000, 6700, 9000, 12700, 18000, 22500, 28000, 35000, 46100, 60700, 80000], MEGA: 1.2 },
+  // STADYUM 3D (2026-07-20): tesis panelinde seviyeye göre gerçek 3D stadyum (assets/stadiums/, gömülü three.js).
+  // Seviye 0..10 → 7 model (8 görsel kademe). İlk model 2 seviye kaplar (kullanıcı: "1-2 aynı stat").
+  // TEK DÜZENLEME NOKTASI: kademe eklemek/oynatmak için bu diziyi değiştir (dosya adı, uzantısız).
+  STAD_3D: { DIR: 'assets/stadiums/', BY_LVL: [
+    '1_mahalle_8000', '1_mahalle_8000', '2_ilce_13000', '3_modern_18000', '4_ulusal_30000',
+    '5_super_55000', '6_mega_75000', 'stadyum_90000_1', 'stadyum_90000_1', 'stadyum_90000_1', 'stadyum_90000_1',
+  ] },
   // KONFOR (kullanıcı tasarımı 2026-07-22: "stadyum kalitesi doluluğu etkilesin"): stadyum
   // seviyesi = konfor. Sv.5 nötr; her seviye doluluk ±%1.2 (sv0 −%6 köhne, sv10 +%6 modern).
   // Kapasite ayrı hikâye: tier + MEGA kompleks (×1.2) — kalite yüzdeyi, kompleks koltuğu büyütür.
   ATTEND: { base: 0.45, taraftarDiv: 200, sportifDiv: 300, priceSlope: 0.25, min: 0.30, KONFOR_SV: 0.012, KONFOR_NOTR: 5 },
   AUTO_DEBT_PENALTY: 0.03, INFLATION: [0.06, 0.14], RATE_DRIFT: [-0.03, 0.06],
+  RATE_MAX: 0.60,          // faiz tavanı: kasa<0 cezası sınırsız tırmanmasın (kurtarılabilir kriz)
+  RATE_SEASON_DECAY: 0.05, // sezon başı faiz tabana doğru geri çekilir (autoplay-nötr, rand YOK)
   FFP: { revenueMult: 0.85, appealRepMin: 60, appealChance: 0.4, appealBoost: 0.10 },
   // — Tesis —
   FAC_COST: { stadyum: 8, antrenman: 3.5, tibbi: 3, akademi: 3, scout: 2.5, ticari: 3 }, FAC_EXP: 1.5, // [kalibre: orta 3 sezonda 1 tesis +2 yapabilsin → P06/P08 tutulabilir]

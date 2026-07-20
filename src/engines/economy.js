@@ -130,7 +130,9 @@ export function applyEconomy(state, { isHomeMatch = false, isSeasonWeek = true, 
     autoBorrow = -state.economy.kasa;
     state.economy.borc += autoBorrow;
     state.economy.kasa = 0;
-    state.economy.faizOrani += TUNING.AUTO_DEBT_PENALTY;
+    // TAVAN (2026-07-20): ceza sınırsız tırmanmasın — geçici nakit sıkışması faizi kalıcı
+    // uçurmasın; "krizde ama kurtarılabilir" felsefesi. Sezon başı sönümleme (initSeason) tabana çeker.
+    state.economy.faizOrani = Math.min(TUNING.RATE_MAX, state.economy.faizOrani + TUNING.AUTO_DEBT_PENALTY);
     penalty = true;
   }
 

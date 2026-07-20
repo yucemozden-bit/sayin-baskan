@@ -6,7 +6,7 @@
 
 import { TUNING } from '../config.js';
 import { rand, randint } from '../core/rng.js';
-import { idealXI } from '../models/squad.js';
+import { availableXI } from '../models/squad.js';
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const random01 = () => rand(0, 1);
@@ -77,7 +77,7 @@ export function sigmoidResult(homeMG, awayMG, rng = random01) {
 export function postMatch(squad, res, facilities = {}, rng = random01) {
   const M = TUNING.MATCH, PL = TUNING.PLAYER;
   const tibbi = facilities.tibbi ?? TUNING.POWER.FAC_REF;
-  const xi = new Set(idealXI(squad));
+  const xi = new Set(availableXI(squad)); // "kim oynadı" = sahaya çıkan uygun 11 (sakat/cezalı hariç)
   const played = [];
 
   // 1) Kondisyon/form/moral (oynayanlar düşer, yedekler toparlanır)

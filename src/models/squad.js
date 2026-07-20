@@ -31,6 +31,14 @@ export function idealXI(squad, need = TUNING.POWER.IDEAL_XI) {
   return xi;
 }
 
+// Sahaya ÇIKAN 11 — sakat/cezalı/milli HARİÇ. postMatch "kim oynadı" bunu kullanmalı
+// (idealXI nominal kalır: uygunluk oranı hesabı için). Mevki dolamıyorsa daha az oyuncu döner.
+export function availableXI(squad, need = TUNING.POWER.IDEAL_XI) {
+  const xi = [];
+  for (const pos of POSITIONS) xi.push(...bestAtPosition(squad, pos, need[pos], true));
+  return xi;
+}
+
 // İlk 11 dışındaki en iyi n yedek (Bible-5.1 Derinlik: yedekOrt).
 export function benchBest(squad, n = TUNING.POWER.YEDEK_COUNT, xi = idealXI(squad)) {
   const inXI = new Set(xi);

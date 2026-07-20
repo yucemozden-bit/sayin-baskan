@@ -331,6 +331,10 @@ function initSeason(G, opts = {}) {
       b: yeni === 2 ? 'Fikstür değişti: rakipler daha zayıf ama yayın/sponsor/bilet geliri de küçüldü. Tek hedef var — terfi (ilk 3).' : 'Üst lig fikstürü döndü: rakipler güçlü, gelir masası yeniden kalın. Beklenti eski çıtasına çıktı.', noQueue: true });
   }
   G._ligChange = null;
+  // FAİZ SÖNÜMLEMESİ (2026-07-20): mali kriz faizi tavana ittiyse her sezon başı tabana doğru
+  // bir miktar geri çekilir → "kurtarılabilir kriz" (autoplay-nötr: rand YOK, salt aritmetik).
+  { const taban = G.cfg?.RATE_BASE ?? TUNING.RATE_BASE;
+    if (G.economy && G.economy.faizOrani > taban) G.economy.faizOrani = Math.max(taban, G.economy.faizOrani - TUNING.RATE_SEASON_DECAY); }
   // D1: Canlı lig — sezon başı AI başkan kararları (ilk sezonda drift yok; merdiven kalibre)
   if ((G.worldSeason = (G.worldSeason ?? 0) + 1) > 1) {
     // LİG DE GELİŞİR (2026-07-21, gelişim-27 karşı ağırlığı): rakip kadrolar da her sezon olgunlaşır —
@@ -1000,7 +1004,8 @@ function finishWeekTail(G, lateMove) {
     G.cup.round++;
     if (cres.result === 'L' || (cres.result === 'D' && rand(0, 1) < 0.5)) {
       G.cup.alive = false;
-      pushInbox(G, { cat: 'mac', t: `Kupadan elendik (${G.cup.round}. tur)`, b: `${cres.gH}-${cres.gA + 1} — kupa macerası bitti; lig yoğunluğu hafifledi.` });
+      const eSkor = cres.result === 'D' ? `${cres.gH}-${cres.gA} (pen.)` : `${cres.gH}-${cres.gA}`;
+      pushInbox(G, { cat: 'mac', t: `Kupadan elendik (${G.cup.round}. tur)`, b: `${eSkor} — kupa macerası bitti; lig yoğunluğu hafifledi.` });
     } else if (G.cup.round >= CAL.CUP_WEEKS.length) {
       G.cup.alive = false; G.cup.won = true;
       G.gauges.itibar = clamp(G.gauges.itibar + 8, 0, 100); G.gauges.taraftar = clamp(G.gauges.taraftar + 10, 0, 100);
@@ -2573,8 +2578,12 @@ const pickFrom = (arr) => arr[Math.floor(rand(0, 1) * arr.length)];
 export function upgradeFacility(G, tesis) {
   if (G.tender) return { ok: false, why: 'İhale zaten sürüyor' };
   if (G.santiye) return { ok: false, why: `Şantiye sürüyor: ${G.santiye.tesis} (${G.santiye.kalan} hafta kaldı)` }; // tek şantiye kuralı
-  if (!canUpgrade(G, tesis)) return { ok: false };
+  if (!(tesis in G.facilities)) return { ok: false };                                   // geçersiz tesis (fuzz koruması)
+  if (G.facilities[tesis] >= TUNING.TRANSFER.FAC_MAX) return { ok: false, why: 'Maksimum seviye' };
+  if (G.flags && G.flags.budgetLock > 0) return { ok: false }; // yalnız bütçe kilidi engeller
+  // KASA yetmese bile ihale AÇILIR: kullanıcı sonraki seviyeyi/teklifleri önizlesin; firma seçimi kasa yeterse (teklif butonu kilitli).
   const base = effectiveUpgradeCost(G, tesis); // B4a senaryo + K1 olay indirimi (facilities.js tek kaynak)
+  if (!Number.isFinite(base) || base <= 0) return { ok: false };                        // NaN/geçersiz maliyet — ihale açma (kaos/uc fuzz koruması)
   const F = G.data.firms || { A: ['Yerel Müteahhit'], B: ['Prestij Yapı'], C: ['Tanıdık Firma'] };
   const T = TUNING.TENDER;
   G.tender = {
@@ -2806,7 +2815,7 @@ export function endSeason(G) {
     const star = [...G.squad].sort((a, b) => b.overall - a.overall)[0];
     if (star && star.overall >= L.STAR_EXODUS_MIN) {
       G.squad = G.squad.filter((p) => p !== star);
-      const fee = Math.max(1, Math.round((star.value || star.overall * 0.8) * L.STAR_EXODUS_FEE));
+      const fee = Math.max(1, Math.round((star.marketValue || star.overall * 0.8) * L.STAR_EXODUS_FEE));
       G.economy.kasa += fee; G.sezonSatis = (G.sezonSatis || 0) + fee;
       pushInbox(G, { cat: 'transfer', t: `${star.name} küme sonrası ayrıldı`, b: `Üst lig kulübü ${fmt1(fee)}mn ödedi — yıldız 2. ligde kalmadı. Kasaya nakit girdi ama kadro zayıfladı.`, noQueue: true });
       anKarti(G, { t: 'Yıldız göçü', b: `${star.name} küme düşünce takımdan ayrıldı.`, etki: -5 });

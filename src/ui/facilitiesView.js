@@ -3,7 +3,7 @@
 // Kaydırma yok — 6 tesis viewport'u doldurur.
 import { TUNING } from '../config.js';
 import { fmt } from './frame.js';
-import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES, stadKapasite } from '../engines/facilities.js';
+import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES, stadKapasite, stadModel } from '../engines/facilities.js';
 import { sbShell } from './cockpit.js';
 import { MEGA, TESIS_BAKIM } from '../actions.js';
 import { bilet as ecoBilet } from '../engines/economy.js';
@@ -90,6 +90,62 @@ function sahne(f, lvl) {
   const dolu = Math.max(0, Math.min(10, lvl)) / 10;         // 0..1 gelişmişlik
   const S = SCENE[f]; return S ? S(dolu) : '';
 }
+
+// 3D VİTRİN — hangi tesisin SEVİYEYE göre 3D modeli var? (şimdilik yalnız stadyum; antrenman/ticari gelince eklenir)
+const FAC_3D = { stadyum: (lvl) => stadModel(lvl) };
+// 3D vitrin paneli (1. sıra). Model varsa canlı iframe; yoksa mevcut SVG sahne + "3D yakında" etiketi.
+function panel3D(G, f) {
+  const lvl = G.facilities[f], title = AD[f] || f, mk = FAC_3D[f];
+  if (mk) return `<div class="tesis-3dhero">
+    <iframe class="tesis-3d" src="${mk(lvl)}" title="${title} 3D" loading="lazy" scrolling="no"></iframe>
+    <button class="tesis-3d-detay" data-act="tesis3d" data-arg="${f}|${lvl}" data-tip="Tam ekran 3D — döndür, yakınlaş">⛶ Detay</button>
+  </div>`;
+  return `<div class="tesis-3dhero ph">${sahne(f, lvl)}<span class="tesis-3dph-tag">${IKON[f] || ''} ${title} · 3D yakında</span></div>`;
+}
+
+// İHALE 3D — güncel (sol) + bir sonraki seviye (sağ) before/after; kapasite+konfor+avantaj karşılaştırması (motive et)
+function tender3DPanels(G, t) {
+  const mk = FAC_3D[t.tesis];
+  if (!mk) return '';
+  const cur = G.facilities[t.tesis], nxt = Math.min(10, cur + 1), ad = AD[t.tesis] || t.tesis;
+  // stadyum kapasite/konfor karşılaştırması (motor tek kaynak: stadKapasite + TUNING.ATTEND)
+  const kap = (lvl) => stadKapasite({ ...G, facilities: { ...G.facilities, stadyum: lvl } });
+  const A = TUNING.ATTEND, kf = (lvl) => (lvl - A.KONFOR_NOTR) * A.KONFOR_SV * 100;
+  const tr = (n) => n.toLocaleString('tr-TR');
+  const statOf = (lvl, karsi) => {
+    if (t.tesis !== 'stadyum') return '';
+    const dk = karsi != null ? kap(lvl) - kap(karsi) : 0, dkon = karsi != null ? kf(lvl) - kf(karsi) : 0;
+    const artisKap = dk > 0 ? ` <span class="ihale-3d-artis">▲ +${tr(dk)}</span>` : '';
+    const artisKon = dkon > 0 ? ' <span class="ihale-3d-artis">▲</span>' : '';
+    const kilit = karsi != null && lvl >= 7 && karsi < 7 ? ' · <span class="ihale-3d-kilit">🔓 İsim hakkı geliri</span>'
+      : (karsi != null && lvl >= 10 && karsi < 10 ? ' · <span class="ihale-3d-kilit">🔓 MEGA kompleks</span>' : '');
+    return `<div class="ihale-3d-stat">🎟 Kapasite <b>${tr(kap(lvl))}</b> koltuk${artisKap} · Konfor <b>%${kf(lvl) >= 0 ? '+' : ''}${kf(lvl).toFixed(1)}</b>${artisKon}${kilit}</div>`;
+  };
+  const panel = (lvl, cls, etiket, stat) => `<div class="ihale-3d">
+    <div class="ihale-3d-bar"><span class="ihale-3d-durum ${cls}">${etiket}</span><b>Seviye ${lvl}</b></div>
+    <div class="tesis-3dhero">
+      <iframe class="tesis-3d" src="${mk(lvl)}" title="${ad} Sv.${lvl}" loading="lazy" scrolling="no"></iframe>
+      <button class="tesis-3d-detay" data-act="tesis3d" data-arg="${t.tesis}|${lvl}" data-tip="Tam ekran 3D">⛶ Detay</button>
+    </div>
+    ${stat}
+  </div>`;
+  return `<div class="ihale-3d-row">${panel(cur, 'suan', 'ŞU AN', statOf(cur, null))}<div class="ihale-3d-ok">→</div>${panel(nxt, 'yeni', 'YÜKSELTME', statOf(nxt, cur))}</div>`;
+}
+
+// TAM EKRAN 3D — detay butonuyla açılan modal (G._tesis3d = "tesis|seviye" veya "tesis"). main.js render'ında basılır.
+export function renderTesis3D(G) {
+  const [f, lvlStr] = String(G._tesis3d).split('|');
+  const mk = FAC_3D[f];
+  if (!mk) return '';
+  const lvl = lvlStr != null && lvlStr !== '' ? +lvlStr : G.facilities[f];
+  const title = AD[f] || f;
+  return `<div class="tesis3d-overlay" data-act="tesis3dClose">
+    <div class="tesis3d-box">
+      <iframe class="tesis3d-frame" src="${mk(lvl)}" title="${title} Sv.${lvl}" scrolling="no"></iframe>
+      <button class="tesis3d-kapat" data-act="tesis3dClose" data-tip="Kapat (ESC)">✕</button>
+    </div>
+  </div>`;
+}
 const SCENE = {
   stadyum: (d) => `<svg class="tesis-sahne" viewBox="0 0 320 132" preserveAspectRatio="xMidYMax slice">
     <defs><radialGradient id="st-p" cx="50%" cy="130%" r="90%"><stop offset="0" stop-color="rgba(63,191,127,.4)"/><stop offset="1" stop-color="rgba(63,191,127,.03)"/></radialGradient>
@@ -166,7 +222,8 @@ export function render(G) {
       <div class="ihale-desc">${o.desc}</div>
       <button class="cx-btn ${o.type === 'B' ? 'on' : ''}" data-act="tender" data-arg="${i}" ${G.economy.kasa < o.cost ? 'disabled' : ''}>${G.economy.kasa < o.cost ? 'Kasa yetmiyor' : 'Bu firmayı seç'}</button>
     </div>`).join('');
-    const ihaleBody = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden;justify-content:center">
+    const ihaleBody = `<div class="ihale-root">
+      ${tender3DPanels(G, t)}
       <div class="ihale-grid">${offers}</div>
       <div class="btnrow" style="justify-content:center"><button class="cx-btn" data-act="tenderCancel">İhaleden vazgeç</button></div>
     </div>`;
@@ -176,12 +233,14 @@ export function render(G) {
 
   // ── KAMPÜS PANOSU: 6 tesis, tam ekran ── (şantiye sürerken o tesiste ilerleme, diğerlerinde kilit)
   const sInsa = G.santiye;
-  const cards = FACILITIES.map((f) => {
+  const makeCard = (f, withScene) => {
     const lvl = G.facilities[f];
     const disc = facilityDiscountMult(G, f);
     const cost = effectiveUpgradeCost(G, f);
-    const ok = canUpgrade(G, f) && !sInsa;
     const maks = lvl >= 10;
+    const budgetLock = !!(G.flags && G.flags.budgetLock > 0);
+    const acilabilir = !maks && !sInsa && !budgetLock; // ihale AÇILABİLİR mi (KASA hariç) — kasa yetmese de 3D/teklif önizlensin
+    const paraVar = G.economy.kasa >= cost;            // firma seçimi ancak kasa yeterse
     const buradaSantiye = sInsa && sInsa.tesis === f;
     const segs = Array.from({ length: 10 }, (_, i) => `<span class="seg ${i < lvl ? 'dolu' : ''}${buradaSantiye && i === lvl ? ' insaat' : ''}"></span>`).join('');
     const indirim = disc < 0.999
@@ -192,11 +251,11 @@ export function render(G) {
           <span>🏗 ŞANTİYE · ${gecen}/${sInsa.toplam} hafta</span>
           <span class="tesis-santiye-bar"><i style="width:${Math.round(gecen / sInsa.toplam * 100)}%"></i></span>
         </div>`
-      : `<button class="cx-btn tesis-btn ${ok ? '' : 'kilit'}" data-act="upgrade" data-arg="${f}" ${ok ? '' : 'disabled'}
-          data-tip="${maks ? 'Maksimum seviye' : sInsa ? `Şantiye sürüyor (${AD[sInsa.tesis] || sInsa.tesis}) — aynı anda tek inşaat` : ok ? 'İhale aç — 3 firma süre ve fiyatla teklif getirir' : 'Kasa yetersiz'}">
+      : `<button class="cx-btn tesis-btn ${!acilabilir ? 'kilit' : paraVar ? '' : 'onizle'}" data-act="upgrade" data-arg="${f}" ${acilabilir ? '' : 'disabled'}
+          data-tip="${maks ? 'Maksimum seviye' : sInsa ? `Şantiye sürüyor (${AD[sInsa.tesis] || sInsa.tesis}) — aynı anda tek inşaat` : budgetLock ? 'Bütçe kilidi aktif' : paraVar ? 'İhale aç — 3 firma süre ve fiyatla teklif getirir' : 'Kasa yetmiyor — yine de aç: sonraki seviyeyi ve teklifleri gör (firma seçilemez)'}">
           ${maks ? 'TAMAMLANDI' : `İHALE AÇ · ~${fmt(cost)}mn`}
         </button>`;
-    return `<div class="tesis-kart ${buradaSantiye ? 'insaatta' : ''}">
+    return `<div class="tesis-kart ${buradaSantiye ? 'insaatta' : ''}${withScene ? '' : ' sahnesiz'}">
       <div class="tesis-kart-ust">
         <span class="tesis-ikon">${IKON[f] || ''}</span>
         <div class="tesis-ad"><b>${AD[f] || f}</b><i>SEVİYE ${lvl}/10${buradaSantiye ? ' · 🏗' : ''}</i></div>
@@ -204,13 +263,19 @@ export function render(G) {
       </div>
       <div class="tesis-seviye">${segs}</div>
       <div class="tesis-etki">${ETKI[f]}${etkiSayilar(f, lvl, G)}${bakimUyari(G, f, lvl)}</div>
-      <div class="tesis-sahne-wrap">${sahne(f, lvl)}</div>
+      ${withScene ? `<div class="tesis-sahne-wrap">${sahne(f, lvl)}</div>` : ''}
       <div class="tesis-alt">
         ${indirim}
         ${altBtn}
       </div>
     </div>`;
-  }).join('');
+  };
+  // 3 SIRA YERLEŞİM (kullanıcı 2026-07-20): 1) 3D vitrin (stadyum·antrenman·ticari)
+  // 2) o üçünün yönetim kartları (3D üstte olduğundan sahnesiz) 3) kalan üç tesis (SVG sahneli).
+  const HAS3D = ['stadyum', 'antrenman', 'ticari'];
+  const NO3D = ['tibbi', 'akademi', 'scout'];
+  const heroRow = HAS3D.map((f) => panel3D(G, f)).join('');
+  const cards = HAS3D.map((f) => makeCard(f, false)).join('') + NO3D.map((f) => makeCard(f, true)).join('');
   // KADIN TAKIMI ŞUBESİ — "Kadın Takımını Kuracağım" sözünün gerçek mekaniği
   const kt = G.womensTeam && G.womensTeam.active;
   const kadinSerit = `<div class="tesis-kadin ${kt ? 'aktif' : ''}">
@@ -235,8 +300,8 @@ export function render(G) {
   </div>`;
   const ortLvl = FACILITIES.reduce((a, f) => a + (G.facilities[f] || 0), 0) / FACILITIES.length;
   const altyapi = ortLvl < 3.5 ? 'DÜŞÜK' : ortLvl < 6.5 ? 'ORTA' : 'YÜKSEK';
-  const body = `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:.7em;overflow:hidden">
-    <div class="tesis-grid">${cards}</div>
+  const body = `<div class="tesis-root">
+    <div class="tesis-grid tri">${heroRow}${cards}</div>
     ${megaSerit}
     ${kadinSerit}
   </div>`;

@@ -257,6 +257,7 @@ function render() {
   if (G._pcard) html += playerCard.render(G);
   if (G._spCard) html += finance.renderSponsorCard(G); // sponsor detay kartı (modal)
   if (G._achModal) html += clubView.renderAchModal(G); // başarım duvarı (kulüp ekranından "Tümünü Gör")
+  if (G._tesis3d) html += facilitiesView.renderTesis3D(G); // tam ekran 3D tesis vitrini (detay butonu)
   app.innerHTML = html;
   document.body.classList.toggle('kontrast', !!G.uiKontrast); // Ayarlar → Yüksek Kontrast
   fitVaat(); // KAYDIRMASIZ GARANTİ: sahne ekrandan uzunsa orantılı küçült — asla taşmaz
@@ -328,7 +329,7 @@ function fitVaat() {
 // fitVaat ile aynı teknikle orantılı küçültülür — kırpılma/taşma yok. GENEL LİSTE (taşma
 // taraması dersi): yoğun sezonda kongre/kulüp kartları da taşabiliyordu — kök buraya eklenir.
 // ŞART: kökün İÇİNDE overflow:hidden ara katman olmamalı (yoksa scrollHeight ihtiyacı ölçemez).
-const SB_FIT_ROOTS = ['.fin-root', '.kng-root', '.klub-root', '.sn-fit'];
+const SB_FIT_ROOTS = ['.fin-root', '.kng-root', '.klub-root', '.sn-fit', '.tesis-root', '.ihale-root'];
 function fitSb() {
   for (const sel of SB_FIT_ROOTS) {
     const el = app.querySelector(sel);
@@ -609,6 +610,8 @@ function dispatch(act, arg) {
     case 'fullscreen': { const p = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); if (p && p.catch) p.catch(() => {}); break; }
     case 'pcard': G._pcard = arg; break;                                                       // oyuncu kartını aç
     case 'pcardClose': G._pcard = null; break;
+    case 'tesis3d': G._tesis3d = arg; break;                                                   // tam ekran 3D tesis vitrini aç
+    case 'tesis3dClose': G._tesis3d = null; break;
     case 'kiralikListe': A.toggleKiralikListe(G, arg); break;                                  // kiralık listesine koy/çek
     case 'renewContract': A.renewContract(G, arg); break;                                       // oyuncu kartı: sözleşme yenile
     case 'noop': break;                                                                        // kart içi boş tık (kapatmasın)
@@ -1013,7 +1016,8 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (e.key !== 'Escape') return;
-  if (G._pcard) { G._pcard = null; render(); }
+  if (G._tesis3d) { G._tesis3d = null; render(); }
+  else if (G._pcard) { G._pcard = null; render(); }
   else if (G._achModal) { G._achModal = false; render(); }
 });
 eventBus.on('TICK_END', () => {}); // ui eventBus dinler (ileride canlı widget'lar buraya bağlanacak)
