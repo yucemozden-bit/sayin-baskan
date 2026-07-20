@@ -3,9 +3,10 @@
 // Kaydırma yok — 6 tesis viewport'u doldurur.
 import { TUNING } from '../config.js';
 import { fmt } from './frame.js';
-import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES } from '../engines/facilities.js';
+import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES, stadKapasite } from '../engines/facilities.js';
 import { sbShell } from './cockpit.js';
-import { MEGA } from '../actions.js';
+import { MEGA, TESIS_BAKIM } from '../actions.js';
+import { bilet as ecoBilet } from '../engines/economy.js';
 
 const AD = {
   stadyum: 'Stadyum', antrenman: 'Antrenman Tesisi', tibbi: 'Tıbbi Merkez',
@@ -13,7 +14,32 @@ const AD = {
 };
 // Seviyenin SOMUT karşılığı (kullanıcı isteği: "faydası gözle görülür olsun") — motorla aynı
 // katsayılardan (TUNING) canlı hesaplanır; yükseltmenin ne kazandıracağı ok ile gösterilir.
-function etkiSayilar(f, lvl) {
+function etkiSayilar(f, lvl, G) {
+  if (f === 'stadyum') {
+    // STADYUM KURGU (kullanıcı 2026-07-22): kapasite + konfor GÖRÜNÜR olsun — ne neden artıyor bilinsin.
+    // Kalite (seviye) doluluk YÜZDESİNİ yazar; kapasiteyi MEGA kompleks büyütür. Motorla tek kaynak.
+    const A = TUNING.ATTEND;
+    const kf = (n) => ((n - A.KONFOR_NOTR) * A.KONFOR_SV * 100);
+    const b = ecoBilet(G);
+    const kap = stadKapasite(G).toLocaleString('tr-TR');
+    const kapSonra = stadKapasite({ ...G, facilities: { ...G.facilities, stadyum: lvl + 1 } }).toLocaleString('tr-TR');
+    const kapali = b.doluluk >= 0.97;
+    const sonraki = lvl < 10 ? ` → <b class="pos">Sv.${lvl + 1}: ${kapSonra} koltuk · konfor %${kf(lvl + 1) >= 0 ? '+' : ''}${kf(lvl + 1).toFixed(1)}</b>` : '';
+    // DOLULUK KIRILIMI (kullanıcı sorusu 2026-07-22 "sonuçlar da etkili değil mi"): karışım görünür —
+    // motorla aynı formülden (economy.bilet) canlı hesap
+    const yp = (x) => `${x >= 0 ? '+' : '−'}%${Math.abs(x).toFixed(1)}`;
+    const statB = G.staff?.stat ? G.staff.stat.skill / TUNING.STAFF.STAT_DOLULUK_DIV * 100 : 0;
+    const dolulukTip = `Doluluk karışımı: taban %${Math.round(A.base * 100)} · taraftar ${yp(G.gauges.taraftar / A.taraftarDiv * 100)} · SONUÇLAR ${yp(G.gauges.sportif / A.sportifDiv * 100)} · bilet fiyatı ${yp(-(G.economy.ticketPrice - 1) * A.priceSlope * 100)} · konfor ${yp(kf(lvl))}${statB ? ` · stat müdürü ${yp(statB)}` : ''} — kazandıkça tribün dolar, galibiyet taraftarı da coşturur (çifte etki).`;
+    return `<div class="tesis-etki-sayi">Kapasite <b>${kap}</b> koltuk · konfor etkisi doluluğa <b>%${kf(lvl) >= 0 ? '+' : ''}${kf(lvl).toFixed(1)}</b>${sonraki} · şu an doluluk <b data-tip="${dolulukTip}">%${Math.round(b.doluluk * 100)}</b>${kapali ? ' · <b class="pos">🎫 KAPALI GİŞE — kapasite yetmiyor, kompleksin vakti</b>' : ''}${lvl >= 7 ? '' : ` · Sv.7'de isim hakkı geliri açılır`}</div>`;
+  }
+  if (f === 'akademi') {
+    // GENÇLİK KADEMESİ (2026-07-22): seviyenin genç mahsulüne somut karşılığı — motorla tek kaynak
+    const kdm = (n) => [...(TUNING.SQUADGEN.YOUTH_LADDER || [])].reverse().find((k) => n >= k.min);
+    const yaz = (k) => k ? `${k.n} genç · güç ${k.band[0]}-${k.band[1]}${k.super ? ' · ★ süperstar adayı' : ''}` : 'genç çıkmaz';
+    const su = kdm(lvl), so = lvl < 10 ? kdm(lvl + 1) : null;
+    const sonraki = so && (!su || so.n !== su.n || so.band[0] !== su.band[0]) ? ` → <b class="pos">Sv.${lvl + 1}: ${yaz(so)}</b>` : '';
+    return `<div class="tesis-etki-sayi">Şimdi: yılda <b>${yaz(su)}</b>${sonraki}</div>`;
+  }
   if (f !== 'antrenman') return '';
   const dev = (n) => (n * TUNING.DEV_ANT_HAFTALIK).toFixed(1);
   const din = (n) => (n * TUNING.FIT_ANT).toFixed(1);
@@ -22,8 +48,19 @@ function etkiSayilar(f, lvl) {
   return `<div class="tesis-etki-sayi">Şimdi: genç gelişimi <b>+${dev(lvl)} puan/hafta</b> · dinlenme <b>+${din(lvl)} kond/maç</b>${sonraki}${elit ? ' · <b class="pos">ELİT: sezon içi gelişim tavanı +4</b>' : lvl >= 6 ? ` · Sv.${TUNING.DEV_CAP_ELITE_ANT}'de tavan +4` : ''}</div>`;
 }
 
+// TESİS BAKIMI UYARISI (2026-07-22): stadyum hariç 3 sezon dokunulmayan tesis yıpranır —
+// ceza SESSİZ gelmez: 2. bakımsız sezondan itibaren sayaç burada görünür.
+function bakimUyari(G, f, lvl) {
+  if (!TESIS_BAKIM.includes(f) || lvl <= 0) return '';
+  const ws = G.worldSeason ?? 1;
+  const n = ws - ((G.tesisBakim || {})[f] ?? ws);
+  if (n < 2) return '';
+  const kalan = 3 - n;
+  return `<div class="tesis-bakim-uyari" data-tip="Stadyum hariç tesisler 3 sezon dokunulmazsa 1 seviye yıpranır — bakımın yolu yeni ihale">⚠ ${n} sezondur bakımsız${kalan <= 0 ? ' — BU SEZON SONU SEVİYE DÜŞER' : ` — ${kalan} sezon sonra seviye düşer`}</div>`;
+}
+
 const ETKI = {
-  stadyum: 'Ev avantajı, kapasite ve isim hakkı geliri (sv≥7). Tribün büyüdükçe şehir arkanda.',
+  stadyum: 'Konfor tribünü doldurur: her seviye doluluk yüzdesi + ev avantajı yazar; sv≥7 isim hakkı. Koltuk sayısını ancak KOMPLEKS büyütür.',
   antrenman: 'Oyuncular hızlı gelişir, kondisyon çabuk toparlar. Formun mutfağı.',
   tibbi: 'Sakatlıklar kısalır, riski düşer. Revir boş kalır, kadro sahada kalır.',
   akademi: 'Genç üretimi ve altyapı gücü. Vitrinin de vaatlerin de kaynağı.',
@@ -149,7 +186,7 @@ export function render(G) {
         <span class="tesis-lvl led">${lvl}</span>
       </div>
       <div class="tesis-seviye">${segs}</div>
-      <div class="tesis-etki">${ETKI[f]}${etkiSayilar(f, lvl)}</div>
+      <div class="tesis-etki">${ETKI[f]}${etkiSayilar(f, lvl, G)}${bakimUyari(G, f, lvl)}</div>
       <div class="tesis-sahne-wrap">${sahne(f, lvl)}</div>
       <div class="tesis-alt">
         ${indirim}

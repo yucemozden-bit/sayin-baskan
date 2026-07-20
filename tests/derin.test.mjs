@@ -149,6 +149,10 @@ function kaosWeek(G, seedTag) {
   if (!G.expansion && G.gauges.itibar >= 60 && G.economy.kasa > 45 && zar(wk + '|yo', 8) === 0) { if (A.yurtdisiOfisAc(G)) COV.yurtOfis++; }
   // KAPSAMA: kurulButce yalnız pencere+mali≥55 iken başarır ve dönem tek-atışlıdır (mali<55 denemesi hakkı yakar).
   // Bu yüzden kör örneklemek yerine koşul GERÇEKTEN uygunken deneriz — sistem tetiklenebiliyorsa tetiklensin.
+  // KAPSAMA SİGORTASI (2026-07-22): kayan RNG akışında bazı koşumlarda mali pencere boyunca 55'i
+  // hiç görmüyor → yol test edilemiyordu. 2. sezondan itibaren hâlâ 0 kapsamdaysa fuzz malîyi
+  // eşiğe iter (test ayrıcalığı — oyun davranışı değişmez, yalnız yol sahalanır).
+  if (G.mode !== 'aile' && G.transferWindow && COV.kurulButce === 0 && G.meta.season >= 2) G.gauges.mali = Math.max(G.gauges.mali ?? 50, 56);
   if (G.mode !== 'aile' && G.transferWindow && (G.gauges.mali ?? 50) >= 55) { if (A.kurulButceArtisi(G)) COV.kurulButce++; }
   const mids = A.midPromiseOptions(G);
   if (mids && mids.length && A.midPromiseCount(G) === 0 && zar(wk + '|mp', 12) === 0) { if (A.makeMidPromise(G, mids[0].id)) COV.midPromise++; }

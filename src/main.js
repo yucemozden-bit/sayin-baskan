@@ -210,7 +210,7 @@ function render() {
       break;
     }
     case 'CAREER_END':
-      html = shell(G, { content: careerEnd.render(G), center: true, devam: { label: 'Yeni Kariyer ►', pulse: true } }); break;
+      html = careerEnd.render(G); break; // sb-cinematic tam-ekran tören (kendi topbar+bottombar; scroll yok)
     case 'SEASON_LOOP':
       if (G.phone) { // Y2: TELEFON EKRANI KESER — inbox'a düşmez
         html = shell(G, { content: phoneModal(G), center: true });
@@ -333,14 +333,24 @@ function fitSb() {
   for (const sel of SB_FIT_ROOTS) {
     const el = app.querySelector(sel);
     if (!el) continue;
-    el.style.transform = ''; el.style.width = '';
+    el.style.transform = ''; el.style.width = ''; el.style.overflow = '';
     const avail = el.clientHeight;           // flex'in bu içeriğe ayırdığı alan
-    const need = el.scrollHeight;            // içeriğin doğal boyu
+    let need = el.scrollHeight;              // içeriğin doğal boyu
     if (need > avail + 2 && avail > 160) {
-      const s = Math.max(0.55, avail / need);
+      let s = Math.max(0.55, avail / need);
       el.style.transformOrigin = 'top left';
       el.style.transform = `scale(${s})`;
       el.style.width = `${(100 / s).toFixed(2)}%`;
+      // Genişleyen kolonlar ihtiyacı DEĞİŞTİREBİLİR (kare müze yuvaları vb.) — bir kez rafine et
+      need = el.scrollHeight;
+      if (need * s > avail + 2) {
+        s = Math.max(0.55, avail / need);
+        el.style.transform = `scale(${s})`;
+        el.style.width = `${(100 / s).toFixed(2)}%`;
+      }
+      // KURAL: CSS'teki overflow:hidden kırpmayı transform'dan ÖNCE (yerleşim kutusunda) uygular —
+      // kök kendini kırparsa ölçek asla yeni içerik gösteremez (klub 2026-07: çifte kayıp bulgusu).
+      el.style.overflow = 'visible';
     }
   }
 }

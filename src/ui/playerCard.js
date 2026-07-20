@@ -235,19 +235,27 @@ export function render(G) {
     <div class="pc-guc">${gucRing(tierVal, gucBig, gucSub, tier, gucTip)}${potStar}</div>
   </div>`;
 
-  // — YABANCI: lite kart (derin raporlu da olsa — kadro aksiyonları/iç profil imzadan önce sızmaz) —
+  // — YABANCI: lite kart (derin raporlu da olsa — kadro aksiyonları/iç profil imzadan önce sızmaz).
+  // Görsel dil zengin kartla BİREBİR: aynı bölüm başlığı + mevki sahası + 6'lı metrik bloğu;
+  // bilinmeyen üç ölçü görünür-kilit satırı olur (boş segment + 🔒 + gerekçe tooltip).
   if (yabanci) {
+    const kilit = (lbl) => `<div class="pc-mrow pc-kilit" data-tip="🔒 ${lbl} imzadan sonra ölçülür — senin kulübüne ve hocana göre şekillenir"><i>${lbl}</i><span class="pc-segs">${'<span class="pc-seg"></span>'.repeat(10)}</span><em>🔒</em></div>`;
     return `<div class="pcard-ovl" data-act="pcardClose"><div class="pcard pcard-lite ${tier}" data-act="noop">
       <button class="pc-close" data-act="pcardClose" aria-label="Kapat">✕</button>
       ${head}
-      <div class="pc-lite-body">
+      <div class="pc-sec-t">SKAUT RAPORU</div>
+      <div class="pc-profil pc-profil-lite">
+        <div class="pc-pitch-box"><div class="pc-sec-s">MEVKİ · ${(POS_TR[p.pos] || p.pos).toLocaleUpperCase('tr')}</div>${miniPitch(p.pos)}</div>
         <div class="pc-mrows">
           ${segBar('FORM', p.form, null, 'Son haftalardaki saha performansı')}
           ${segBar('KONDİSYON', p.fitness, null, 'Bacaklardaki güç')}
           ${segBar('MUTLULUK', p.morale, null, 'Moral')}
+          ${kilit('TD UYUMU')}
+          ${kilit('KULÜP AİDİYETİ')}
+          ${kilit('BAŞKANA GÜVEN')}
         </div>
-        <div class="pc-lite-note">🔒 TD uyumu · kulüp aidiyeti · başkana güven — ancak <b>İMZADAN SONRA</b> ölçülür (senin kulübüne/hocana göre şekillenir).</div>
       </div>
+      <div class="pc-krk-note"><span class="pc-krk-tag">${esc(krk)}</span> karakter: ${esc(KARAKTER_NOT[krk] || '')}</div>
       <div class="pc-stats-strip">
         <span class="pc-cell"><i>DEĞER</i><b>${fmt(p.marketValue)}mn</b></span>
         <span class="pc-cell" data-tip="Bugün satılsa piyasa primiyle beklenen bedel"><i>TAHMİNİ BEDEL</i><b>~${fmt(bedel)}mn</b></span>

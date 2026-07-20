@@ -37,7 +37,12 @@ export function canUpgrade(state, tesis) {
   return state.economy.kasa >= effectiveUpgradeCost(state, tesis);
 }
 
-// Stadyum kapasitesi (Bible-9: 12000 + L×4000)
-export function stadiumCapacity(level) {
-  return 12000 + level * 4000;
+// STADYUM KAPASİTESİ (kullanıcı tasarımı 2026-07-22): kapasiteyi SEVİYE belirler — config
+// STAD_KAP.TABLO açık tablodur (çıpalar: sv2 9.000 · sv4 18.000 · sv7 35.000 · sv10 80.000),
+// MEGA kompleks ×1.2. TEK KAYNAK: gişe geliri (economy.bilet) ve tüm ekranlar bunu okur;
+// club.stadiumCapacity salt eski-kayıt/legacy alanı. Tier yalnız BAŞLANGIÇ seviyesini belirler.
+export function stadKapasite(state) {
+  const K = TUNING.STAD_KAP;
+  const sv = Math.max(0, Math.min(K.TABLO.length - 1, state.facilities?.stadyum ?? 0));
+  return Math.round(K.TABLO[sv] * (state.megaStad ? K.MEGA : 1) / 100) * 100;
 }

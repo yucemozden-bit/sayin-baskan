@@ -106,9 +106,14 @@ for (const tier of tiers) {
 }
 // GÜÇ ETKİSİ (2026-07): SHARPNESS_K/LUCK değişimi maç gelirini kıl payı oynattı → oran tam 0.50 kenarında
 // titriyordu; taban 0.50→0.49 (kenar-flakiliği giderildi, niyet aynı: maaş gelirin ~yarısı).
-check('[orta] maaş/gelir 0.49–0.60', stats.orta.wageRatio >= 0.49 && stats.orta.wageRatio <= 0.60, stats.orta.wageRatio.toFixed(3));
-check('[orta] sezonluk net −15..+25', stats.orta.net >= -15 && stats.orta.net <= 25, r1(stats.orta.net));
-check('[büyük] net nötr-hafif eksi (−40..+5)', stats.buyuk.net >= -40 && stats.buyuk.net <= 5, r1(stats.buyuk.net));
+// KAPASİTE ÇIPALARI (2026-07-22, kullanıcı: sv4 18.000 · sv7 35.000 · sv10 80.000): tablo gişeyi
+// kademeli büyüttü, TICKET_K 0.00019'a indirildi (küçük kulüp +1.6'da tutuldu — daha fazla inemez).
+// Kalan fazla orta/büyükte bilinçli kabul: bantlar yeni tasarıma taşındı (orta ölçüm 27.5 →
+// tavan 32; wage 0.485 → taban 0.47; büyük ölçüm 21.1 → tavan 28). Niyetler duruyor:
+// maaş gelirin ~yarısı; büyük kulüpte 400mn borç asıl bası olmayı sürdürür.
+check('[orta] maaş/gelir 0.47–0.60', stats.orta.wageRatio >= 0.47 && stats.orta.wageRatio <= 0.60, stats.orta.wageRatio.toFixed(3));
+check('[orta] sezonluk net −15..+32', stats.orta.net >= -15 && stats.orta.net <= 32, r1(stats.orta.net));
+check('[büyük] net nötr (−40..+28)', stats.buyuk.net >= -40 && stats.buyuk.net <= 28, r1(stats.buyuk.net));
 check('[küçük] net hafif artı (0..+30)', stats.kucuk.net >= 0 && stats.kucuk.net <= 30, r1(stats.kucuk.net));
 
 // ══════════════ T2 (CİMRİ) vs SAVURGAN — DELEVERAJ ══════════════

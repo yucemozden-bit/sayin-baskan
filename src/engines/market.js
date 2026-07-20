@@ -38,14 +38,15 @@ export function publicView(p, scoutLv = 0, week = 0) {
 
 // DETERMİNİSTİK HAVUZ GENİŞLETİCİ: çekirdek (seed'li) pazarın üstüne hash tabanlı +N isim.
 // pos verilirse o mevkide üretir (ilan sonucu havuz genişlemesi).
-export function extendMarketDet(refStrength, { names = null, scout = 0, count = 70, salt = 0, pos = null, exclude = null } = {}) {
+// band: [lo,hi] verilirse güç bandı ref+lo..ref+hi+scout olur (haftalık vitrin yıldızı yüksek banttan gelir)
+export function extendMarketDet(refStrength, { names = null, scout = 0, count = 70, salt = 0, pos = null, exclude = null, band = null } = {}) {
   const POS = ['GK', 'DEF', 'MID', 'FWD'];
   const out = [];
   const sb = Math.round((scout || 0) * 1.5);
   for (let i = 0; i < count; i++) {
     const rng = mk(h32('mktx|' + salt + '|' + i) ^ Math.imul(refStrength + 11, 2654435761));
     const ri = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
-    const ov = Math.max(35, Math.min(92, refStrength + ri(-9, 10 + sb)));
+    const ov = Math.max(35, Math.min(92, refStrength + (band ? ri(band[0], band[1] + sb) : ri(-9, 10 + sb))));
     const age = ri(18, 33);
     // İSİM ÇAKIŞMA ENGELİ (kullanıcı raporu 2026-07-21: kadrodaki "Osman Nas" için piyasa KLONU
     // üretilip alım dosyası gelmişti — "benim oyuncuma teklif mi soruyor?" karmaşası).
@@ -58,6 +59,7 @@ export function extendMarketDet(refStrength, { names = null, scout = 0, count = 
         li = (li + 1) % names.last.length;
         name = `${names.first[fi]} ${names.last[li]}`;
       }
+      if (exclude) exclude.add(name); // set MUTASYONA uğrar: aynı üretimde iç klon da doğmaz (2026-07-22)
     }
     const p = new Player({
       id: `mktx-${salt}-${i}`, name, pos: pos || POS[ri(0, 3)],

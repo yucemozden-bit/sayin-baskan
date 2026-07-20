@@ -29,7 +29,7 @@ export function canBuy(state, fee) {
 }
 
 // Kulüp seviyesine göre piyasa hedefleri (bazıları takviye kalitesinde).
-export function generateMarket(refStrength, { names = null, size = TUNING.TRANSFER.MARKET_SIZE, scout = 0 } = {}) {
+export function generateMarket(refStrength, { names = null, size = TUNING.TRANSFER.MARKET_SIZE, scout = 0, exclude = null } = {}) {
   const POS = ['GK', 'DEF', 'MID', 'FWD'];
   // Gözlemci ağı (scout tesisi) geliştikçe daha yüksek tavanlı oyuncular bulunur.
   // NOT: randint çağrı SAYISI değişmez (sadece üst sınır) → seed'li akış kaymaz.
@@ -40,7 +40,7 @@ export function generateMarket(refStrength, { names = null, size = TUNING.TRANSF
     const age = randint(18, 32);
     const potential = age < 24 ? Math.min(95, overall + randint(0, 8)) : overall;
     const p = new Player({
-      id: 'mkt' + i, name: pickName(names, i), pos: POS[randint(0, 3)],
+      id: 'mkt' + i, name: pickName(names, i, exclude), pos: POS[randint(0, 3)],
       overall, potential, age, contractYears: randint(1, 4),
     });
     p.fee = transferFee(p);
@@ -49,7 +49,7 @@ export function generateMarket(refStrength, { names = null, size = TUNING.TRANSF
   // Her pencerede 1 "marquee" yıldız (80-85) — pahalı; zengin/borçlanan kulüp kapabilir.
   // Yıldız → taraftar kanalı (yildizVarligi) bu sayede orta kulüplerde de tetiklenebilir.
   const star = new Player({
-    id: 'mkt-star', name: pickName(names, size), pos: POS[randint(0, 3)],
+    id: 'mkt-star', name: pickName(names, size, exclude), pos: POS[randint(0, 3)],
     overall: randint(80, 85), potential: randint(82, 88), age: randint(24, 29), contractYears: randint(2, 4),
   });
   star.fee = transferFee(star);
@@ -57,11 +57,24 @@ export function generateMarket(refStrength, { names = null, size = TUNING.TRANSF
   return list.sort((a, b) => b.overall - a.overall);
 }
 
-function pickName(names, i) {
+// İSİM KLONU ENGELİ (devasa bulgusu 2026-07-22: kadrodaki "Marco Bianchi" piyasada klon doğdu —
+// exclude yalnız extendMarketDet'e eklenmişti, ÇEKİRDEK havuz açıktı). Kaydırma RAND'SIZ →
+// çekiliş sayısı sabit, seed'li akış kaymaz. exclude MUTASYONA uğrar: üretilen isim sete eklenir
+// (havuz İÇİ çift isim de böyle önlenir).
+function pickName(names, i, exclude = null) {
   if (!names) return 'Serbest Oyuncu ' + (i + 1);
+  let name;
   if (rand(0, 1) < 0.3 && names.foreign) {
     const pool = Object.values(names.foreign)[randint(0, 2)];
-    return pool[randint(0, pool.length - 1)];
+    let pi = randint(0, pool.length - 1);
+    name = pool[pi];
+    for (let k = 0; exclude && exclude.has(name) && k < pool.length; k++) { pi = (pi + 1) % pool.length; name = pool[pi]; }
+  } else {
+    const fi = randint(0, names.first.length - 1);
+    let li = randint(0, names.last.length - 1);
+    name = `${names.first[fi]} ${names.last[li]}`;
+    for (let k = 0; exclude && exclude.has(name) && k < names.last.length; k++) { li = (li + 1) % names.last.length; name = `${names.first[fi]} ${names.last[li]}`; }
   }
-  return `${names.first[randint(0, names.first.length - 1)]} ${names.last[randint(0, names.last.length - 1)]}`;
+  if (exclude) exclude.add(name);
+  return name;
 }

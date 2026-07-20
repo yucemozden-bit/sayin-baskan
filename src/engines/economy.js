@@ -5,6 +5,7 @@
 // Sponsor PAZARLIĞI ve FFP MVP dışı (sponsor yalnızca gelir kalemi). Katsayılar TUNING'den.
 
 import { TUNING } from '../config.js';
+import { stadKapasite } from './facilities.js';
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
@@ -20,12 +21,15 @@ export function bilet(state) {
   const { ticketPrice } = state.economy;
   // A1: Stat/Operasyon Müdürü doluluğu artırır (skill/2500)
   const statBonus = state.staff && state.staff.stat ? state.staff.stat.skill / TUNING.STAFF.STAT_DOLULUK_DIV : 0;
+  // KONFOR (2026-07-22): stadyum seviyesi doluluğa işler — köhne stat seyirci kaçırır, modern çeker
+  const konfor = ((state.facilities?.stadyum ?? A.KONFOR_NOTR) - A.KONFOR_NOTR) * A.KONFOR_SV;
   const doluluk = clamp(
-    A.base + state.gauges.taraftar / A.taraftarDiv + state.gauges.sportif / A.sportifDiv - (ticketPrice - 1) * A.priceSlope + statBonus,
+    A.base + state.gauges.taraftar / A.taraftarDiv + state.gauges.sportif / A.sportifDiv - (ticketPrice - 1) * A.priceSlope + statBonus + konfor,
     A.min, 1.0,
   );
-  const gelir = state.club.stadiumCapacity * doluluk * ticketPrice * TUNING.TICKET_K * ligMult(state, 'gate');
-  return { doluluk, gelir };
+  // KAPASİTE = SEVİYE EĞRİSİ (2026-07-22): stadKapasite tek kaynak — yükselen stat gişeyi büyütür
+  const gelir = stadKapasite(state) * doluluk * ticketPrice * TUNING.TICKET_K * ligMult(state, 'gate');
+  return { doluluk, gelir, kapasite: stadKapasite(state) };
 }
 
 export function yayin(state) {

@@ -88,8 +88,12 @@ export function postMatch(squad, res, facilities = {}, rng = random01) {
     if (xi.has(p)) {
       played.push(p);
       p.fitness = clamp(p.fitness - TUNING.FIT_DROP, 0, 100);
-      p.form = clamp(p.form + TUNING.FORM_D[res], 0, 100);
-      p.morale = clamp(p.morale + TUNING.MORALE_D[res], 0, 100);
+      // DIP FRENİ (2026-07-22): eşiğin altındaki oyuncuda yenilgi kaybı yarıya iner —
+      // kötü seri kendini beslemesin ("dibe vuran daha fazla düşmez"). Kazanç deltaları aynı.
+      const DF = TUNING.DIP_FREN || {};
+      const dForm = TUNING.FORM_D[res], dMoral = TUNING.MORALE_D[res];
+      p.form = clamp(p.form + (dForm < 0 && p.form < (DF.form ?? 0) ? dForm / 2 : dForm), 0, 100);
+      p.morale = clamp(p.morale + (dMoral < 0 && p.morale < (DF.moral ?? 0) ? dMoral / 2 : dMoral), 0, 100);
     } else {
       p.fitness = clamp(p.fitness + TUNING.FIT_REST + antRest, 0, 100);
     }

@@ -40,7 +40,8 @@ console.log('\n── Sahne 1: Ana giriş ──');
   check('1a: main.js CLUB_SELECT doğrudan clubSelect render eder', /CLUB_SELECT[\s\S]{0,120}clubSelect\.render/.test(mainSrc), '');
   check('1b: gece atmosferi CSS\'te (.sb-atmo + vinyet)', css.includes('.sb-atmo') && css.includes('.sb-vignette'), '');
   const eksikLore = data.teams.filter((t) => !t.lore || t.lore.length < 20);
-  check(`1c: lore alanı 18/18 dolu (≥20 karakter)`, data.teams.length === 18 && eksikLore.length === 0, eksikLore.map((t) => t.name).join(',') || '18/18');
+  // 2026-07-22: havuz 18→40 kulübe çıktı ("takım isimleri artsın") — sabit 18 yerine ≥18 + hepsi lore'lu
+  check(`1c: lore alanı ${data.teams.length}/${data.teams.length} dolu (≥20 karakter)`, data.teams.length >= 18 && eksikLore.length === 0, eksikLore.map((t) => t.name).join(',') || `${data.teams.length} kulüp`);
   check('1c: kartta lore paragrafı + anlatı (sb-cc-lore ≥3)', (html.match(/sb-cc-lore/g) || []).length >= 3, '');
   check('1d: stat grid etiketleri (GÜÇ/STADYUM/BÜTÇE/BORÇ/TARAFTAR/ZORLUK)', ['GÜÇ', 'STADYUM', 'BÜTÇE', 'BORÇ', 'TARAFTAR', 'ZORLUK'].every((k) => html.includes(k)), '');
   check('1e: mod tooltip\'i — Geri Adım Yok (ironman) tek-yaşam uyarısı', html.includes('Geri Adım Yok') && html.includes('imza geri alınmaz'), '');

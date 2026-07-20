@@ -111,20 +111,33 @@ export function developSquad(squad, facilities, rng = rand) {
 }
 
 // Gençlik alımı (Bible-11 / V4-§4): akademi seviyesine bağlı floor(akademi/2) genç üret.
+// GENÇLİK ALIMI v2 (2026-07-22 kullanıcı tasarımı): akademi seviyesi KADEMEYLE hem sayıyı hem
+// güç bandını belirler (config YOUTH_LADDER); potansiyel TAMAMEN ŞANS (+0..16). sv9-10'da ilk
+// kart SÜPERSTAR adayı (_super işareti — hafta 17 sahnesi manşete taşır).
 export function youthIntake(facilities, { rng = rand, names = null, used = null } = {}) {
   const G = TUNING.SQUADGEN;
   const akademi = facilities.akademi || 0;
-  const count = Math.floor(akademi / G.INTAKE_DIV);
+  const kademe = [...(G.YOUTH_LADDER || [])].reverse().find((k) => akademi >= k.min);
+  if (!kademe) return [];
   const POS = ['GK', 'DEF', 'MID', 'FWD'];
   const youths = [];
-  for (let i = 0; i < count; i++) {
-    const overall = clamp(Math.round(G.YOUTH_OVR_BASE + akademi * G.YOUTH_OVR_PER_AKADEMI + randint(-4, 4)), 30, 60);
-    const potential = clamp(Math.round(gaussian(G.YOUTH_POT_BASE + akademi * G.YOUTH_POT_PER_AKADEMI, G.YOUTH_POT_SD, rng)), overall, 95);
+  for (let i = 0; i < kademe.n; i++) {
+    const sup = !!kademe.super && i === 0;
+    const [lo, hi] = sup ? G.YOUTH_SUPER_BAND : kademe.band;
+    const overall = clamp(randint(lo, hi), 30, 90);
+    const potLuck = randint(G.YOUTH_POT_LUCK[0], G.YOUTH_POT_LUCK[1]); // şansın kendisi
+    // Süperstar adayı: güç bandı garantili ama CEVHER POTANSİYELİ şans işi (%50) —
+    // "biri süperstar gibi ÇIKABİLİR" (garanti değil). Zarlar koşulsuz çekilir (sayı sabit).
+    const superPot = sup ? randint(G.YOUTH_SUPER_POT[0], G.YOUTH_SUPER_POT[1]) : 0;
+    const cevher = sup ? rand(0, 1) < 0.5 : false;
+    const potential = clamp(cevher ? Math.max(overall + potLuck, superPot) : overall + potLuck, overall, 95);
     const age = randint(G.YOUTH_AGE_RANGE[0], G.YOUTH_AGE_RANGE[1]);
-    youths.push(new Player({
+    const y = new Player({
       id: 'y' + i, name: uniqueName(names, used, rng), pos: POS[randint(0, 3)],
       overall, potential, age, contractYears: 3,
-    }));
+    });
+    if (cevher) y._super = true;
+    youths.push(y);
   }
   return youths.sort((a, b) => b.potential - a.potential); // en yetenekli başta
 }

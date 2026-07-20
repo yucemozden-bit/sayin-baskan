@@ -226,7 +226,7 @@ function gucKirilim(G) {
   try { b = temelBilesenler(powerCtx(G)); } catch { return ''; }
   const zayif = b.slice().sort((x, y) => x.v - y.v).slice(0, 2);
   const tip = b.map((x) => `${x.ad} ${Math.round(x.v)} (pay %${Math.round(x.w * 100)})`).join(' · ');
-  return `<div class="cx-guc-kirilim" data-tip="Takım gücü karışımı: ${tip}. Kadro en büyük pay ama tek başına yetmez — hoca, kimya, taktik uyumu ve tesisler de sahaya çıkar.">
+  return `<div class="cx-guc-kirilim" data-tip="Takım gücü karışımı: ${tip}. Kadro en büyük pay ama tek başına yetmez — hoca, kimya, taktik uyumu ve tesisler de sahaya çıkar. Maç günü bu TEMELİN üstüne form, kondisyon, moral ve sakat/cezalı eksikleri ÇARPAN olarak biner (yorgun kadro sahada bedel öder, formda kadro üstüne koyar).">
     <i>GÜCÜNÜ TUTAN</i> ${zayif.map((x) => `<b>${x.ad} ${Math.round(x.v)}</b>`).join(' · ')} <span>— yatırım buraya</span>
   </div>`;
 }

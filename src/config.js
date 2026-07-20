@@ -32,7 +32,13 @@ export const TUNING = {
   MOTIV_UNDERDOG: 0.04, BIGMATCH_HIDDEN: 0.05,
   // — Oyuncu —
   INJURY_BASE: 0.03, FIT_DROP: 12, FIT_REST: 20,
+  // KÖTÜ SERİ YUMUŞATMASI (kullanıcı 2026-07-22 "spiral yumuşasın"): efektif-güç geçişi
+  // sonrası yenilgi→moral/form→güç döngüsü kendini besliyordu. Çare SADECE DİPTE: DIP_FREN —
+  // eşiğin altındaki oyuncuda yenilgi kaybı YARIYA iner ("dibe vuran daha fazla düşmez").
+  // NOT: L deltalarını genel hafifletmek DENENDİ ve GERİ ALINDI (autoplay: dönem-4 hayatta
+  // kalma %80'e fırladı, bant %12-56 — iyi oynayanı da uçuruyor; fren dibe hedefli kalmalı).
   FORM_D: { W: 8, D: 2, L: -8 }, MORALE_D: { W: 4, D: 0, L: -5 }, RED_CARD_P: 0.08,
+  DIP_FREN: { form: 40, moral: 50 },
   DEV_U24_MAX: 1.15 /*×antrenman sv — gençler DAHA HIZLI gelişsin (kullanıcı isteği: 0.8→1.15)*/, AGE_DECAY_START: 31, DEV_DECAY_RATE: 0.6,
   // Antrenman tesisi HER SEVİYEDE hissedilir (kullanıcı isteği 2026-07-20 — eski floor(sv/5) yalnız 5 ve 10'da basamaktı):
   DEV_ANT_HAFTALIK: 0.35, // sezon içi gelişim puanı = sv × bu (kesirli birikir — her yükseltme haftalık hızı artırır)
@@ -52,8 +58,18 @@ export const TUNING = {
   // TIER_SCALE: mali hedef/karne borç normalizasyonu — 5 KADEMENİN TAMAMI (dev/efsane eksikti:
   // DEV'e terfi eden kariyer maliHedef=NaN üretip güven/mali gauge'larını zehirliyordu — maraton D8 avı 2026-07-21)
   WAGE_RATIO_HEALTHY: 0.55, TIER_SCALE: { kucuk: 2, orta: 6, buyuk: 14, dev: 24, efsane: 36 },
-  TV_BASE: { kucuk: 20, orta: 50, buyuk: 261, dev: 360, efsane: 480 }, TICKET_K: 0.0001, // [kalibre: gelir ölçeği; dev/efsane yalnız oyunla ulaşılır]
-  ATTEND: { base: 0.45, taraftarDiv: 200, sportifDiv: 300, priceSlope: 0.25, min: 0.30 },
+  TV_BASE: { kucuk: 20, orta: 50, buyuk: 261, dev: 360, efsane: 480 }, TICKET_K: 0.00019, // [kalibre: gelir ölçeği; dev/efsane yalnız oyunla ulaşılır]
+  // TICKET_K 0.0001→0.00022→0.00019 (2026-07-22): kapasite seviye tablosuna geçiş + kullanıcı
+  // çıpaları (sv4 18.000 · sv7 35.000) gişeyi büyüttü — orta/büyük nötr akış bantlarına göre
+  // yeniden kalibre edildi (ölçüm: orta +19 · büyük +7 civarı).
+  // STAD_KAP (kullanıcı çıpaları 2026-07-22): sv2 9.000 · sv4 18.000 · sv7 35.000 · sv10 80.000 —
+  // dört çıpa tek eğriye sığmaz → AÇIK TABLO (aralar geometrik ara değer; ileride tek sayı oynanır).
+  // MEGA kompleks ×1.2 (sv10'da 96.000). Kapasiteyi SEVİYE belirler; tier yalnız başlangıç seviyesi.
+  STAD_KAP: { TABLO: [5000, 6700, 9000, 12700, 18000, 22500, 28000, 35000, 46100, 60700, 80000], MEGA: 1.2 },
+  // KONFOR (kullanıcı tasarımı 2026-07-22: "stadyum kalitesi doluluğu etkilesin"): stadyum
+  // seviyesi = konfor. Sv.5 nötr; her seviye doluluk ±%1.2 (sv0 −%6 köhne, sv10 +%6 modern).
+  // Kapasite ayrı hikâye: tier + MEGA kompleks (×1.2) — kalite yüzdeyi, kompleks koltuğu büyütür.
+  ATTEND: { base: 0.45, taraftarDiv: 200, sportifDiv: 300, priceSlope: 0.25, min: 0.30, KONFOR_SV: 0.012, KONFOR_NOTR: 5 },
   AUTO_DEBT_PENALTY: 0.03, INFLATION: [0.06, 0.14], RATE_DRIFT: [-0.03, 0.06],
   FFP: { revenueMult: 0.85, appealRepMin: 60, appealChance: 0.4, appealBoost: 0.10 },
   // — Tesis —
@@ -106,10 +122,19 @@ export const TUNING = {
     AGE: [18, 34], YOUTH_AGE: 24, POT_SPREAD: 10,
     STAR_MIN: 80, STAR_MAX: 88, BUYUK_STARS: [2, 3],
     CONTRACT: [1, 5],
-    // Gençlik alımı (Bible-11 / V4-§4): floor(akademi/INTAKE_DIV) genç; kalite akademiye bağlı
-    INTAKE_DIV: 2, YOUTH_AGE_RANGE: [17, 19],
-    YOUTH_OVR_BASE: 48, YOUTH_OVR_PER_AKADEMI: 2,
-    YOUTH_POT_BASE: 50, YOUTH_POT_PER_AKADEMI: 4, YOUTH_POT_SD: 10,
+    // GENÇLİK ALIMI KADEMESİ (kullanıcı tasarımı 2026-07-22: "her sezon 10 tane gelmesin —
+    // akademi seviyesi hem SAYIYI hem KALİTEYİ belirlesin"): sv1-2 → 1 genç (42-52) ·
+    // sv3-5 → 2 genç (50-60) · sv6-8 → 3 genç (58-70) · sv9-10 → 4 genç (66-80, İLKİ
+    // SÜPERSTAR ADAYI: güç 74-82 + potansiyel 86-93 garantili manşet). Potansiyel TAMAMEN
+    // ŞANS: güç + 0..16 (bazısı düz çıkar, bazısı cevher). Akademisiz kulüpten ocak çıkmaz.
+    YOUTH_LADDER: [
+      { min: 1, n: 1, band: [42, 52] },
+      { min: 3, n: 2, band: [50, 60] },
+      { min: 6, n: 3, band: [58, 70] },
+      { min: 9, n: 4, band: [66, 80], super: true },
+    ],
+    YOUTH_POT_LUCK: [0, 16], YOUTH_SUPER_BAND: [74, 82], YOUTH_SUPER_POT: [86, 93],
+    YOUTH_AGE_RANGE: [17, 19],
   },
 
   // — Takım gücü 3 katman (Bible-5) —
@@ -217,7 +242,7 @@ export const TUNING = {
   // — Transfer (Bible-11 MVP) —
   TRANSFER: {
     PREMIUM: [1.0, 1.6], DEPOSIT: 0.3, SALE: [0.8, 1.3],
-    MARKET_SIZE: 10, WINDOWS: [1, 17], FAC_MAX: 10,
+    MARKET_SIZE: 10, POOL: 80, WINDOWS: [1, 17], FAC_MAX: 10, // POOL: canlı havuz hedef boyu (haftalık vitrin sonrası kırpma)
   },
 
   // — Transfer ONAY akışı (Başkanlık Hissi §1): oyuncu transfer yapmaz, ONAYLAR —
@@ -431,7 +456,9 @@ export const TUNING = {
     // B3a: ihtiyaç ilanı
     ILAN: { CEVAP_HAFTA: [1, 3], CEVAP_MAX: 3, MORAL_CEZA: -2, MOTIV: { normal: 1.0, nakit: 0.85, ffp: 0.7 } },
     // B3b: satış vitrini
-    VITRIN: { MORAL: -3, DONUS_MORAL: 2, TEKLIF_HAFTA: [2, 4], TEKLIF_P: 0.35 },
+    // PITY (2026-07-22): %35 zar + telefon-meşgul haftalar üst üste ıskalayınca vitrin haftalarca
+    // sessiz kalabiliyordu ("2-4 haftada teklif" sözü çiğneniyordu) — 4. haftada teklif GARANTİ.
+    VITRIN: { MORAL: -3, DONUS_MORAL: 2, TEKLIF_HAFTA: [2, 4], TEKLIF_P: 0.35, PITY: 4 },
     // B4c: koltuk modları
     MOD: { AILE_SERVET: 100, VITRIN_LOYALTY_CEZA: -20 },
     // B6c: vaat umut tavanı

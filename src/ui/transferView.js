@@ -187,7 +187,7 @@ export function render(G) {
     return `<div class="tr-tt ${durum === 'dis' ? 'tr-tt-dis' : ''}" data-act="pcard" data-arg="${p.id}" data-tip="Kart: güç aralığı · form · değer · sözleşme">
       <span class="tr-tt-ov ${ovCls(sr)}">${sr}<i>±${srH}</i></span>
       <span class="tr-tt-av">${forma(p)}</span>
-      <div class="tr-tt-id"><b>${esc(p.name)}${p.age <= 21 ? ' <span class="tr-genc">GENÇ</span>' : ''}${p._ilan ? ' <span class="tr-ilan-tag" data-tip="Bu isim SENİN İLANINLA piyasaya geldi — menajerler getirdi">İLAN</span>' : ''}</b><i>${alt}</i></div>
+      <div class="tr-tt-id"><b>${esc(p.name)}${p._vitrinYildiz ? ' <span class="tr-vitrin" data-tip="Haftanın vitrini — scout ağının öne çıkardığı yüksek çıtalı isim">★ VİTRİN</span>' : ''}${p._yeniW != null && (G.meta?.week || 0) - p._yeniW <= 1 ? ' <span class="tr-yeni" data-tip="Bu hafta piyasaya düştü — scout ağı yeni buldu">YENİ</span>' : ''}${p.age <= 21 ? ' <span class="tr-genc">GENÇ</span>' : ''}${p._ilan ? ' <span class="tr-ilan-tag" data-tip="Bu isim SENİN İLANINLA piyasaya geldi — menajerler getirdi">İLAN</span>' : ''}</b><i>${alt}</i></div>
       ${farkChip}
       <span class="tr-tt-pos" style="color:${POS_COL[p.pos]};border-color:${POS_COL[p.pos]}">${(POS_TR[p.pos] || p.pos).toLocaleUpperCase('tr')}</span>
       <span class="tr-tt-val"><b>${fmt(ask)}<em>mn</em></b><i data-tip="Piyasa değeri — bedel talip sayısıyla şişer">değer ${fmt(p.marketValue)}mn</i></span>
@@ -204,7 +204,7 @@ export function render(G) {
   </div>` : '';
 
   const hedefPanel = `<div class="sb-panel tr-hedef-panel">
-    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">TRANSFER HEDEFLERİ</span><span class="sb-panel-r" data-tip="Gözlemci ağın güçlendikçe sis daralır, sorgu hakkın artar">sis ±${h} · sorgu ${hak} hak</span></div>
+    <div class="sb-panel-h"><span class="sb-tick"></span><span class="sb-panel-t">TRANSFER HEDEFLERİ</span><span class="sb-panel-r" data-tip="Gözlemci ağın güçlendikçe sis daralır, sorgu hakkın artar">${(() => { const v = (G.market || []).find((p) => p._vitrinYildiz && p._yeniW != null && (G.meta?.week || 0) - p._yeniW <= 1); return v ? `<span class="tr-vitrin" data-tip="Haftanın vitrini — scout ağının öne çıkardığı isim">★ ${esc(v.name)}</span> · ` : ''; })()}sis ±${h} · sorgu ${hak} hak</span></div>
     ${arama}
     ${filtreBar}
     <div class="tr-tt-list">${pageList.map(row).join('') || '<div class="tr-bos">Bu mevkide isim yok — arketip ilanı ver, menajerler yeni isim getirsin.</div>'}</div>

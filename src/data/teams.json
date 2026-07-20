@@ -217,6 +217,248 @@
    "baseStrength": 44,
    "rival": false,
    "lore": "Asırlık köprünün ayağında küçük ama dik başlı. Devleri kendi sahasında terletmek şehir sporu sayılır."
+  },
+  {
+   "id": "hisarspor",
+   "name": "Hisarspor",
+   "city": "Bursa",
+   "colors": [
+    "#1B5E20",
+    "#F9F9F9"
+   ],
+   "baseStrength": 68,
+   "lore": "Surların dibinde doğdu; savunması da surdan farksız. Deplasmanda puan vermeyen inatçı ev sahibi."
+  },
+  {
+   "id": "altinova-fk",
+   "name": "Altınova FK",
+   "city": "İzmir",
+   "colors": [
+    "#B8860B",
+    "#101820"
+   ],
+   "baseStrength": 66,
+   "lore": "Altın sarısı formasıyla gösterişli hücum futbolu — savunma sorarsanız, o başka bahar."
+  },
+  {
+   "id": "yalikent-sk",
+   "name": "Yalıkent SK",
+   "city": "İstanbul",
+   "colors": [
+    "#006064",
+    "#FFFFFF"
+   ],
+   "baseStrength": 64,
+   "lore": "Sahil kasabasının zengin kulübü: yönetimde armatörler, tribünde yazlıkçılar."
+  },
+  {
+   "id": "simal-sk",
+   "name": "Şimal SK",
+   "city": "Samsun",
+   "colors": [
+    "#0D47A1",
+    "#E3F2FD"
+   ],
+   "baseStrength": 63,
+   "lore": "Kuzeyin soğuğuna alışkın; kar altında oynanan maçların korkulu rüyası."
+  },
+  {
+   "id": "lodos-fk",
+   "name": "Lodos FK",
+   "city": "Çanakkale",
+   "colors": [
+    "#37474F",
+    "#FF7043"
+   ],
+   "baseStrength": 61,
+   "lore": "Rüzgara karşı oynamayı şehirdeki herkes bilir — rakipler ilk yarıda anlar, ikinci yarıda öğrenir."
+  },
+  {
+   "id": "kervanspor",
+   "name": "Kervanspor",
+   "city": "Konya",
+   "colors": [
+    "#4E342E",
+    "#FFD54F"
+   ],
+   "baseStrength": 62,
+   "lore": "Bozkırın ortasında bir konak: misafire ikramı bol, puana gelince eli sıkı."
+  },
+  {
+   "id": "meltem-sk",
+   "name": "Meltem SK",
+   "city": "Antalya",
+   "colors": [
+    "#00838F",
+    "#FFF176"
+   ],
+   "baseStrength": 60,
+   "lore": "Turizm sezonu açılınca tribün boşalır, takım da tatile çıkar derler — ilk 5 maçına denk gelmeyin."
+  },
+  {
+   "id": "granit-1926",
+   "name": "Granit 1926",
+   "city": "Eskişehir",
+   "colors": [
+    "#424242",
+    "#E53935"
+   ],
+   "baseStrength": 65,
+   "lore": "Taş ocakları kulübü: sert zemin, sert futbol, sert tribün. Kolay üç puan yazan pişman olur."
+  },
+  {
+   "id": "safak-genclik",
+   "name": "Şafak Gençlik",
+   "city": "Diyarbakır",
+   "colors": [
+    "#B71C1C",
+    "#FBC02D"
+   ],
+   "baseStrength": 59,
+   "lore": "Altyapısından her yıl bir yıldız çıkar; elinde tutamaz ama yerine yenisini yetiştirir."
+  },
+  {
+   "id": "baharkent-fk",
+   "name": "Baharkent FK",
+   "city": "Adana",
+   "colors": [
+    "#2E7D32",
+    "#FFEB3B"
+   ],
+   "baseStrength": 58,
+   "lore": "Sıcak şehrin sıcakkanlı kulübü — golü de bol, gol yiyeni de."
+  },
+  {
+   "id": "pusula-sk",
+   "name": "Pusula SK",
+   "city": "Trabzon",
+   "colors": [
+    "#01579B",
+    "#B3E5FC"
+   ],
+   "baseStrength": 63,
+   "lore": "Denizci kulübü: fırtınada yön bulmayı iyi bilir, düz havada rotayı şaşırır."
+  },
+  {
+   "id": "menekse-1931",
+   "name": "Menekşe 1931",
+   "city": "Kayseri",
+   "colors": [
+    "#4A148C",
+    "#E1BEE7"
+   ],
+   "baseStrength": 57,
+   "lore": "Mor formasıyla ligin çalımcısı; hoş seyirlik futbol, karışık sonuç cetveli."
+  },
+  {
+   "id": "cinaralti-sk",
+   "name": "Çınaraltı SK",
+   "city": "Sakarya",
+   "colors": [
+    "#33691E",
+    "#DCEDC8"
+   ],
+   "baseStrength": 56,
+   "lore": "Yüz yıllık çınarın gölgesinde kurulan kulüp; kökü derin, bütçesi sığ."
+  },
+  {
+   "id": "serhat-fk",
+   "name": "Serhat FK",
+   "city": "Erzurum",
+   "colors": [
+    "#263238",
+    "#90A4AE"
+   ],
+   "baseStrength": 58,
+   "lore": "Sınır şehrinin gururu: dondurucu deplasmanıyla meşhur — misafir takımlar otobüsten inmek istemez."
+  },
+  {
+   "id": "kuheylan-sk",
+   "name": "Küheylan SK",
+   "city": "Şanlıurfa",
+   "colors": [
+    "#8D6E63",
+    "#FFF8E1"
+   ],
+   "baseStrength": 55,
+   "lore": "Asil at soyundan alır adını; hızlı kanat oyunuyla bir gün şaha kalkar, ertesi hafta tökezler."
+  },
+  {
+   "id": "mercanspor",
+   "name": "Mercanspor",
+   "city": "Mersin",
+   "colors": [
+    "#D84315",
+    "#FFCCBC"
+   ],
+   "baseStrength": 57,
+   "lore": "Liman işçilerinin kulübü; mesai bitince tribün dolar, maç bitince şehir konuşur."
+  },
+  {
+   "id": "kuzgun-fk",
+   "name": "Kuzgun FK",
+   "city": "Ankara",
+   "colors": [
+    "#212121",
+    "#9E9E9E"
+   ],
+   "baseStrength": 61,
+   "lore": "Simsiyah formasıyla başkentin gölge kulübü — sessiz transferler, sürpriz galibiyetler."
+  },
+  {
+   "id": "selvikent-sk",
+   "name": "Selvikent SK",
+   "city": "Denizli",
+   "colors": [
+    "#00695C",
+    "#B2DFDB"
+   ],
+   "baseStrength": 56,
+   "lore": "Tekstil parasıyla dönen çarklar; sponsor bolluğu var, şampiyonluk hasreti daha çok."
+  },
+  {
+   "id": "harman-1929",
+   "name": "Harman 1929",
+   "city": "Gaziantep",
+   "colors": [
+    "#F57F17",
+    "#3E2723"
+   ],
+   "baseStrength": 59,
+   "lore": "Bereketli toprakların kulübü: sezonu iyi başlar, hasadı hep son haftaya bırakır."
+  },
+  {
+   "id": "rihtim-sk",
+   "name": "Rıhtım SK",
+   "city": "İzmir",
+   "colors": [
+    "#1A237E",
+    "#C5CAE9"
+   ],
+   "baseStrength": 60,
+   "lore": "Körfezin karşı yakası: ezeli şehir rekabeti kanında var, derbi haftası vapurlar dolar."
+  },
+  {
+   "id": "zirve-1935",
+   "name": "Zirve 1935",
+   "city": "Malatya",
+   "colors": [
+    "#BF360C",
+    "#FFE0B2"
+   ],
+   "baseStrength": 55,
+   "lore": "Dağ şehrinin dirençli kulübü — düşe kalka çıktığı zirveden kolay inmez."
+  },
+  {
+   "id": "derinsu-fk",
+   "name": "Derinsu FK",
+   "city": "Zonguldak",
+   "colors": [
+    "#004D40",
+    "#80CBC4"
+   ],
+   "baseStrength": 54,
+   "lore": "Madenci şehrinin evladı: yerin altından gelen sabırla oynar, asla erken pes etmez."
   }
  ]
 }

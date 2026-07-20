@@ -71,7 +71,11 @@ console.log('\n── Oyuncu Kartı ──');
   const h = pc.render(G);
   check('telefon oyuncusunun kartı render olur (kadroda olmasa da)', h.includes('Bruno Alencar') && h.includes('GÜÇ'));
   check('SİS: teklif oyuncusunun KESİN gücü sızmaz — aralık gösterilir', h.includes('GÜÇ ~') && h.includes('–'));
-  check('SİS: ilişkisel çubuklar (aidiyet/başkana güven) imzadan önce gizli', !h.includes('KULÜP AİDİYETİ') && !h.includes('BAŞKANA GÜVEN') && h.includes('İMZADAN SONRA'));
+  // 2026-07-22: lite kart zengin kartla aynı dile geçti — ilişkisel ölçüler artık görünür-KİLİT
+  // satırı (etiket + boş segment + 🔒); değişmez olan ETİKET değil DEĞERİN sızmaması.
+  const kilitli = h.match(/<div class="pc-mrow pc-kilit"[\s\S]*?<em>🔒<\/em><\/div>/g) || [];
+  check('SİS: ilişkisel ölçüler imzadan önce KİLİTLİ (etiket var, değer yok)',
+    kilitli.length === 3 && kilitli.every((r) => !r.includes('pc-seg on')) && h.includes('imzadan sonra ölçülür'));
   check('SİS: potansiyel yıldızı (gizli yetenek) sızmaz', !h.includes('POTANSİYEL ★'));
   // kuyruk + ertelenen dosyalar da açılabilir
   const q = { id: 'ph9002', name: 'Kuyruk Oyuncu', pos: 'MID', age: 25, overall: 58, potential: 58, marketValue: 8, wage: 1, contractYears: 2, form: 60, fitness: 70, morale: 60 };
@@ -101,8 +105,11 @@ console.log('\n── YABANCI OYUNCU: kart hep LITE (derin raporlu bile) ──'
     const hDerin = pc.render(G);
     check('derin raporlu yabancı: hâlâ LITE kart (KESİN RAPOR başlığı)', hDerin.includes('KESİN RAPOR'));
     check('derin raporlu yabancı: kesin güç + potansiyel görünür', hDerin.includes(`>${mp.overall}<`) || hDerin.includes(String(mp.overall)));
+    // 2026-07-22: 'BAŞKANA GÜVEN' etiketi artık kilit satırında görünür (değeri yok) —
+    // sızma denetimi kadro aksiyonları + SON 5 MAÇ + kilit satırının DEĞERSİZLİĞİ üzerinden.
     check('derin raporlu yabancı: kadro aksiyonları/iç profil SIZMAZ',
-      !hDerin.includes('data-act="vitrin"') && !hDerin.includes('data-act="pJest"') && !hDerin.includes('Sözleşme Yenile') && !hDerin.includes('SON 5 MAÇ') && !hDerin.includes('BAŞKANA GÜVEN'));
+      !hDerin.includes('data-act="vitrin"') && !hDerin.includes('data-act="pJest"') && !hDerin.includes('Sözleşme Yenile') && !hDerin.includes('SON 5 MAÇ')
+      && (hDerin.match(/<div class="pc-mrow pc-kilit"[\s\S]*?<em>🔒<\/em><\/div>/g) || []).every((r) => !r.includes('pc-seg on')));
   }
 }
 

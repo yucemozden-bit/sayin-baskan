@@ -26,7 +26,7 @@ import { assignPersonalities, spreadMorale, hierarchy, katman } from './engines/
 import { computeSentiment } from './engines/social.js';
 import { generateCoaches, hireCoach, generateStaff, describeStaff, staffQualityWord, cfoNoiseRange, ROLE_TR, STAFF_TRAITS } from './models/staff.js';
 import { generateMarket, transferFee, saleOffer, canBuy, windowOpen } from './engines/transfer.js';
-import { canUpgrade, effectiveUpgradeCost } from './engines/facilities.js';
+import { canUpgrade, effectiveUpgradeCost, stadKapasite } from './engines/facilities.js';
 import { selectTag, makeHeadline, updateMediaTone, makeReport } from './engines/narrative.js';
 import { applyDemec } from './engines/press.js';
 import { rand, randint } from './core/rng.js';
@@ -194,6 +194,7 @@ export function selectClub(G, tier, identity = null, opts = {}) {
   ultrasInit(G);                            // KONGRE 2.6: gruplara iliski+talep katmanı
   G.delege = delegeInit();                  // KONGRE 2.6: 4 seçmen bloku (nötr 50)
   G.worldSeason = 0;                        // D1: AI drift sayacı (ilk sezon drift yok)
+  G.tesisBakim = {}; for (const t of TESIS_BAKIM) G.tesisBakim[t] = 0; // bakım saati kariyer başında kurulur
   G.flags = {}; G.rival = { attractiveness: 0 }; G.sozTutmaBirikim = 0;
   G.promises = []; G.history = { seasons: [] };
   G.term = { income: 0, wage: 0, starBought: false, maxTicket: G.economy.ticketPrice, weeks: 0, ticari: 0, academyGraduates: 0, socialProjects: 0 };
@@ -506,12 +507,25 @@ export function preSeasonWeek(G) {
 // Deterministik string hash (piyasa ilgi/süre/rapor türetimi — ana RNG'yi TÜKETMEZ)
 function mh32(s) { let h = 0; const t = String(s); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return h; }
 
+// PİYASA REFERANSI: havuz tavanı yalnız BENİM gücüme kilitlenmez — lig zirvesine doğru
+// YARI YOLDA, en fazla +10 (kullanıcı 2026-07-22: "72'den büyük adam yok" ama abartı da yok:
+// zirve 85'lik dev diye hafta 2'de 92'lik isim doğmasın). Lig geliştikçe (LIG_GELISIM) piyasa
+// da büyür; 2. Lig'de zirve senin altındaysa ref = kendi gücün (doğal zayıf pazar).
+function marketRef(G) {
+  const temel = Math.round(G.temelGuc || 50);
+  const rakipMax = Math.max(0, ...Object.values(G.league?.table || {}).filter((t) => t && !t.mine).map((t) => t.strength || 0));
+  return temel + Math.min(10, Math.max(0, Math.round((rakipMax - temel) / 2)));
+}
+
 // PİYASA KURULUMU: seed'li çekirdek (RNG akışı aynı kalır) + deterministik +70 isim
 // (A8: 80+ oyunculuk havuz — ekran sayfalama/filtreyle gösterir).
 function makeMarket(G) {
-  const core = generateMarket(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout });
-  const ek = extendMarketDet(Math.round(G.temelGuc), {
-    names: G.data.names, scout: G.facilities.scout, count: 70, exclude: new Set((G.squad || []).map((p) => p.name)),
+  // TEK isim seti: kadro + dosyalar + üretilen her isim — hiçbir katman klon üretemez
+  // (devasa bulguları 2026-07-22: foreign klonu + dosyada bekleyen adayın klonu)
+  const used = aktifIsimler(G);
+  const core = generateMarket(marketRef(G), { names: G.data.names, scout: G.facilities.scout, exclude: used });
+  const ek = extendMarketDet(marketRef(G), {
+    names: G.data.names, scout: G.facilities.scout, count: 70, exclude: used,
     salt: (G.meta?.season || 1) * 100 + ((G.meta?.week || 1) >= 17 ? 1 : 0),
   });
   return core.concat(ek);
@@ -532,21 +546,34 @@ export function scoutTick(G) {
     p._kalan -= 1;
     if (p._kalan <= 0) gidenler.push(G.market.splice(i, 1)[0]);
   }
+  // KİMLİK ZIRHI: aynı hafta İKİNCİ tick (test/çift çağrı) aynı salt'la AYNI oyuncuyu yeniden
+  // üretebilir — "rakibe imzalayan" adam aynı kimlikle geri gelemez (bu tick gidenler + havuz yasak).
+  const gidenId = new Set(gidenler.map((x) => x.id));
+  const havuzdaYok = (p) => !gidenId.has(p.id) && !G.market.some((x) => x.id === p.id);
+  // TEK isim seti (2026-07-22): kadro + havuz + DOSYADA BEKLEYENLER — bu tick'in tüm üretimleri klonsuz
+  const usedAd = aktifIsimler(G);
   if (gidenler.length) {
     // Kaçanların yerine taze isimler — piyasa döner ama boşalmaz
-    G.market.push(...extendMarketDet(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout, count: gidenler.length, exclude: new Set((G.squad || []).map((p) => p.name)), salt: 50000 + (G.meta?.week || 0) + (G.meta?.season || 1) * 53 }));
+    const yerine = extendMarketDet(marketRef(G), { names: G.data.names, scout: G.facilities.scout, count: gidenler.length, exclude: usedAd, salt: 50000 + (G.meta?.week || 0) + (G.meta?.season || 1) * 53 }).filter(havuzdaYok);
+    for (const p of yerine) p._yeniW = G.meta?.week || 0; // listede YENİ rozeti — dönüş görünür olsun
+    G.market.push(...yerine);
     const onemli = gidenler.filter((p) => p._sorgu || p.overall >= Math.round(G.temelGuc) + 12).slice(0, 2);
     for (const p of onemli) {
-      const rk = rakipler.length ? rakipler[mh32(p.name) % rakipler.length].name : 'bir rakip';
-      pushInbox(G, { cat: 'transfer', t: `${p.name} rakibe imza attı`, b: `${rk} dosyayı kapattı — geç kaldık Başkanım. İlgi gören isim beklemez.`, noQueue: true });
+      // Yabancı isimli oyuncu YURTDIŞINA gider (2026-07-22): "Wesley Damasceno Bozkırspor'a imzaladı"
+      // tuhaf kaçıyordu — foreignClubs havuzundan hash'le kulüp seçilir (rand'sız).
+      const yb = yabanciKulup(G, p.name);
+      if (yb) {
+        pushInbox(G, { cat: 'transfer', t: `${p.name} yurtdışına imza attı`, b: `${yb} dosyayı kapattı — menajeri Avrupa hattını hiç kapatmamış. Geç kaldık Başkanım.`, noQueue: true });
+      } else {
+        const rk = rakipler.length ? rakipler[mh32(p.name) % rakipler.length].name : 'bir rakip';
+        pushInbox(G, { cat: 'transfer', t: `${p.name} rakibe imza attı`, b: `${rk} dosyayı kapattı — geç kaldık Başkanım. İlgi gören isim beklemez.`, noQueue: true });
+      }
     }
     const sessiz = gidenler.length - onemli.length;
     if (sessiz > 0) pushInbox(G, { cat: 'transfer', t: `Piyasa döndü: ${sessiz} isim başka kulüplere gitti`, b: 'Scout ağı listeyi tazeledi — yeni isimler raporda.', noQueue: true, sig: 'piyasa-donus' });
   }
   if (G.market.length === 0) return;
-  const CAP = (TUNING.TRANSFER.MARKET_SIZE || 12) + 1;
   G.market.sort((a, b) => b.overall - a.overall);
-  if (G.market.length >= CAP) G.market.pop(); // en zayıf isim "başka kulübe gitti"
   // DETERMİNİSTİK yerel RNG (ana akışı tüketmez → seed'li testler kaymaz). Çeşitlilik: sıra no + hafta + güç.
   const seq = (G._mktSeq = (G._mktSeq || 0) + 1);
   let s = (seq * 2654435761 + (G.meta.week || 0) * 40503 + Math.round(G.temelGuc) * 97) >>> 0;
@@ -554,24 +581,45 @@ export function scoutTick(G) {
   const dR = (lo, hi) => lo + nx() * (hi - lo);
   const dI = (lo, hi) => Math.floor(dR(lo, hi + 1));
   const POS = ['GK', 'DEF', 'MID', 'FWD'];
-  const base = Math.round(G.temelGuc);
+  const base = marketRef(G); // lig-zirvesi referansı — tavan kendi gücüne kilitlenmez
   const sb = Math.round((G.facilities.scout || 0) * 1.5); // gözlemci ağı → daha yüksek tavan
   const ov = Math.max(35, Math.min(92, base + dI(-6, 10 + sb)));
   const age = dI(18, 32);
   const nm = G.data.names;
-  // İSİM ÇAKIŞMA ENGELİ: kadrodaki biriyle aynı isim üretme (soyadı determinist kaydır — bkz. extendMarketDet)
+  // İSİM ÇAKIŞMA ENGELİ: kadro + havuzdaki biriyle aynı isim üretme (soyadı determinist kaydır)
   let name = 'Serbest ' + seq;
   if (nm) {
     const fi = dI(0, nm.first.length - 1); let li = dI(0, nm.last.length - 1);
-    const kadro = new Set((G.squad || []).map((x) => x.name));
     name = `${nm.first[fi]} ${nm.last[li]}`;
-    for (let k = 0; kadro.has(name) && k < nm.last.length; k++) { li = (li + 1) % nm.last.length; name = `${nm.first[fi]} ${nm.last[li]}`; }
+    for (let k = 0; usedAd.has(name) && k < nm.last.length; k++) { li = (li + 1) % nm.last.length; name = `${nm.first[fi]} ${nm.last[li]}`; }
+    usedAd.add(name);
   }
   const p = new Player({ id: 'mkt-w' + seq, name, pos: POS[dI(0, 3)], overall: ov, potential: age < 24 ? Math.min(95, ov + dI(0, 8)) : ov, age, contractYears: dI(2, 4), rng: dR });
   const pr = TUNING.TRANSFER.PREMIUM; p.fee = p.marketValue * ((pr[0] + pr[1]) / 2); // deterministik bedel (transferFee rand kullanır)
   const mhN = mh32(String(p.id) + '|' + p.name); p._ilgi = mhN % 4; p._kalan = 2 + ((mhN >>> 4) % 4); // yeni isim de ilgi/süre ile doğar
+  p._yeniW = G.meta?.week || 0;
   G.market.push(p);
+  // HAFTALIK VİTRİN (kullanıcı 2026-07-22: "sürekli güncellenmeli, her hafta yeni isimler"):
+  // her pencere haftası +2 taze isim daha — İLKİ YÜKSEK BANTTAN (lig zirvesi +4..+12+scout:
+  // "yıldız adayı"). Hepsi YENİ rozetiyle listeye düşer; hash-salt determinist, ana RNG'yi tüketmez.
+  const wkV = G.meta?.week || 0, sezV = G.meta?.season || 1;
+  const bandLi = extendMarketDet(base, { names: nm, scout: G.facilities.scout, count: 1, salt: 70000 + sezV * 911 + wkV * 7, exclude: usedAd, band: [4, 12] });
+  for (const v of bandLi) v._vitrinYildiz = true; // listede ★ VİTRİN rozeti — haftanın öne çıkanı görünür
+  const vitrin = [
+    ...bandLi,
+    ...extendMarketDet(base, { names: nm, scout: G.facilities.scout, count: 1, salt: 80000 + sezV * 911 + wkV * 7, exclude: usedAd }),
+  ].filter(havuzdaYok); // kimlik zırhı: aynı hafta ikinci tick'te vitrin klonu doğmaz
+  for (const v of vitrin) v._yeniW = wkV;
+  G.market.push(...vitrin);
+  // Havuz boyu SABİT (~POOL): en zayıflar sessizce başka kulüplere — sorgu/derin dosyalı
+  // ve bu hafta gelen isimler korunur (oyuncunun emeği/yeniliği silinmez).
+  const POOL = TUNING.TRANSFER.POOL || 80;
   G.market.sort((a, b) => b.overall - a.overall);
+  for (let i = G.market.length - 1; G.market.length > POOL && i >= 0; i--) {
+    const z = G.market[i];
+    if (z._sorgu || z._derin || z._yeniW === wkV) continue;
+    G.market.splice(i, 1);
+  }
 }
 
 // GÜVENLİK AĞI — kadro bütünlüğü. Nadir yollardan (piyasa id tekrarı hafta 17, kiralık dönüşü…)
@@ -964,7 +1012,7 @@ function finishWeekTail(G, lateMove) {
   // D4: Genç Takım Günü SAHNESİ (hafta 17) — kart açma + ☆ potansiyel + %10 altın çocuk
   if (wk === CAL.YOUTH_WEEK) {
     const youths = youthIntake(G.facilities, { names: G.data.names, used: G.usedNames });
-    for (const y of youths) y.ocak = true; // B4d: ocak çocuğu izi
+    for (const y of youths) { y.ocak = true; y.name = klonKir(G, y.name); } // B4d ocak izi + piyasa klonu kırıcı
     G.term.academyGraduates = (G.term.academyGraduates || 0) + youths.length; // P05/P12: akademi mezunu sayacı
     // A1: Akademi Direktörü — potansiyel dağılımı + altın çocuk şansı çarpanı
     const akDir = G.staff?.akademi;
@@ -972,7 +1020,9 @@ function finishWeekTail(G, lateMove) {
     let golden = null;
     for (const y of youths) {
       if (akDir) y.potential = Math.min(95, y.potential + Math.round((akDir.skill - 50) / TUNING.STAFF.AKADEMI_POT_DIV));
-      if (rand(0, 1) < goldenP) { y.potential = Math.max(y.potential, randint(85, 92)); golden = y; }
+      // NOT: rand HER gençte çekilir (zar sayısı sabit); _super (sv9-10 süperstar adayı) zarsız manşete gider
+      const sansli = rand(0, 1) < goldenP;
+      if (y._super || sansli) { if (sansli && !y._super) y.potential = Math.max(y.potential, randint(85, 92)); golden = golden || y; }
       y.id = 'sq' + (G._pid = (G._pid || 1000) + 1);
       G.squad.push(y);
     }
@@ -1420,6 +1470,12 @@ function applyPrimResults(G, myRes, primWinCost) {
   }
   // MAĞLUBİYET SERİSİ — Takım Moral Gecesi davetinin kapısı (üst üste 2 L'de açılır; G/B sıfırlar)
   G.magSeri = myRes === 'L' ? (G.magSeri || 0) + 1 : 0;
+  // DİP FRENİ GERİ BİLDİRİMİ (2026-07-22 "spiral yumuşasın"): mekanik görünür olsun —
+  // 3. üst üste yenilgide sezonda 1 kez, determinist (rand yok), sig'li tek mektup.
+  if (G.magSeri === 3) pushInbox(G, {
+    cat: 'mac', t: 'Soyunma odası dibe vurdu — ama dağılmıyor', noQueue: true, sig: 'dip-freni-' + (G.meta?.season || 1),
+    b: 'Üst üste yenilgiler morali törpüledi; ama çekirdek kadro kenetlendi — düşüş bundan sonra yavaşlar (dibe vuran daha fazla düşmez). Tek bir galibiyet havayı çevirir Başkanım.',
+  });
   // TD KRİZ BASKISI (kullanıcı isteği 2026-07-21: "sonuçlar kötü gelirse TD'yi kovma durumları"):
   // 4 maçlık kayıp serisinde kurul hocanın dosyasını masaya koyar — KOV / ARKASINDA DUR / PAZARI TARA.
   // Sezonda 1 kez; determinist (rand YOK); karar oyuncunun — pasif ceza değil, OLAY.
@@ -2227,12 +2283,18 @@ function deadlineTick(G, wk) {
       if (!cands.length) continue;
       const p = cands[randint(0, cands.length - 1)];
       const offer = saleOffer(p) * (G.marketMult || 1) * rand(D.SELL_PREM[0], D.SELL_PREM[1]);
+      // ALICININ ADI VAR (2026-07-22): anonim "dev kulüp" yerine hash'le isim — yarısı ligin
+      // zirvesinden, yarısı yurtdışından (rand'sız; determinist)
+      const zirve = Object.values(G.league?.table || {}).filter((t) => t && !t.mine && t.name).sort((a, b) => (b.strength || 0) - (a.strength || 0)).slice(0, 3);
+      const alici = (mh32('alici|' + p.name) % 2 === 0 && zirve.length)
+        ? zirve[mh32('alici2|' + p.name) % zirve.length].name
+        : YABANCI_KULUPLER[mh32('alici3|' + p.name) % YABANCI_KULUPLER.length];
       ringPhone(G, {
         kind: 'dlsell', caller: 'menajer', callerName: 'Menajer hattı', deadline: true,
         title: `⏱ DEV panik alıyor: ${p.name}`,
-        body: `Şampiyonluk baskısındaki dev kulüp ${fmt1(offer)}mn sayıyor — piyasanın ÜSTÜ. Bu akşam kapanır.`,
+        body: `Şampiyonluk baskısındaki ${alici} ${fmt1(offer)}mn sayıyor — piyasanın ÜSTÜ. Bu akşam kapanır.`,
         options: [{ key: 'sat', label: `SAT (+${fmt1(offer)}mn)` }, { key: 'red', label: 'REDDET' }],
-        playerId: p.id, offer,
+        playerId: p.id, offer, alici,
       });
     } else { // kiralık takviye → TELEFON
       const p = new Player({ id: 'ln' + (G._pid = (G._pid || 1000) + 1), name: gmPickName(G), pos: ['DEF', 'MID', 'FWD'][randint(0, 2)], overall: randint(Math.round(G.temelGuc), Math.round(G.temelGuc) + 6), potential: 0, age: randint(22, 28), contractYears: 1 });
@@ -2527,6 +2589,16 @@ export function upgradeFacility(G, tesis) {
 
 const TESIS_TR = { stadyum: 'Stadyum', antrenman: 'Antrenman Tesisi', tibbi: 'Tıbbi Merkez', akademi: 'Akademi', scout: 'Gözlemci Ağı', ticari: 'Ticari Ofis', mega: 'Stadyum Kompleksi (MEGA)' };
 
+// TESİS BAKIMI (kullanıcı tasarımı 2026-07-22): STADYUM HARİÇ tesisler 3 sezon boyunca hiç
+// dokunulmazsa (dokunmak = kurdele/teslimle yükseltme) sezon sonunda 1 seviye YIPRANIR.
+// Görünür sistem: tesis ekranı 2. sezondan itibaren ⚠ sayaç gösterir, düşüş isim isim mektupla
+// gelir (sessiz ceza yok — kadro tavanı dersinden). Determinist: rand yok.
+export const TESIS_BAKIM = ['antrenman', 'tibbi', 'akademi', 'scout', 'ticari'];
+function tesisBakimTouch(G, tesis) {
+  if (!TESIS_BAKIM.includes(tesis)) return;
+  (G.tesisBakim = G.tesisBakim || {})[tesis] = G.worldSeason ?? 1;
+}
+
 // İFLAS EŞİĞİ — tek kaynak (finishWeekTail + Finans UI çizgisi aynı sayıyı okur)
 export function iflasEsigi(G) { return Math.max(500, Math.round((G.iflasTaban ?? 60) * 1.25) + 150); }
 
@@ -2577,13 +2649,14 @@ export function santiyeTick(G) {
     G.club.stadiumCapacity = Math.round(G.club.stadiumCapacity * 1.2);
     G.gauges.itibar = clamp(G.gauges.itibar + 5, 0, 100);
     G.gauges.taraftar = clamp(G.gauges.taraftar + 3, 0, 100);
-    pushInbox(G, { cat: 'manset', t: '🏟️ ŞEHRİN YENİ SİMGESİ: Stadyum Kompleksi açıldı', sig: 'mega-acilis', b: `${s.toplam} haftalık dev şantiye bitti: müze, mağaza caddesi, loca katı, kapalı çatı. Kapasite ${G.club.stadiumCapacity.toLocaleString('tr-TR')} koltuğa çıktı — Avrupa basını "örnek yatırım" yazdı. Bilet geliri kalıcı büyüdü.`, noQueue: true });
+    pushInbox(G, { cat: 'manset', t: '🏟️ ŞEHRİN YENİ SİMGESİ: Stadyum Kompleksi açıldı', sig: 'mega-acilis', b: `${s.toplam} haftalık dev şantiye bitti: müze, mağaza caddesi, loca katı, kapalı çatı. Kapasite ${stadKapasite(G).toLocaleString('tr-TR')} koltuğa çıktı — Avrupa basını "örnek yatırım" yazdı. Bilet geliri kalıcı büyüdü.`, noQueue: true });
     anKarti(G, { t: 'Stadyum Kompleksi açıldı', b: 'Kapasite +%20 · itibar +5 · taraftar +3 — şehrin simgesi.', etki: 8 });
     G.santiye = null;
     return;
   }
   if (s.kalan <= 0) { // KURDELE KESİMİ — kademe şimdi devreye girer
     G.facilities[s.tesis] = Math.min(TUNING.TRANSFER.FAC_MAX, (G.facilities[s.tesis] || 0) + 1);
+    tesisBakimTouch(G, s.tesis); // bakım sayacı sıfırlanır
     let ek = '';
     if (s.bonus && G.facilities[s.tesis] < TUNING.TRANSFER.FAC_MAX) { G.facilities[s.tesis] += 1; ek = ' Premium iş: firma beklenenin üstüne çıktı — +1 EKSTRA kademe!'; }
     G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G);
@@ -2790,6 +2863,7 @@ export function endSeason(G) {
   // v4.1-4: sezon sonuna sarkan ihale işleri tamamlanır
   for (const tesis of G.pendingFacilities || []) {
     if (G.facilities[tesis] < TUNING.TRANSFER.FAC_MAX) G.facilities[tesis] += 1;
+    tesisBakimTouch(G, tesis); // teslim = bakım sayacı sıfırlanır
     pushInbox(G, { cat: 'tesis', t: `Geciken iş tamamlandı: ${tesis}`, b: 'Sarkan ihale nihayet teslim edildi; etki devrede.' });
   }
   G.pendingFacilities = [];
@@ -2852,11 +2926,42 @@ export function endSeason(G) {
       }
     }
   }
+  // TESİS YIPRANMASI (kullanıcı kuralı 2026-07-22): stadyum hariç, 3 sezondur dokunulmayan
+  // tesis 1 seviye düşer. Sayaç düşüşte sıfırlanır (3 sezon daha ihmal → yine düşer).
+  {
+    const ws = G.worldSeason ?? 1;
+    G.tesisBakim = G.tesisBakim || {};
+    const yipranan = [];
+    for (const t of TESIS_BAKIM) {
+      if ((G.facilities[t] || 0) <= 0) { G.tesisBakim[t] = ws; continue; } // sv0'ın yıpranacağı yok — sayaç boşa işlemesin
+      if (ws - (G.tesisBakim[t] ?? ws) >= 3) {
+        G.facilities[t] -= 1;
+        G.tesisBakim[t] = ws;
+        yipranan.push(`${TESIS_TR[t]} Sv.${G.facilities[t] + 1} → ${G.facilities[t]}`);
+      }
+    }
+    if (yipranan.length) pushInbox(G, { cat: 'tesis', t: `⚠ Tesis yıpranması: ${yipranan.length} tesis seviye kaybetti`, b: `${yipranan.join(' · ')} — 3 sezondur çivi çakılmadı; beton da ekip de yaşlanır. Bakımın yolu yeni ihale.`, noQueue: true });
+  }
   // Sezon sonu gelişim (Bible-9). Gençlik alımı D4 ile 17. haftaya (Genç Takım Günü sahnesi) taşındı.
   developSquad(G.squad, G.facilities);
-  // Akademi pipeline: kadro 30'u aşarsa en zayıflar bırakılır (gençleşme)
+  // KADRO TAVANI 30 — SESSİZ KESME BUG'I DÜZELTİLDİ (kullanıcı raporu 2026-07-22: "sözleşmesi
+  // süren oyuncularım yeni sezonda yok oldu"): eskiden güç sırasına göre dipten mektupsuz
+  // siliniyordu (ocak gençleri ilk kurbandı — "gençleşme" yorumunun tam tersi). Artık:
+  // ocak genci (≤23) / kaptan / aile oğlu KORUNUR; yaşlı + zayıf + kısa sözleşmeli önce gider;
+  // kim gittiği İSİM İSİM mektupla bildirilir. Determinist — rand yok.
+  if (G.squad.length > 30) {
+    const korunan = (p) => (p.ocak && p.age <= 23) || p.aileOgul || p.id === G.captainId;
+    const skor = (p) => p.overall * 1.5 - p.age * 1.2 + (p.contractYears || 0) * 2; // düşük skor önce gider
+    const giden = G.squad.filter((p) => !korunan(p)).sort((a, b) => skor(a) - skor(b)).slice(0, G.squad.length - 30);
+    if (giden.length) {
+      const gidenSet = new Set(giden);
+      G.squad = G.squad.filter((p) => !gidenSet.has(p));
+      pushInbox(G, { cat: 'transfer', t: `Sezon sonu kadro düzenlemesi: ${giden.length} isimle yollar ayrıldı`, b: `Kadro 30 kişilik tavana indirildi — ${giden.map((p) => `${p.name} (${p.age})`).join(', ')} serbest bırakıldı. GM: "Yeni sezona yalın kadro, Başkanım."`, noQueue: true });
+    }
+    // korumalılar tek başına tavanı aşıyorsa (patolojik) kadro invariantı yine de önde
+    if (G.squad.length > 30) { G.squad.sort((a, b) => b.overall - a.overall); G.squad.length = 30; }
+  }
   G.squad.sort((a, b) => b.overall - a.overall);
-  if (G.squad.length > 30) G.squad.length = 30;
   G.club.kadroDeger = squadMarketValue(G.squad);
   G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G);
   // #1 ŞAMPİYONLUK SAHNESİ — kupa gecesi sinematiği (karneden ÖNCE tam ekran; DEVAM ile geçilir).
@@ -3192,9 +3297,11 @@ export function olayKisisellestir(G, ev) {
   const star = (G.squad || []).slice().sort((a, b) => (b.marketValue || 0) - (a.marketValue || 0))[0];
   if (!star) return ev;
   const bedel = fmt1(star.marketValue);
+  // Teklifin sahibi de İSİMLİ (2026-07-22): yıldıza gelen dev teklif hep yurtdışından — hash'le seç
+  const alici = YABANCI_KULUPLER[mh32('devTeklif|' + star.name) % YABANCI_KULUPLER.length];
   return {
     ...ev,
-    body: `${ev.body || ''} Masadaki isim: ${star.name} (${posTrPhone(star.pos)}, ${star.age} yaş, güç ${star.overall}) — teklif ${bedel}mn.`,
+    body: `${ev.body || ''} Masadaki isim: ${star.name} (${posTrPhone(star.pos)}, ${star.age} yaş, güç ${star.overall}) — ${alici} ${bedel}mn teklif ediyor.`,
     options: (ev.options || []).map((o) => satisMi(o) ? { ...o, label: `${o.label} — ${star.name}, ${bedel}mn kasaya` } : o),
   };
 }
@@ -3342,7 +3449,7 @@ function applyPhoneChoice(G, ph, opt) {
         if (p.overall >= TUNING.STAR_THRESHOLD) { G.gauges.taraftar = clamp(G.gauges.taraftar - 4, 0, 100); for (const q of G.squad) q.morale = clamp(q.morale - 2, 0, 100); }
         G.club.kadroDeger = squadMarketValue(G.squad);
         G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G);
-        pushInbox(G, { cat: 'transfer', t: 'Panik alıcıya satış: ' + p.name, b: `+${fmt1(ph.offer)}mn — dev kulüp gece yarısı ödedi.` });
+        pushInbox(G, { cat: 'transfer', t: 'Panik alıcıya satış: ' + p.name, b: `+${fmt1(ph.offer)}mn — ${ph.alici || 'dev kulüp'} gece yarısı ödedi.` });
         captainVoice(G, p); // K2: yıldızsa kaptan sözcülük yapar
         efsaneSatisKontrol(G, p); // M3: efsane küskünlüğü
       }
@@ -3811,7 +3918,24 @@ const LIG2_TEAM_NAMES = [
   'Kavaklıdere SK', 'Değirmenlik FK', 'İncesu Birliği', 'Poyraz SK', 'Karlıtepe Gençlik',
   'Selimpaşa SK', 'Doğanşehir Belediye', 'Menteşe FK', 'Ardıçlı SK', 'Bereketli Gençlik',
   'Çamlıca SK', 'Söğütlü Belediyespor', 'Kayalık FK',
+  'Sarıkaya Belediye', 'Kuşluca SK', 'Yoncalı FK', 'Dereboyu Gençlik', 'Kestanelik SK',
+  'Çakıltepe Belediye', 'Yamaçköy FK', 'Söğütyolu SK', 'Ilgınlı Belediyespor', 'Kızılçam Gençlik',
 ];
+// YABANCI KULÜP HAVUZU (2026-07-22): anlatı katmanı — yabancı oyuncu yurtdışına imzalar,
+// "dev kulüp" alıcılar isimlenir. Tümü KURGUSAL (gerçek kulüp adı/benzerliği yok — Steam kuralı).
+const YABANCI_KULUPLER = [
+  'Estrela do Vale', 'Maré Azul FC', 'Atlético Ribeira', 'Porto das Dunas', 'Cruz do Sertão', 'Ipanema Norte',
+  'Valmora SC', 'Nordhaven FC', 'Weißbach 04', 'Rosendal IF', 'Montclair FC', 'Fiorvento Calcio',
+  'Beranovice FK', 'Girondelle SC', 'Kolsberg BK', 'Loch Craigen FC', 'Eastmoor City', 'Sierra Blanca CF',
+  'Al-Sarab FC', 'Marjan SC', 'Wahat Club', 'El-Minar SC', 'Kasbah United', 'Zaytun FC',
+];
+// Yabancı isimli oyuncuya hash'le yurtdışı kulübü seç (rand'sız); Türk isimliye null döner
+function yabanciKulup(G, isim) {
+  const f = G.data?.names?.foreign;
+  if (!f || !isim) return null;
+  const yabanci = Object.values(f).some((pool) => pool.includes(isim));
+  return yabanci ? YABANCI_KULUPLER[mh32('yk|' + isim) % YABANCI_KULUPLER.length] : null;
+}
 function buildLadder(G, boost = 0) {
   const L = TUNING.LEAGUE, lig = G.lig || 1;
   // Küme düşen (üst-lig kaliteli) kulüp 2. ligde ezer → toparlanma; 2. ligden BAŞLAYAN kulüp dengi rakiplerle yarışır
@@ -3822,8 +3946,15 @@ function buildLadder(G, boost = 0) {
   G.club.hedefSira = hedef;
   const stronger = clamp(hedef - 1, 0, 17), weaker = 17 - stronger;
   const offsets = [...linspace(25, 8, stronger), ...linspace(-2, -25, weaker)];
-  // Lig-duyarlı isim havuzu: üst lig teams.json, 2. lig kendi taşra kulüpleri
-  const names = lig === 2 ? LIG2_TEAM_NAMES : (G.data.teams || []).map((t) => t.name);
+  // Lig-duyarlı isim havuzu: üst lig teams.json (40 kulüp), 2. lig kendi taşra kulüpleri.
+  // ROTASYON (2026-07-22 "takım isimleri artsın"): her kariyer havuzdan FARKLI 17'liyi görür —
+  // kaydırma kulüp adının hash'i (rand'sız → determinist, aynı kariyerde her sezon aynı lig).
+  // Kendi kulüp adıyla çakışan isim elenir (oyuncu "Kartalspor" yazarsa ligde ikizi olmasın).
+  const havuz = (lig === 2 ? LIG2_TEAM_NAMES : (G.data.teams || []).map((t) => t.name)).filter((n) => n !== G.club.name);
+  // Anahtar KARİYERE özgü olmalı ama merdiven kurulurken elde olmalı: kulüp adı setup'ta SONRA
+  // yazılır → ilk oyuncunun adı (seed'e göre değişir) + kulüp adı karışımı. rand'sız.
+  const rot = havuz.length ? mh32('lig|' + (G.squad?.[0]?.name || '') + '|' + (G.club.name || '')) % havuz.length : 0;
+  const names = [...havuz.slice(rot), ...havuz.slice(0, rot)];
   G.opponents = initAIClubs(offsets.map((off, i) => ({ id: 'o' + i, name: names[i] || ('Rakip ' + i), strength: clamp(Math.round(base + off), 25, 92) })));
   // B1b: AI kulüplerin başkanları isimli kişilerdir — yüzleşmeler onlarla yaşanır
   for (const o of G.opponents) o.baskan = uniqueName(G.data.names, G.usedNames || (G.usedNames = {})) || 'Rakip Başkan';
@@ -3983,6 +4114,15 @@ export function migrateLoaded(G) {
   // (nötr 50 sandığı OYNATMAZ; delegeEtki tam 0 döner, eski kayıt dengesi bozulmaz).
   if (!G.delege) G.delege = delegeInit();
   ultrasInit(G);
+  // TESİS BAKIM GÖÇÜ (2026-07-22): eski kayıtta sayaç yok — şimdiki sezondan başlat
+  // (eski kariyer ANINDA yıpranmaz; kural yüklemeden itibaren 3 sezon sayar).
+  if (!G.tesisBakim) { G.tesisBakim = {}; for (const t of TESIS_BAKIM) G.tesisBakim[t] = G.worldSeason ?? 1; }
+  // TD ZIRHI (kaos bulgusu 2026-07-22): coach alanı düşmüş/bozuk kayıt ilk haftada
+  // teknikEkip(c.taktik) okurken çöküyordu — vekil antrenörle aç, oyun kayıpsız sürer.
+  if (!G.coach || typeof G.coach !== 'object' || !Number.isFinite(G.coach.taktik)) {
+    G.coach = { name: 'Vekil Antrenör', ...TUNING.COACH_FIRE.INTERIM, contractYears: 0 };
+    pushInbox(G, { cat: 'kulup', t: 'Teknik ekip dosyası onarıldı', b: 'Kayıtta teknik direktör kaydı eksikti — vekil antrenör göreve çağrıldı. Yeni TD için pazar açık.', noQueue: true, sig: 'coach-onarim' });
+  }
   // REHİDRASYON (her yüklemede): JSON, Player metotlarını (refreshValue) düşürür —
   // prototip geri takılmazsa sezon sonu developSquad'da oyun ÇÖKER (Devam Et bug'ı).
   const canlandir = (p) => { if (p && typeof p === 'object' && !(p instanceof Player)) Object.setPrototypeOf(p, Player.prototype); };
@@ -4016,6 +4156,11 @@ export function startScenario(G, scId) {
   if (M.itibar != null) { G.gauges.itibar = M.itibar; G.club.reputation = M.itibar; }
   if (M.fanMult) G.club.fanCount = Math.round(G.club.fanCount * M.fanMult);
   if (M.tesisIndirim) G.tesisIndirim = M.tesisIndirim;        // belediye desteği: tesis −%50 bu dönem
+  // ENKAZ STADI (2026-07-22): kapasite seviye tablosuna geçince Batan Dev gişe zengini olmuştu
+  // (%88 kurtuluş, bant 40-72) — enkazın stadı da enkaz: düşük seviye + bakımsız sayaç
+  // (yıpranma uyarıları 1. sezondan düşer; kurtuluş yine emek ister).
+  if (M.stadyumSv != null) G.facilities.stadyum = M.stadyumSv;
+  if (M.tesisBakimEski) { G.tesisBakim = G.tesisBakim || {}; for (const t of TESIS_BAKIM) G.tesisBakim[t] = (G.worldSeason ?? 0) - M.tesisBakimEski; }
   if (M.buyumeMult) G.buyumeMult = M.buyumeMult;              // taban büyüme hızı ×1.5
   if (M.transferBan) { G.flags = G.flags || {}; G.flags.transferBan = TUNING.APPROVAL.WINDOW_SPAN; }
   G.scenario = { id: sc.id, ad: sc.ad, hedef: sc.hedef, done: false };
@@ -4064,7 +4209,7 @@ export function ilanVer(G, opts) {
   for (const p of G.squad.filter((x) => x.pos === pos)) p.morale = clamp(p.morale + TUNING.MEGA.ILAN.MORAL_CEZA, 0, 100);
   // İLANIN SOMUT SONUCU: piyasa o mevkide GENİŞLER — menajerler ellerindeki isimleri getirir
   if (Array.isArray(G.market)) {
-    const gelenler = extendMarketDet(Math.round(G.temelGuc), { names: G.data.names, scout: G.facilities.scout, count: 4, exclude: new Set((G.squad || []).map((p) => p.name)), salt: 9000 + (G.meta?.week || 0), pos });
+    const gelenler = extendMarketDet(marketRef(G), { names: G.data.names, scout: G.facilities.scout, count: 4, exclude: aktifIsimler(G), salt: 9000 + (G.meta?.week || 0), pos });
     for (const p of gelenler) p._ilan = true; // listede "İLAN" rozetiyle ayrışır — "hangileri benim ilanımdan geldi?" sorusu biter
     G.market.push(...gelenler);
     G.market.sort((a, b) => b.overall - a.overall);
@@ -4134,6 +4279,7 @@ export function vitrinToggle(G, playerId) {
   const V = TUNING.MEGA.VITRIN;
   if (!p.vitrin) {
     p.vitrin = true;
+    p._vitrinHafta = 0; // pity sayacı sıfırdan başlar
     p.morale = clamp(p.morale + V.MORAL, 0, 100);
     registerDecision(G, 'vitrin:' + p.name);
     if (p.id === G.captainId) { // K2 bağı: kaptan vitrine konursa telefon
@@ -4200,7 +4346,10 @@ function vitrinTick(G) {
   const V = TUNING.MEGA.VITRIN;
   for (const p of G.squad.filter((x) => x.vitrin)) {
     p.form = clamp(p.form - 1, 0, 100); // küskünlük form riski
-    if (!G.phone && rand(0, 1) < V.TEKLIF_P) {
+    p._vitrinHafta = (p._vitrinHafta || 0) + 1; // pity sayacı — kaçıncı hafta vitrinde
+    // NOT: rand() ÖNCE, pity SONRA (|| kısa devre) → zar çağrı sayısı değişmez, akış kaymaz
+    if (!G.phone && (rand(0, 1) < V.TEKLIF_P || p._vitrinHafta >= (V.PITY || 4))) {
+      p._vitrinHafta = 0;
       const offer = saleOffer(p) * (G.marketMult || 1) * rand(0.9, 1.1);
       ringPhone(G, {
         kind: 'dlsell', story: true, caller: 'menajer', callerName: 'Menajer hattı',
@@ -4654,9 +4803,35 @@ function telkinKabulSozu(t) {
     kale: '"Kapanıp kontra bekleyeceğiz. Gol yemeden dönersek kârdayız."',
   }[t] || '"Talimat alındı."');
 }
+// AKTİF İSİM EVRENİ (devasa bulgusu 2 · 2026-07-22): klon yalnız kadro+havuzdan değil, DOSYADA
+// BEKLEYEN oyuncudan da doğar — tfile/telefon dosyasındaki aday haftalarca bekler, piyasa o arada
+// aynı ismi üretir, dosya onaylanınca kadroda klon. Üretim exclude setleri BU evreni okur.
+function aktifIsimler(G) {
+  const s = new Set([...(G.squad || []).map((p) => p.name), ...(G.market || []).map((p) => p.name)]);
+  for (const m of G.inbox || []) if (m.file?.player?.name && !m.resolved) s.add(m.file.player.name);
+  for (const ph of [G.phone, G.phoneDeferred, ...(G.phoneQueue || [])]) if (ph?.file?.player?.name) s.add(ph.file.player.name);
+  if (G.delayedFile?.player?.name) s.add(G.delayedFile.player.name);
+  for (const p of G.loanedOut || []) if (p?.name) s.add(p.name);
+  return s;
+}
+// PİYASA KLONU KIRICI (devasa bulgusu 2026-07-22): hash-üretimli piyasa isimleri usedNames
+// kaydına GİRMEZ — kadroya giren üretilmiş isim (GM dosyası, genç takım, panik alım...) piyasadaki
+// adaşla çakışırsa soyadı RAND'SIZ kaydırılır (çekiliş sayısı sabit — seed'li akış kaymaz).
+function klonKir(G, name) {
+  const nm = G.data.names;
+  const piyasa = new Set((G.market || []).map((p) => p.name));
+  if (!nm || !name || !piyasa.has(name)) return name;
+  const parca = name.split(' '), ilk = parca[0];
+  const li0 = Math.max(0, nm.last.indexOf(parca.slice(1).join(' ')));
+  let li = li0;
+  do { li = (li + 1) % nm.last.length; name = `${ilk} ${nm.last[li]}`; }
+  while ((piyasa.has(name) || (G.usedNames || {})[name]) && li !== li0);
+  (G.usedNames = G.usedNames || (G.usedNames = {}))[name] = 1;
+  return name;
+}
 function gmPickName(G) {
   // v4.3: GM dosyaları + kriz yıldızları da TEKİL isim havuzundan (usedNames'e kaydolur)
-  return uniqueName(G.data.names, G.usedNames || (G.usedNames = {})) || 'Aday Oyuncu';
+  return klonKir(G, uniqueName(G.data.names, G.usedNames || (G.usedNames = {})) || 'Aday Oyuncu');
 }
 // §4: vaat ilerleme özeti (kongre mini barları) — 10: adım yok, 55: ara-adım, 90: koşul şu an sağlanıyor, 100: karara bağlandı
 export function promiseStatus(G) {

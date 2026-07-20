@@ -192,12 +192,14 @@ setSeed(930);
   if (G.pendingMatch && G.pendingMatch.phase === 'pre') { A.htDecision(G, 'tdguven'); const r = A.finishWeek(G); if (r && r.waitLate) A.lateDecision(G, 'devam'); }
   G.pendingMatch = null;
   let tur2 = null;
+  // 2026-07-22: kontrat telefonu o hafta kuyrukta İKİNCİ sıraya düşebilir (başka telefon önce
+  // çalar) — yalnız haftanın ilk telefonuna bakmak kaçırıyordu; drain seçicisi İÇİNDE yakala.
+  const yakala = (ph) => { if (ph.kind === 'kontrat' && !tur2) tur2 = { ...ph }; return ph.kind === 'kontrat' ? ph.options.findIndex((o) => o.key === 'kabul') : null; };
   for (let w = 0; w < 4 && !tur2; w++) {
     A.beginWeek(G);
-    if (G.phone && G.phone.kind === 'kontrat') tur2 = { ...G.phone };
-    drainPhones(G, (ph) => (ph.kind === 'kontrat' ? ph.options.findIndex((o) => o.key === 'kabul') : null));
+    drainPhones(G, yakala);
     if (G.pendingMatch && G.pendingMatch.phase === 'pre') { A.htDecision(G, 'tdguven'); const r = A.finishWeek(G); if (r && r.waitLate) A.lateDecision(G, 'devam'); }
-    drainPhones(G);
+    drainPhones(G, yakala);
     G.pendingMatch = null;
   }
   check('pazarlık: 2. tur telefonu (orta yol ya da direniş)', !!tur2, tur2 ? tur2.title : 'gelmedi');

@@ -563,8 +563,10 @@ body.kriz::after {
 .sb-tip {
   position: fixed; z-index: 9999; display: none; pointer-events: none;
   max-width: 300px; white-space: normal; text-align: left;
-  background: var(--bg-3); color: var(--ink-1); font-size: var(--fs-micro); line-height: 1.42;
-  padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); box-shadow: 0 10px 28px rgba(0, 0, 0, .6);
+  background: linear-gradient(180deg, #131c33, #0b1122); color: var(--ink-1); font-size: var(--fs-micro); line-height: 1.42;
+  padding: 8px 12px; border-radius: 7px; border: 1px solid rgba(212, 169, 64, .45);
+  /* dış halka: alttaki kart yazısından kesin kopuş — "üst üste binme" hissini kırar */
+  box-shadow: 0 0 0 3px rgba(7, 11, 20, .78), 0 12px 32px rgba(0, 0, 0, .75);
   animation: tipGoster .1s var(--ease) forwards;
 }
 @keyframes tipGoster { from { opacity: 0; } to { opacity: 1; } }
@@ -828,6 +830,19 @@ body { overflow: hidden; }
 /* analiz + sandık açılımı YAN YANA (done aşaması) — tek dar kolon yerine simetrik panel */
 .sn-done-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; max-width: 1360px; margin: 14px auto 0; text-align: left; align-items: start; }
 .sn-done-grid .card { max-width: none !important; margin: 0 !important; }
+/* ── KARİYER KAPANIŞI (ce-*): sb-cinematic 3 panel tören — eski dar kolon + scroll bitti (2026-07-22) ── */
+.ce-body { padding: 1em 1.6em .4em; }
+.ce-scene { width: min(1460px, 96vw); max-width: none; display: flex; flex-direction: column; gap: 14px; } /* global .scene 560px tavanını ezer */
+.ce-kol .kp-row { flex-wrap: wrap; } /* dar kolonda YENİ REKOR rozeti kart DIŞINA taşmasın */
+.ce-hero { text-align: center; }
+.ce-h1 { font-family: var(--font-display); font-size: 42px; font-weight: 800; letter-spacing: 3px; color: var(--ink-1); margin: 4px 0 6px; }
+.ce-tarih { font-family: var(--serif, Georgia); font-style: italic; font-size: 17px; color: var(--ink-2); }
+.ce-tarih b { color: var(--club-2); }
+.ce-not { font-size: 12px; margin-top: 4px; }
+.ce-grid { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 14px; align-items: start; text-align: left; }
+/* kural (fitsb-olcek-kurallari): fit kolonunda kart EZİLEMEZ — açık taşma fitSb'ye görünsün */
+.ce-kol { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ce-kol .card { margin: 0 !important; max-width: none !important; flex-shrink: 0; }
 .sn-veda { padding: .45em 0; border-top: 1px solid var(--line); font-size: 12px; }
 .sn-veda b { display: block; color: var(--ink-1); font-weight: 700; }
 .sn-veda i { display: block; color: var(--ink-2); font-style: italic; margin-top: 2px; }
@@ -1270,7 +1285,10 @@ body { overflow: hidden; }
 @media (max-width: 1200px) { .klub-grid { grid-template-columns: 1fr 1fr; } }
 .klub-grid { align-items: stretch; }
 .klub-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
-.klub-col .card { margin: 0 !important; position: relative; }
+/* flex-shrink:0 ŞART: .klub-kunye'nin overflow:hidden'ı min-height:auto korumasını sıfırlıyordu →
+   kolon sıkışınca TÜM açığı künye tek başına yutuyor (satırlar kayboluyor), kök "sığıyor" ölçtüğü
+   için fitSb hiç devreye girmiyordu. Hiçbir kart ezilmesin ki taşma fitSb'ye görünüp ölçeklensin. */
+.klub-col .card { margin: 0 !important; position: relative; flex-shrink: 0; }
 .klub-col .card.klub-tall { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
 
 /* Başlık — arma rozeti */
@@ -2250,7 +2268,7 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
   box-shadow: 0 42px 100px -30px #000, inset 0 1px 0 rgba(255, 255, 255, .12), 0 0 0 1px rgba(var(--club-rgb), .2), 0 0 54px -16px rgba(var(--club-rgb), .38);
   animation: pcIn .2s var(--ease); display: flex; flex-direction: column; gap: 11px; padding: 18px 20px 15px; max-height: 94vh; }
 .pcard-rich { width: min(840px, 96vw); }
-.pcard-lite { width: min(440px, 94vw); }
+.pcard-lite { width: min(660px, 96vw); }
 .pcard.t1 { border-color: rgba(240, 205, 110, .5); }
 .pcard.t2 { border-color: rgba(92, 214, 155, .38); }
 .pcard.t3 { border-color: rgba(135, 171, 217, .38); }
@@ -2320,7 +2338,10 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
 .pc-cell i { font-size: 8px; letter-spacing: 1px; color: var(--ink-3); font-weight: 800; font-style: normal; }
 .pc-cell b { font-size: 15px; color: var(--ink-1); font-variant-numeric: tabular-nums; font-family: var(--font-display); font-weight: 800; }
 .pc-cell b em { font-style: normal; font-size: 8.5px; color: var(--ink-3); font-weight: 600; margin-left: 4px; font-family: var(--font-body); }
-/* Lite (sisli) gövde */
+/* Lite (sisli) gövde — zengin kartla aynı dil: mevki solda, 6'lı metrik sağda */
+.pc-profil-lite { grid-template-columns: 172px 1fr; }
+.pc-kilit { opacity: .5; }
+.pc-kilit em { font-size: 11px; }
 .pc-lite-body { display: flex; flex-direction: column; gap: 10px; }
 .pc-lite-note { font-size: 11px; color: var(--ink-3); line-height: 1.45; }
 .pc-lite-note b { color: var(--club-2); }
@@ -3362,6 +3383,9 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 .tr-tt-id b { font-family: var(--font-display); font-weight: 800; font-size: .92em; letter-spacing: .015em; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tr-tt-id i { font-style: normal; font-size: .68em; color: var(--ink-3); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .tr-genc { color: var(--info); font-size: .7em; font-weight: 800; letter-spacing: .08em; border: 1px solid rgba(78,143,217,.4); border-radius: 4px; padding: 0 .35em; vertical-align: middle; }
+.tr-yeni { color: var(--pos); font-size: .7em; font-weight: 800; letter-spacing: .08em; border: 1px solid rgba(63,191,127,.45); border-radius: 4px; padding: 0 .35em; vertical-align: middle; background: rgba(63,191,127,.08); }
+.tr-vitrin { color: var(--club-2); font-size: .7em; font-weight: 800; letter-spacing: .08em; border: 1px solid rgba(212,169,64,.5); border-radius: 4px; padding: 0 .35em; vertical-align: middle; background: rgba(212,169,64,.08); }
+.tesis-bakim-uyari { color: var(--warn); font-size: .72em; font-weight: 700; margin-top: .35em; letter-spacing: .03em; }
 /* DİNAMİK çipi — bu isim hattı oynatır mı? Sabit kolonda, hep aynı hizada */
 .tr-fark { justify-self: center; width: 100%; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: .64em; letter-spacing: .04em; color: var(--ink-3); border: 1px solid var(--line); border-radius: 999px; padding: .3em 0; white-space: nowrap; overflow: hidden; }
 .tr-fark:empty { visibility: hidden; }

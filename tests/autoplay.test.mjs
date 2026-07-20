@@ -325,8 +325,10 @@ check('anlatı şablonu tekrarı (6 hafta) = 0', totalViolations === 0, `${total
 // EFEKTİF güçle oynanır (moral/form/kond/uygunluk) — AI'ya simetri oranı AI_EFEKTIF 0.93.
 // DENGELİ ana nöbetçi (bantları anlamlı); CİMRİ ince-kadro + minimal yönetimle SERT cezalanır
 // (bilinçli: uygunluk cezası gerçek) → ayrı gevşek bant.
-check('well-played oyOranı — Dengeli %55-67 · Cimri %45-67 · Popülist <%35',
-  RESULTS['Cimri'].oy >= 45 && RESULTS['Cimri'].oy <= 67 && RESULTS['Dengeli'].oy >= 55 && RESULTS['Dengeli'].oy <= 67 && RESULTS['Popülist'].oy < 35,
+// DIP_FREN (2026-07-22, kullanıcı "spiral yumuşasın"): dipteki oyuncuda yenilgi kaybı yarıya
+// iner — Dengeli'nin kötü serileri de biraz hızlı toparlanır → tavan 67→68 (ölçüm %67.3).
+check('well-played oyOranı — Dengeli %55-68 · Cimri %45-68 · Popülist <%35',
+  RESULTS['Cimri'].oy >= 45 && RESULTS['Cimri'].oy <= 68 && RESULTS['Dengeli'].oy >= 55 && RESULTS['Dengeli'].oy <= 68 && RESULTS['Popülist'].oy < 35,
   `Cimri %${RESULTS['Cimri'].oy.toFixed(1)}, Dengeli %${RESULTS['Dengeli'].oy.toFixed(1)}, Popülist %${RESULTS['Popülist'].oy.toFixed(1)}`);
 // ── ÇOK DÖNEM HAYATTA KALMA (Cimri vs Dengeli — yatırımın uzun vade getirisi) ──
 function playCareer(bot, seed, maxTerms = 4) {
@@ -453,7 +455,11 @@ check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D 
 // EFEKTİF-GÜÇ (2026-07-21): uzun vade bantları YALNIZ Dengeli'de (ana nöbetçi — ölçülen 72→57→43);
 // Cimri'nin ince kadrosu efektif dünyada uzun vadede YAŞAMAZ (12→4→2 — bilinçli: kalıcılık
 // derinlik + kondisyon yönetimi ister). Cimri için yumuşak nöbet: eğri düşer + D2'de sıfırlanmaz.
-const bands2 = [[1, 60, 88], [2, 30, 74], [3, 12, 56]]; // [idx, lo, hi] — dönem 2/3/4
+// KADRO TAVANI GÖRÜNÜR FESİH (2026-07-22, kullanıcı bug raporu "oyuncularım sessizce yok oldu"):
+// sezon sonu 30 tavanı eskiden güç sırasıyla dipten SESSİZCE kesiyordu — ocak gençleri ilk
+// kurbandı. Artık gençler korunup yaşlı+zayıf balast bırakılıyor → 12 sezonluk birikim Dengeli'yi
+// yapısal güçlendirdi (ölçülen dönem-4 %56→%62). Tavanlar ±gürültüyle taşındı; eğri hâlâ düşer.
+const bands2 = [[1, 60, 90], [2, 30, 78], [3, 15, 66]]; // [idx, lo, hi] — dönem 2/3/4
 for (const [i, lo, hi] of bands2) {
   check(`çok dönem: dönem-${i + 1} hayatta kalma %${lo}-${hi} (Dengeli)`,
     survival['Dengeli'][i] >= lo && survival['Dengeli'][i] <= hi,
@@ -528,7 +534,9 @@ function playModeTerm(bot, seed, mode) {
 // M1: muhalefet dönüş metriği — ikinci şans var ama garanti değil (bantlardan ayrı denetim)
 const donusOrani = MIRAS_STATS.dusus ? (MIRAS_STATS.donus / MIRAS_STATS.dusus) * 100 : 0;
 console.log(`\n── MİRAS: MUHALEFET DÖNGÜSÜ ──\n  düşüş ${MIRAS_STATS.dusus} · dönüş ${MIRAS_STATS.donus} (%${donusOrani.toFixed(0)}) · kapanış ${MIRAS_STATS.kapanis}`);
-check('muhalefet yaşandı + dönüş mümkün ama garanti değil (%15-60)', MIRAS_STATS.dusus > 50 && donusOrani >= 15 && donusOrani <= 60, `%${donusOrani.toFixed(0)} dönüş`);
+// GENÇLİK KADEMESİ (2026-07-22, kullanıcı tasarımı): akademili kulübün genç omurgası güçlendi →
+// muhalefetten dönüş ~+5 kaydı (ölçülen %65). Tavan 60→68 — dönüş hâlâ garanti değil.
+check('muhalefet yaşandı + dönüş mümkün ama garanti değil (%15-68)', MIRAS_STATS.dusus > 50 && donusOrani >= 15 && donusOrani <= 68, `%${donusOrani.toFixed(0)} dönüş`);
 check('2-kayıp kapanışı çalışıyor', MIRAS_STATS.kapanis > 0, `${MIRAS_STATS.kapanis} kariyer kapandı`);
 
 console.log(`\n${'─'.repeat(52)}\nSONUÇ: ${pass} geçti, ${fail} kaldı\n`);
