@@ -231,6 +231,25 @@ function gucKirilim(G) {
   </div>`;
 }
 
+// Oyun içi GÜNCEL TARİH — sezon Ağustos'ta (2024+sezon) başlar, hazırlık Temmuz'da,
+// 30.06.(2025+sezon)'de kapanır. Sözleşme bitişi "30.06.YYYY" ile aynı takvime oturur,
+// böylece güncel gün ile sözleşme bitiş günü aynı ölçekte kıyaslanır. (Salt gösterim; RNG'ye dokunmaz.)
+const SB_AYLAR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+export function sbTarih(G) {
+  const m = G.meta || {};
+  const S = G.worldSeason ?? m.season ?? 1;
+  const agustosYil = 2025 + S - 1; // sezon Ağustos'unun yılı (kapanış 30.06.(2025+S))
+  let d;
+  if ((G.hazirlik || 0) > 0) {
+    d = new Date(Date.UTC(agustosYil, 6, 12)); // hazırlık: 12 Temmuz
+  } else {
+    const w = Math.min(Math.max(m.week || 1, 1), G.SEASON_WEEKS || 34);
+    d = new Date(Date.UTC(agustosYil, 7, 10)); // 1. hafta = 10 Ağustos
+    d.setUTCDate(d.getUTCDate() + (w - 1) * 7); // her hafta +7 gün
+  }
+  return `${d.getUTCDate()} ${SB_AYLAR[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
 export function sbTopbar(G, { phaseChip = null, back = null } = {}) {
   const m = G.meta || {};
   const hazir = (G.hazirlik || 0) > 0;
@@ -243,6 +262,7 @@ export function sbTopbar(G, { phaseChip = null, back = null } = {}) {
     <div class="sb-brand"><span class="sb-brand-name">${esc(G.club?.name || 'SAYIN BAŞKAN')}${(G.career?.titles || 0) > 0 ? `<span class="sb-yildizlar" data-tip="Senin dönemindeki şampiyonluklar: ${G.career.titles}">${'⭐'.repeat(Math.min(3, G.career.titles))}${G.career.titles > 3 ? '×' + G.career.titles : ''}</span>` : ''}</span><span class="sb-brand-sub">${lig}${G.club?.city ? ' · ' + esc(G.club.city) : ''}</span></div>
     <span class="sb-divider"></span>
     <span class="sb-chip sb-chip-club"><i class="sb-dot-live"></i>${chip}</span>
+    <span class="sb-chip sb-chip-tarih" data-tip="Oyun içi güncel tarih — sözleşme bitişleri (30.06.YYYY) bu takvime göredir"><svg viewBox="0 0 20 20" class="sb-cal-svg" width="12" height="12" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 8.5h14M7 2.5v3.4M13 2.5v3.4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>${sbTarih(G)}</span>
     <span class="sb-spacer"></span>
     <span class="sb-pill sb-pill-pos"><b>KASA</b><span>${fmt(G.economy.kasa)}mn</span></span>
     <span class="sb-pill sb-pill-neg"><b>BORÇ</b><span>${fmt(G.economy.borc)}mn</span></span>

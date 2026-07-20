@@ -2761,6 +2761,8 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 .sb-spacer{ flex:1; }
 .sb-chip{ display:inline-flex; align-items:center; gap:.6em; background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:var(--radius-s); padding:.5em 1em; font-family:var(--font-display); font-weight:700; font-size:.85em; letter-spacing:.08em; }
 .sb-chip-club{ color:var(--club); }
+.sb-chip-tarih{ color:var(--gold-2, #f0cd6e); gap:.5em; letter-spacing:.05em; background:rgba(240,205,110,.08); border-color:rgba(240,205,110,.3); }
+.sb-chip-tarih .sb-cal-svg{ opacity:.85; flex:0 0 auto; }
 .sb-dot-live{ width:.5em; height:.5em; border-radius:50%; background:currentColor; box-shadow:0 0 .7em currentColor; }
 .sb-pill{ display:inline-flex; align-items:center; gap:.5em; border-radius:var(--radius-s); padding:.5em 1em; font-family:var(--font-display); font-weight:800; }
 .sb-pill b{ font-size:.72em; letter-spacing:.1em; font-weight:700; opacity:.8; }

@@ -296,7 +296,7 @@ export function render(G) {
     ? '<span class="badge" style="margin-left:auto">tarihe geçtin</span>'
     : megaInsa
       ? `<span class="tesis-santiye" style="margin-left:auto" data-tip="Konsorsiyum çalışıyor — kurdele ${sInsa.kalan} hafta sonra"><span>🏗 ${megaGecen}/${sInsa.toplam}</span><span class="tesis-santiye-bar"><i style="width:${Math.round(megaGecen / sInsa.toplam * 100)}%"></i></span></span>`
-      : `<button class="cx-btn on" data-act="megaProje" style="margin-left:auto" ${G.economy.kasa < MEGA.maliyet || sInsa ? 'disabled' : ''} data-tip="${sInsa ? 'Şantiye dolu — önce mevcut iş bitsin' : G.economy.kasa < MEGA.maliyet ? `Kasa yetersiz (${MEGA.maliyet}mn gerek)` : `${MEGA.maliyet}mn peşin · ${MEGA.hafta} hafta şantiye · kurdelede itibar +5, taraftar +3`}">Temel At · ${MEGA.maliyet}mn</button>`}
+      : `<button class="cx-btn on" data-act="megaProje" style="margin-left:auto" ${G.economy.kasa < MEGA.maliyet || sInsa || (G.flags && G.flags.budgetLock > 0) ? 'disabled' : ''} data-tip="${sInsa ? 'Şantiye dolu — önce mevcut iş bitsin' : (G.flags && G.flags.budgetLock > 0) ? 'Bütçe kilidi aktif' : G.economy.kasa < MEGA.maliyet ? `Kasa yetersiz (${MEGA.maliyet}mn gerek)` : `${MEGA.maliyet}mn peşin · ${MEGA.hafta} hafta şantiye · kurdelede itibar +5, taraftar +3`}">Temel At · ${MEGA.maliyet}mn</button>`}
   </div>`;
   const ortLvl = FACILITIES.reduce((a, f) => a + (G.facilities[f] || 0), 0) / FACILITIES.length;
   const altyapi = ortLvl < 3.5 ? 'DÜŞÜK' : ortLvl < 6.5 ? 'ORTA' : 'YÜKSEK';

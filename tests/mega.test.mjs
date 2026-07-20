@@ -499,7 +499,7 @@ setSeed(2191);
 {
   const G = A.newGame(data, 'normal');
   const cs = clubSelect.render(G);
-  check('kulüp seçimi: mod butonları + senaryo sekmesi + önerilir rozeti', cs.includes('Geri Adım Yok') && cs.includes('Dosyalar') && cs.includes('yeni başkana göre'));
+  check('kulüp seçimi: mod butonları + senaryo sekmesi + önerilir rozeti', cs.includes('Geri Adım Yok') && cs.includes('Senaryolar') && cs.includes('yeni başkana göre'));
   G._identities = { orta: rollClubIdentity('orta', data.teams) };
   check('havuz kimliği kartta görünür (isim/renk/lore kullanılır)', clubSelect.render(G).includes(G._identities.orta.name));
   const G2 = fresh();

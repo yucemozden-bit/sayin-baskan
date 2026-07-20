@@ -1009,6 +1009,12 @@ window.addEventListener('keydown', (e) => {
   if (!G) return;
   if (e.key === ' ' || e.code === 'Space') {
     if (e.repeat) return; // basılı tutup hafta makinelemek yok — her ilerleme bilinçli bir dokunuş
+    // AÇIK MODAL varsa SPACE hafta İLERLETMEZ — modalı kapatır (yoksa overlay altındaki DEVAM'a basıp sızardı)
+    if (G._tesis3d || G._pcard || G._spCard || G._achModal) {
+      e.preventDefault();
+      if (G._tesis3d) G._tesis3d = null; else if (G._pcard) G._pcard = null; else if (G._spCard) G._spCard = null; else G._achModal = false;
+      render(); return;
+    }
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
     const btn = document.querySelector('button[data-act="devam"]:not([disabled])');
