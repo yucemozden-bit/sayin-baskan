@@ -79,6 +79,10 @@ export const TUNING = {
     'antrenman_1', 'antrenman_1', 'antrenman_2', 'antrenman_3', 'antrenman_4_1',
     'antrenman_5', 'antrenman_6_2', 'antrenman_7_1', 'antrenman_8', 'antrenman_8', 'antrenman_8',
   ] },
+  TICARI_3D: { DIR: 'assets/ticari/', BY_LVL: [
+    'ofis_1_1', 'ofis_1_1', 'ofis_2', 'ofis_3', 'ofis_4_1',
+    'ofis_5', 'ofis_6', 'ofis_7', 'ofis_8_1', 'ofis_8_1', 'ofis_8_1',
+  ] },
   // KONFOR (kullanıcı tasarımı 2026-07-22: "stadyum kalitesi doluluğu etkilesin"): stadyum
   // seviyesi = konfor. Sv.5 nötr; her seviye doluluk ±%1.2 (sv0 −%6 köhne, sv10 +%6 modern).
   // Kapasite ayrı hikâye: tier + MEGA kompleks (×1.2) — kalite yüzdeyi, kompleks koltuğu büyütür.

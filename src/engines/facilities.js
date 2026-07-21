@@ -61,3 +61,9 @@ export function antrenmanModel(lvl) {
   const sv = Math.max(0, Math.min(arr.length - 1, lvl | 0));
   return M.DIR + arr[sv] + '.html';
 }
+// TİCARİ OFİS 3D: seviye → model dosya yolu (assets/ticari/…html). stadModel ile aynı kurgu.
+export function ticariModel(lvl) {
+  const M = TUNING.TICARI_3D, arr = M.BY_LVL;
+  const sv = Math.max(0, Math.min(arr.length - 1, lvl | 0));
+  return M.DIR + arr[sv] + '.html';
+}

@@ -3,7 +3,7 @@
 // Kaydırma yok — 6 tesis viewport'u doldurur.
 import { TUNING } from '../config.js';
 import { fmt } from './frame.js';
-import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES, stadKapasite, stadModel, antrenmanModel } from '../engines/facilities.js';
+import { upgradeCost, canUpgrade, effectiveUpgradeCost, facilityDiscountMult, FACILITIES, stadKapasite, stadModel, antrenmanModel, ticariModel } from '../engines/facilities.js';
 import { sbShell } from './cockpit.js';
 import { MEGA, TESIS_BAKIM } from '../actions.js';
 import { bilet as ecoBilet } from '../engines/economy.js';
@@ -91,8 +91,8 @@ function sahne(f, lvl) {
   const S = SCENE[f]; return S ? S(dolu) : '';
 }
 
-// 3D VİTRİN — hangi tesisin SEVİYEYE göre 3D modeli var? (stadyum + antrenman; ticari gelince eklenir)
-const FAC_3D = { stadyum: (lvl) => stadModel(lvl), antrenman: (lvl) => antrenmanModel(lvl) };
+// 3D VİTRİN — hangi tesisin SEVİYEYE göre 3D modeli var? (stadyum + antrenman + ticari)
+const FAC_3D = { stadyum: (lvl) => stadModel(lvl), antrenman: (lvl) => antrenmanModel(lvl), ticari: (lvl) => ticariModel(lvl) };
 // 3D vitrin paneli (1. sıra). Model varsa canlı iframe; yoksa mevcut SVG sahne + "3D yakında" etiketi.
 function panel3D(G, f) {
   const lvl = G.facilities[f], title = AD[f] || f, mk = FAC_3D[f];

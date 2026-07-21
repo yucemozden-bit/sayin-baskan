@@ -2,6 +2,7 @@
 // Nakit akışı BARLI grafik (gelir yeşil / gider kırmızı / NET LED), FFP şeridi,
 // primler, borç masası. Panel dili tr-panel (3B yüzey) ile ortak.
 import { fmt, esc } from './frame.js';
+import { TUNING } from '../config.js';
 import { sponsorOffers, iflasEsigi as A_iflasEsigi } from '../actions.js';
 import { bilet as ecoBilet } from '../engines/economy.js';
 import { sbShell } from './cockpit.js';
@@ -26,6 +27,22 @@ export function render(G) {
     <div class="fin-kpi"><b>${price.toFixed(1)}<i>×</i></b><span>doluluk ~<b class="tnum">%${Math.round(bOn.doluluk * 100)}</b> · gişe ~<b class="tnum">${fmt(bOn.gelir)}mn</b>/maç — çarpanı değiştir, rakam anında oynar</span></div>
     <div class="cx-seg" style="margin-top:2px">${priceBtns}</div>
     <div class="tr-not">Ucuz = dolu tribün, az gelir · Pahalı = boş koltuk, çok gelir. Taraftar algısı sosyal nabza yansır.</div>
+  </div>`;
+
+  // ── YIL SONU VERGİLERİ (canlı projeksiyon) — kullanıcı: gerçekçi mali kural katmanı ──
+  const VT = TUNING.ECONOMY || {};
+  const karHam = Math.round(G.sezonKar || 0);
+  const karEsik = VT.KAR_VERGISI_ESIK ?? 55;
+  const borcMuaf = (e.borc || 0) > (VT.KAR_VERGISI_BORC_MUAF ?? 20);
+  const karVergi = (!borcMuaf && karHam > karEsik) ? Math.round((karHam - karEsik) * (VT.KAR_VERGISI ?? 0.4)) : 0;
+  const svEsik = ((VT.SERVET_VERGISI || {}).ESIK || {})[G.club.tier] || 100;
+  const kasaFazla = Math.max(0, Math.round(e.kasa) - svEsik);
+  const servetVergi = Math.round(kasaFazla * ((VT.SERVET_VERGISI || {}).ORAN ?? 0.5));
+  const vergiSerit = `<div class="fin-vergi">
+    <span class="fin-vergi-t">📅 YIL SONU VERGİ</span>
+    <span class="fin-vergi-i" data-tip="Sezon işletme kârının ilk ${karEsik}mn'i muaf, üstü %${Math.round((VT.KAR_VERGISI ?? 0.4) * 100)} kesilir — AMA yalnız borçsuzken. Borçluyken 'önce borcunu öde', vergi yok. Bu sezon kârı: ${fmt(karHam)}mn.">💰 Kâr vergisi <b class="${karVergi > 0 ? 'neg' : 'pos'}">~${fmt(karVergi)}mn</b>${borcMuaf ? ' <i>borçlu·muaf</i>' : ''}</span>
+    <span class="fin-vergi-i" data-tip="Kasa tier tamponunu (${svEsik}mn) aşarsa fazlanın %${Math.round(((VT.SERVET_VERGISI || {}).ORAN ?? 0.5) * 100)}'i vergilenir — hazine milyarlarda kalmasın. Parayı sahaya/tesise yatır, tampon altında kal. Kasa: ${fmt(e.kasa)}mn.">🏛 Servet vergisi <b class="${servetVergi > 0 ? 'neg' : 'pos'}">~${fmt(servetVergi)}mn</b>${kasaFazla > 0 ? ` <i>+${fmt(kasaFazla)} fazla</i>` : ''}</span>
+    <span class="fin-vergi-not">${servetVergi > 0 || karVergi > 0 ? 'yatır ya da kaybet — parayı çürütme' : e.borc > 0 ? 'borcunu öde, vergiden muafsın' : 'kasa temiz, vergi yok'}</span>
   </div>`;
 
   // ── Nakit akışı: TAM GENİŞLİK YATAY BANT — gelir | gider | NET üç kolonda (vitrin başrol, akış dipnot)
@@ -105,7 +122,7 @@ export function render(G) {
   const hFaiz = e.borc > 0 ? Math.round(e.borc * e.faizOrani / (G.SEASON_WEEKS || 34) * 10) / 10 : 0;
   const borcPanel = `<div class="tr-panel">
     <div class="cx-panel-head"><span class="overline">Borç Masası</span><span class="cx-hint">faiz %${Math.round(e.faizOrani * 100)}</span></div>
-    <div class="fin-kpi"><b class="${e.borc > 0 ? 'kpi-neg' : 'kpi-pos'}">${fmt(e.borc)}<i>mn</i></b><span>${e.borc > 0 ? `faiz kasadan haftada ~<b class="tnum">${fmt(hFaiz)}mn</b> yiyor — ödedikçe kayyum çizgisi uzaklaşır` : 'borç SIFIR — kongre mali disiplini alkışlıyor'}</span></div>
+    <div class="fin-kpi"><b class="${e.borc > 0 ? 'kpi-neg' : 'kpi-pos'}">${fmt(e.borc)}<i>mn</i></b><span>${e.borc > 0 ? `faiz kasadan haftada ~<b class="tnum">${fmt(hFaiz)}mn</b> yiyor · <b class="tnum" data-tip="Faizi ödesen bile anapara ~%${Math.round((TUNING.ECONOMY.BORC_KOMPOUND ?? 0.02) * 100)}/yıl bileşik büyür — sürüncemede bırakma">anapara bileşik ↑</b> — ödedikçe kayyum çizgisi uzaklaşır` : 'borç SIFIR — kongre mali disiplini alkışlıyor'}</span></div>
     ${iflasBar}
     <div class="cx-seg" style="margin-top:2px">
       <button class="cx-btn" data-act="payDebt" data-arg="25" ${e.kasa < 25 || e.borc <= 0 ? 'disabled' : ''}>25mn Öde</button>
@@ -213,6 +230,7 @@ export function render(G) {
   // (tam genişlik, 3 slot gerçek alan bulur), nakit akışı altta yatay dipnot bandı.
   const body = `<div class="fin-root">
     <div class="fin-strip">${biletPanel}${borcPanel}${ffpPanel}${primPanel}</div>
+    ${vergiSerit}
     ${sponsorPanel}
     ${akisPanel}
   </div>`;
