@@ -212,6 +212,14 @@ export const TUNING = {
   // — Ekonomi (Bible-8) — sponsor pazarlığı & FFP MVP dışı; gelir kalemi olarak var —
   ECONOMY: {
     WEEKS_PER_YEAR: 52,
+    KAR_VERGISI: 0.40,         // yıl (sezon) sonu işletme kârının EŞİK ÜSTÜ %40'ı vergi — zengin kulüp payını öder, hazine milyarlara ulaşmasın
+    KAR_VERGISI_ESIK: 55,      // ilk 55mn kâr vergisiz (küçük/orta kulüp korunur; yalnız zengin fazlası vergilenir)
+    KAR_VERGISI_BORC_MUAF: 20, // borç > bu ise kâr vergisi ALINMAZ ("önce borcunu öde; borçluyken zengin sayılmazsın") — Batan Dev / toparlanan kulüp korunur, yalnız borçsuz-zengin vergilenir
+    BORC_KOMPOUND: 0.02,       // borç ANAPARA bileşiği: faizi ödesen bile borç ~%2/yıl büyür (öde, sürüncemede bırakma) — gentle, spiral yok
+    // SERVET VERGİSİ (bakiye tavanı): kasa tier tamponunu aşarsa fazlası vergilenir → hazine milyarlarda
+    // kalmaz ("yatır ya da kaybet"). Kâr vergisi AKIŞI, bu STOKU sınırlar → ikisi birlikte gerçek tavan.
+    SERVET_VERGISI: { ESIK: { kucuk: 25, orta: 70, buyuk: 160, dev: 300, efsane: 420 }, ORAN: 0.5 },
+    VARLIK_VERGISI: 0.02,      // başkanın kişisel varlık değerinin %2'si/sezon (ev/araba/uçak/yat/sanat) — oz.nakit'ten (lüksün kalıcı bedeli)
     SPONSOR_BASE: { kucuk: 6, orta: 22, buyuk: 45, dev: 68, efsane: 95 }, // göğüs baz (sezonluk mn) — küçük/orta ×1.5 (daha ağır); büyük zaten devasa, net bandında kalsın
     SPONSOR_ITIBAR_BASE: 0.5, SPONSOR_ITIBAR_DIV: 100, // itibarFactor = 0.5 + itibar/100
     SPONSOR_KOL: 0.4, SPONSOR_NAMING: 0.6, NAMING_MIN_STAD: 7,

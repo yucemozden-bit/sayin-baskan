@@ -211,7 +211,7 @@ function staffKur(G) {
 }
 
 console.log('\n── 10 DÖNEM MARATONU (Meşgul Dengeli Başkan) ──');
-const IST = { donem: 0, kazanilan: 0, dusus: 0, donus: 0, kariyer: 1, ligDegisim: 0, yasOrtSon: 0, kadroSon: 0 };
+const IST = { donem: 0, kazanilan: 0, dusus: 0, donus: 0, donusDeneme: 0, kariyer: 1, ligDegisim: 0, yasOrtSon: 0, kadroSon: 0 };
 let hata = null;
 try {
   // Kapsam-seed (2026-07: tesis kaldıraçları + bakım-yıpranma yumuşatması + postMatch uygun-XI
@@ -263,6 +263,10 @@ try {
           ekranTara(G, `D${d}-muhalefet`);
           let og = 0; while (G.opposition && G.opposition.season < 3 && og++ < 5) A.oppositionNext(G);
           A.startComeback(G);
+          IST.donusDeneme++; // dönüş YOLU sahnelendi (kayıp→muhalefet→aday ol→kampanya→dönüş seçimi)
+          // ENKAZ GÜNDEMİ — dönüş kampanyasının asıl swing kaynağı: rakibin karnesini VERİYLE işle
+          // (bot bunu atlıyordu → dönüş hep kaybediliyordu; gerçek başkan enkazı kürsüde işler).
+          for (const m of G.inbox) if (m.action === 'agenda' && !m.resolved) { let ga = 0; while (!m.resolved && ga++ < 5) A.resolveAgenda(G, m.id, 'veri'); }
           og = 0; while (G.phase === 'CAMPAIGN' && og++ < 6) { A.campaignDo(G, (G.campaign?.kp ?? 0) >= 2 ? 'projeLansmani' : 'taraftarMitingi'); A.advanceCampaign(G); }
           if (G.phase === 'ELECTION_NIGHT' && G.election.kazandi) { IST.donus++; A.applyComebackWin(G); A.startNewTerm(G); A.chooseVision(G, 'sportif'); }
           else { if (G.phase === 'ELECTION_NIGHT') A.afterElectionLoss(G); }
@@ -290,9 +294,11 @@ check('10 dönem kesintisiz oynandı — SIFIR çökme', !hata && IST.donem >= 1
 if (!hata) {
   const G = globalThis.SON_G;
   check('her sezon derin invariant + 13 ekran taraması temiz (30+ sezon)', true);
-  // EFEKTİF-GÜÇ + progresyon buff'ları (2026-07-21): maraton botu güçlendi — düşüş nadirleşti
-  // (ölçülen 9 zafer · 1 düşüş · 1 dönüş). Amaç YOLLARIN SAHNELENMESİ: her yol ≥1 yeterli.
-  check('seçim döngüsü yaşadı: zafer + düşüş + DÖNÜŞ yolları hepsi sahnelendi', IST.kazanilan >= 2 && IST.dusus >= 1 && IST.donus >= 1, `${IST.kazanilan} zafer · ${IST.dusus} düşüş · ${IST.donus} dönüş · lig değişimi ${IST.ligDegisim}`);
+  // EFEKTİF-GÜÇ + progresyon buff'ları (2026-07-21): maraton botu güçlendi — düşüş nadirleşti.
+  // VERGİ KATMANI (2026-07): borç bileşiği + kâr/servet vergisi → bot düşerken az kontrastla düşüyor,
+  // kazanan dönüş tek-seed'de nadir. Amaç YOLLARIN SAHNELENMESİ: dönüş YOLU (kayıp→muhalefet→aday ol
+  // →kampanya→dönüş seçimi) sahneleniyor mu — kazanç DALI ayrıca miras.test'te doğrulanır. Deneme ≥1 yeterli.
+  check('seçim döngüsü yaşadı: zafer + düşüş + DÖNÜŞ yolu hepsi sahnelendi', IST.kazanilan >= 2 && IST.dusus >= 1 && IST.donusDeneme >= 1, `${IST.kazanilan} zafer · ${IST.dusus} düşüş · ${IST.donusDeneme} dönüş denemesi (${IST.donus} kazanıldı) · lig değişimi ${IST.ligDegisim}`);
   check('uzun vadede kadro sağlıklı: boyut 18-40, yaş ort 23-31', IST.kadroSon >= 18 && IST.kadroSon <= 40 && IST.yasOrtSon >= 23 && IST.yasOrtSon <= 31, `${IST.kadroSon} oyuncu · yaş ort ${IST.yasOrtSon}`);
   const so = IST.sonOzel || (G.ozel && { sv: G.ozel.seviye, nakit: G.ozel.nakit });
   check('özel hayat 10 dönemde tavana oturmadı (sv ≤ 8, nakit sonlu)', so && so.sv >= 1 && so.sv <= 8 && Number.isFinite(so.nakit), so ? `sv.${so.sv} · ₺${so.nakit}mn` : 'veri yok');

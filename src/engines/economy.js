@@ -122,9 +122,15 @@ export function maliHedef(state, gelirHafta, giderHafta) {
 export function applyEconomy(state, { isHomeMatch = false, isSeasonWeek = true, ticketMult = 1 } = {}) {
   const gelir = haftalikGelir(state, { isHomeMatch, isSeasonWeek, ticketMult });
   const gider = haftalikGider(state);
-  const net = gelir.toplam - gider.toplam;
-
+  const net = gelir.toplam - gider.toplam; // P&L (faiz gider olarak dahil) — yıllık kâr vergisi bunu izler
   state.economy.kasa += net;
+
+  // BORÇ ANAPARA BİLEŞİĞİ (kullanıcı kuralı 2026-07): ağır faiz giderini ödesen BİLE anapara her hafta
+  // hafifçe büyür → borcu sürüncemede bırakma, öde. Gentle oran (BORC_KOMPOUND ~%3/yıl) — spiral YOK;
+  // faiz zaten ayrıca nakit yakar (asıl ceza orada). Borçsuz kulüpte etki 0.
+  if (state.economy.borc > 0) state.economy.borc += state.economy.borc * (TUNING.ECONOMY.BORC_KOMPOUND ?? 0.03) / TUNING.ECONOMY.WEEKS_PER_YEAR;
+  state.sezonKar = (state.sezonKar || 0) + net; // sezon (yıl) işletme kârı → endSeason'da eşik üstü %40 vergi
+
   let autoBorrow = 0, penalty = false;
   if (state.economy.kasa < 0) {
     autoBorrow = -state.economy.kasa;

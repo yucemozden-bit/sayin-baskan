@@ -18,7 +18,7 @@ import { computeTargets, applyInertia } from './engines/gauges.js';
 import { checkThresholdEvents, tickEventFlags } from './engines/events.js';
 import { selectPromises, decayPromiseHope, judgePromises, isSelectable, addMidPromise } from './engines/promises.js';
 import { eleksiyon } from './engines/election.js';
-import { h32 as ozH32, absHafta, KADIN_AD, UNVANLAR, seviyeOf, haftalikGelir, VARLIK, DAVETLER, OLAYLAR, ROZETLER, AILE_TEL, varlikPasif } from './engines/ozel.js';
+import { h32 as ozH32, absHafta, KADIN_AD, UNVANLAR, seviyeOf, haftalikGelir, VARLIK, DAVETLER, OLAYLAR, ROZETLER, AILE_TEL, varlikPasif, varlikDegeri } from './engines/ozel.js';
 import { marketValue as pMarketValue } from './models/player.js';
 import { KISILIKLER, kisilikOf, relDelta, esikDurum, klikOf, KLIK_TR, bkIsim } from './engines/iliski.js';
 import { escalateHedef } from './engines/expectation.js';
@@ -196,7 +196,7 @@ export function selectClub(G, tier, identity = null, opts = {}) {
   G.delege = delegeInit();                  // KONGRE 2.6: 4 seçmen bloku (nötr 50)
   G.worldSeason = 0;                        // D1: AI drift sayacı (ilk sezon drift yok)
   G.tesisBakim = {}; for (const t of TESIS_BAKIM) G.tesisBakim[t] = 0; // bakım saati kariyer başında kurulur
-  G.flags = {}; G.rival = { attractiveness: 0 }; G.sozTutmaBirikim = 0;
+  G.flags = {}; G.rival = { attractiveness: 0 }; G.sozTutmaBirikim = 0; G.sezonKar = 0; // yıllık kâr vergisi izleyicisi
   G.promises = []; G.history = { seasons: [] };
   G.term = { income: 0, wage: 0, starBought: false, maxTicket: G.economy.ticketPrice, weeks: 0, ticari: 0, academyGraduates: 0, socialProjects: 0 };
   G.termStartBorc = G.economy.borc;
@@ -2794,6 +2794,32 @@ export function hireCoachAction(G, index) {
 // ── Sezon / dönem geçişi ──
 export function endSeason(G) {
   tickSponsors(G); // sponsor sözleşme süreleri bir sezon azalır; bitenler slotu boşaltır
+  // YILLIK KÂR VERGİSİ (kullanıcı kuralı 2026-07): sezon işletme kârının %40'ı kesilir → zengin kulübün
+  // hazinesi milyarlara ulaşmaz, kâr etmek hâlâ değerli. Zarar eden kulüp vergilenmez (kar ≤ 0).
+  {
+    const kar = G.sezonKar || 0;
+    const esik = TUNING.ECONOMY.KAR_VERGISI_ESIK ?? 0;
+    const vergiyeTabi = Math.max(0, kar - esik); // ilk 'esik' mn muaf — küçük/orta kulüp korunur
+    const borcMuaf = (G.economy.borc || 0) > (TUNING.ECONOMY.KAR_VERGISI_BORC_MUAF ?? 20); // borçluyken vergi yok — önce borcunu öde
+    if (vergiyeTabi > 0.5 && !borcMuaf) {
+      const vergi = Math.round(vergiyeTabi * (TUNING.ECONOMY.KAR_VERGISI ?? 0.4));
+      G.economy.kasa = Math.max(0, G.economy.kasa - vergi);
+      pushInbox(G, { cat: 'mali', t: `Yıllık kâr vergisi: −${fmt1(vergi)}mn`, b: `Sezon işletme kârı ${fmt1(kar)}mn; ilk ${esik}mn muaf, üstündeki ${fmt1(vergiyeTabi)}mn'nin %${Math.round((TUNING.ECONOMY.KAR_VERGISI ?? 0.4) * 100)}'i kesildi. Zengin kulüp payını öder — parayı sahaya/tesise yatır, kasada çürütme.`, noQueue: true });
+    }
+    G.sezonKar = 0;
+  }
+  // SERVET VERGİSİ (bakiye tavanı): kasa tier tamponunu aşarsa fazlası vergilenir → hazine milyarlara
+  // ulaşmaz. Parayı sahaya/tesise/projeye yatıran kulüp tamponun altında kalır, vergi ödemez.
+  {
+    const SV = TUNING.ECONOMY.SERVET_VERGISI || {};
+    const esikS = (SV.ESIK && SV.ESIK[G.club.tier]) || 100;
+    const fazla = Math.max(0, Math.round(G.economy.kasa) - esikS);
+    if (fazla > 0.5) {
+      const vergi = Math.round(fazla * (SV.ORAN ?? 0.5));
+      G.economy.kasa = Math.max(0, G.economy.kasa - vergi);
+      pushInbox(G, { cat: 'mali', t: `Servet vergisi (kasa fazlası): −${fmt1(vergi)}mn`, b: `Kasa ${fmt1(esikS)}mn tamponunu aştı; fazlanın %${Math.round((SV.ORAN ?? 0.5) * 100)}'i kesildi. Zengin kulüp parayı çürütmez — sahaya, tesise, şehir projesine yatır.`, noQueue: true });
+    }
+  }
   const table = standings(G.league);
   const pos = table.find((t) => t.id === MY).rank;
   const L = TUNING.LEAGUE, lig = G.lig || 1;
@@ -4962,6 +4988,13 @@ export function ozelTick(G, myRes, ctx = {}) {
     // (not() henüz tanımsız — akışa doğrudan yazılır)
     if ((oz.varlik?.konut || 0) >= 4) { for (const m of G.board || []) m.loyalty = clamp((m.loyalty || 50) + 1, 0, 100); oz.akis.unshift('Malikâne sezon resepsiyonu — kurul ağırlandı.'); }
     if ((oz.varlik?.sanat || 0) >= 3) { G.gauges.itibar = clamp(G.gauges.itibar + 1, 0, 100); oz.akis.unshift('Şaheserin sezon sergisinde — "sanatsever başkan" manşeti.'); }
+    // VARLIK VERGİSİ (kullanıcı fikri 2026-07): başkanın ev/araba/uçak/yat/sanat serveti her sezon
+    // vergilenir (kişisel kasadan) — lüksün kalıcı bedeli. Servet biriktir ama tutabildiğin kadar.
+    {
+      const servet = varlikDegeri(oz);
+      const vv = Math.round(servet * (TUNING.ECONOMY.VARLIK_VERGISI ?? 0.02) * 10) / 10;
+      if (vv > 0.05) { oz.nakit = Math.max(0, Math.round((oz.nakit - vv) * 10) / 10); oz.akis.unshift(`Varlık vergisi −₺${vv}mn (servet ${servet}mn: ev/araba/uçak/yat/sanat).`); }
+    }
     oz.akis = oz.akis.slice(0, 3);
     // Oğul akademideyse 18'inde A takıma çıkar — başkan oğlu formayla (hash-determinist üretim, rand YOK)
     if (oz.flags.ogulAkademide && oz.c2Yas >= 18 && !oz.flags.ogulKadroda) {
