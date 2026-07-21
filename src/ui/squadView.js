@@ -118,6 +118,6 @@ function sonuc(G, tdBand, nabiz, cols, h) {
   return sbShell(G, {
     crumb: `KADRO · ${G.squad.length} OYUNCU · TOPLAM DEĞER ${toplamDeger}MN · YAŞ ORT. ${yasOrt} · GÖZLEM ±${h}`,
     title: 'Takım Kadrosu',
-    body: `${tdBand}${nabiz}<div class="sb-kad-grid kad-grid-cards">${cols}</div>`,
+    body: `<div class="kad-root">${tdBand}${nabiz}<div class="sb-kad-grid kad-grid-cards">${cols}</div></div>`,
   });
 }

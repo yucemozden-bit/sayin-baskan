@@ -329,7 +329,7 @@ function fitVaat() {
 // fitVaat ile aynı teknikle orantılı küçültülür — kırpılma/taşma yok. GENEL LİSTE (taşma
 // taraması dersi): yoğun sezonda kongre/kulüp kartları da taşabiliyordu — kök buraya eklenir.
 // ŞART: kökün İÇİNDE overflow:hidden ara katman olmamalı (yoksa scrollHeight ihtiyacı ölçemez).
-const SB_FIT_ROOTS = ['.fin-root', '.kng-root', '.klub-root', '.sn-fit', '.tesis-root', '.ihale-root'];
+const SB_FIT_ROOTS = ['.fin-root', '.kng-root', '.klub-root', '.sn-fit', '.tesis-root', '.ihale-root', '.kad-root'];
 function fitSb() {
   for (const sel of SB_FIT_ROOTS) {
     const el = app.querySelector(sel);

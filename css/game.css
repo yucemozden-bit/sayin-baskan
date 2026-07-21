@@ -3162,8 +3162,12 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 
 /* ═══ OYUN-İÇİ EKRAN BİLEŞENLERİ (Kadro/Transfer/Tesis/Finans/Medya/Kongre/Veri/Kulüp/Maç) — sb- ═══ */
 /* Kadro */
-.sb-kad-grid{ flex:1; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1em; min-height:0; }
-.sb-kad-col{ background:linear-gradient(180deg,var(--bg-1),rgba(14,21,34,.96)); border:1px solid var(--line); border-radius:var(--radius-l); padding:1em; display:flex; flex-direction:column; gap:.5em; min-height:0; overflow:hidden; }
+/* FİT-KÖK (2026-07-21): kadro artık fitSb ile ölçeklenir (SB_FIT_ROOTS). Kolonlar İÇ-SCROLL yapmaz;
+   bir mevkide çok oyuncu olunca tüm sahne orantılı küçülür → EN ALTTAKİ oyuncu (düşük overall genç) gizlenmez.
+   ŞART (fitSb): kök içinde overflow:hidden/auto ara katman olmamalı — grid doğal boy (flex:0 0 auto), kolon/liste taşmaz. */
+.kad-root{ flex:1; min-height:0; display:flex; flex-direction:column; }
+.sb-kad-grid{ flex:0 0 auto; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1em; }
+.sb-kad-col{ background:linear-gradient(180deg,var(--bg-1),rgba(14,21,34,.96)); border:1px solid var(--line); border-radius:var(--radius-l); padding:1em; display:flex; flex-direction:column; gap:.5em; }
 .sb-kad-h{ display:flex; align-items:center; gap:.6em; font-family:var(--font-display); font-weight:800; font-size:.82em; letter-spacing:.12em; color:var(--club); margin-bottom:.3em; }
 .sb-kad-h[data-c=info] .sb-tick{ background:var(--info);} .sb-kad-h[data-c=info]{ color:var(--info);} .sb-kad-h[data-c=pos] .sb-tick{ background:var(--pos);} .sb-kad-h[data-c=pos]{ color:var(--pos);} .sb-kad-h[data-c=warn] .sb-tick{ background:var(--warn);} .sb-kad-h[data-c=warn]{ color:var(--warn);} .sb-kad-h[data-c=neg] .sb-tick{ background:var(--neg);} .sb-kad-h[data-c=neg]{ color:var(--neg);}
 .sb-pl{ display:flex; align-items:center; gap:.7em; background:rgba(255,255,255,.03); border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:.5em .6em; cursor:pointer; }
@@ -3507,7 +3511,7 @@ button[data-act], .staff-row, .muze-slot, .dft-node, .tb-plate { transition: bor
 /* kartlar */
 .kad-grid-cards { gap: 1em; }
 /* kolon KENDİ İÇİNDE kayar (sayfa kaymaz → sb-root no-scroll korunur; hiçbir oyuncu kesilmez) */
-.kad-col-list { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: .4em; padding-right: 3px; }
+.kad-col-list { display: flex; flex-direction: column; gap: .4em; }
 .kad-col-list::-webkit-scrollbar { width: 6px; }
 .kad-col-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .12); border-radius: 3px; }
 .kad-col-list::-webkit-scrollbar-track { background: transparent; }
