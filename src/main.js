@@ -258,6 +258,7 @@ function render() {
   if (G._spCard) html += finance.renderSponsorCard(G); // sponsor detay kartı (modal)
   if (G._achModal) html += clubView.renderAchModal(G); // başarım duvarı (kulüp ekranından "Tümünü Gör")
   if (G._tesis3d) html += facilitiesView.renderTesis3D(G); // tam ekran 3D tesis vitrini (detay butonu)
+  if (G._gayrimenkul) html += renderGayrimenkulOfisi(G); // tam ekran Gayrimenkul Ofisi (arsa/bina yatırımı)
   app.innerHTML = html;
   document.body.classList.toggle('kontrast', !!G.uiKontrast); // Ayarlar → Yüksek Kontrast
   fitVaat(); // KAYDIRMASIZ GARANTİ: sahne ekrandan uzunsa orantılı küçült — asla taşmaz
@@ -612,6 +613,12 @@ function dispatch(act, arg) {
     case 'pcardClose': G._pcard = null; break;
     case 'tesis3d': G._tesis3d = arg; break;                                                   // tam ekran 3D tesis vitrini aç
     case 'tesis3dClose': G._tesis3d = null; break;
+    case 'gayrimenkulAc': _arsaSon = null; G._gayrimenkul = true; break;                        // Gayrimenkul Ofisi portalını aç (kasa = bütçe)
+    case 'gayrimenkulKapat': commitGayrimenkul(G); break;                                       // ofisten çık → commit
+    case 'gayrimenkulSat': {                                                                    // portföyü nakde çevir (likidite iskontosu)
+      const gm = G.gayrimenkul; if (gm && gm.deger > 0) { const isk = TUNING.ECONOMY.GAYRIMENKUL?.SATIS_ISKONTO ?? 0.05; G.economy.kasa += Math.round(gm.deger * (1 - isk)); G.gayrimenkul = { deger: 0, kira: 0, adet: 0 }; }
+      break;
+    }
     case 'kiralikListe': A.toggleKiralikListe(G, arg); break;                                  // kiralık listesine koy/çek
     case 'renewContract': A.renewContract(G, arg); break;                                       // oyuncu kartı: sözleşme yenile
     case 'noop': break;                                                                        // kart içi boş tık (kapatmasın)
@@ -1010,9 +1017,9 @@ window.addEventListener('keydown', (e) => {
   if (e.key === ' ' || e.code === 'Space') {
     if (e.repeat) return; // basılı tutup hafta makinelemek yok — her ilerleme bilinçli bir dokunuş
     // AÇIK MODAL varsa SPACE hafta İLERLETMEZ — modalı kapatır (yoksa overlay altındaki DEVAM'a basıp sızardı)
-    if (G._tesis3d || G._pcard || G._spCard || G._achModal) {
+    if (G._tesis3d || G._pcard || G._spCard || G._achModal || G._gayrimenkul) {
       e.preventDefault();
-      if (G._tesis3d) G._tesis3d = null; else if (G._pcard) G._pcard = null; else if (G._spCard) G._spCard = null; else G._achModal = false;
+      if (G._gayrimenkul) commitGayrimenkul(G); else if (G._tesis3d) G._tesis3d = null; else if (G._pcard) G._pcard = null; else if (G._spCard) G._spCard = null; else G._achModal = false;
       render(); return;
     }
     const t = e.target;
@@ -1022,7 +1029,8 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (e.key !== 'Escape') return;
-  if (G._tesis3d) { G._tesis3d = null; render(); }
+  if (G._gayrimenkul) { commitGayrimenkul(G); render(); }
+  else if (G._tesis3d) { G._tesis3d = null; render(); }
   else if (G._pcard) { G._pcard = null; render(); }
   else if (G._achModal) { G._achModal = false; render(); }
 });
@@ -1030,6 +1038,37 @@ eventBus.on('TICK_END', () => {}); // ui eventBus dinler (ileride canlı widget'
 
 // AÇILIŞ 1f: kart hover'ında görsel renk parıltısı CSS ile kalır; uğultu sesi kaldırıldı (kullanıcı isteği)
 globalThis.SBhover = () => {};
+
+// ── GAYRİMENKUL OFİSİ (arsa/bina yatırım portalı) — tam ekran 3D iframe + kulüp kasası köprüsü ──
+let _arsaSon = null; // portal açıkken gelen son durum {kasa, deger, kira, adet}; kapanışta commit edilir
+function renderGayrimenkulOfisi(G) {
+  const kasa = Math.max(0, Math.round(G.economy.kasa)); // portal bütçesi = kulüp kasası (mn)
+  const gm = G.gayrimenkul || { deger: 0, kira: 0, adet: 0 };
+  const mevcut = gm.deger > 0 ? `<span class="gmo-mevcut">Mevcut portföy: <b>${Math.round(gm.deger)}mn</b> · ${gm.adet} mülk · kira ${Math.round((gm.kira || 0) * 10) / 10}mn/ay</span>` : '<span class="gmo-mevcut">Henüz mülkün yok — ofiste al, sat, inşa et, kiraya ver.</span>';
+  return `<div class="tesis3d-overlay gmo-overlay">
+    <div class="tesis3d-box">
+      <div class="gmo-bar"><span class="gmo-t">🏙️ GAYRİMENKUL OFİSİ</span>${mevcut}<button class="tesis3d-kapat gmo-kapat" data-act="gayrimenkulKapat" data-tip="Ofisten çık — bu oturumdaki alımlar portföye eklenir, kalan nakit kasaya döner">Ofisten çık ✕</button></div>
+      <iframe class="tesis3d-frame gmo-frame" src="assets/arsa_yatirimi_7.html?kasa=${kasa}" title="Gayrimenkul Yatırımı" scrolling="no"></iframe>
+    </div>
+  </div>`;
+}
+// Portal (iframe) → kulüp: her HUD güncellemesinde durum gelir; RENDER ETME (iframe reset olur), sadece stakla.
+window.addEventListener('message', (e) => {
+  const d = e && e.data;
+  if (!d || d.type !== 'arsaYatirim') return;
+  _arsaSon = { kasa: +d.kasa || 0, deger: +d.deger || 0, kira: +d.kira || 0, adet: +d.adet || 0 };
+});
+// Ofisten çıkış (buton/ESC/SPACE) → commit: kalan nakit kasaya, bu oturumdaki mülkler portföye eklenir.
+function commitGayrimenkul(G) {
+  G._gayrimenkul = null;
+  if (!_arsaSon) return;
+  const gm = G.gayrimenkul || (G.gayrimenkul = { deger: 0, kira: 0, adet: 0 });
+  G.economy.kasa = Math.max(0, Math.round(_arsaSon.kasa));
+  gm.deger += Math.round(_arsaSon.deger);
+  gm.kira += Math.round(_arsaSon.kira * 10) / 10;
+  gm.adet += _arsaSon.adet;
+  _arsaSon = null;
+}
 
 window.addEventListener('resize', () => { fitVaat(); fitSb(); }); // pencere boyu değişse de sahneler sığar
 // Fontlar geç gelirse ilk render fitVaat'ı yanlış (küçük) ölçüyle çalıştırır → sahne az ölçeklenip

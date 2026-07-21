@@ -1689,6 +1689,14 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
   background: rgba(14,21,34,.8); color: var(--ink-1, #dbe2f0); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(4px);
   box-shadow: 0 4px 14px rgba(0,0,0,.35); transition: background .15s, transform .15s; }
 .tesis3d-kapat:hover { background: rgba(224,82,82,.85); transform: scale(1.06); }
+/* GAYRİMENKUL OFİSİ portalı — tesis3d kabuğu + üst bilgi barı */
+.gmo-overlay .tesis3d-box { display: flex; flex-direction: column; }
+.gmo-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); border-bottom: 1px solid var(--line); z-index: 2; }
+.gmo-t { font-family: var(--font-display); font-size: 13px; letter-spacing: .6px; color: var(--club-2); font-weight: 800; }
+.gmo-mevcut { font-size: 12px; color: var(--ink-2); } .gmo-mevcut b { color: var(--club-2); }
+.gmo-kapat { position: static; margin-left: auto; width: auto; height: auto; padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 9px; }
+.gmo-frame { flex: 1 1 auto; min-height: 0; }
+.gmo-bar-fin .cx-btn { padding: 5px 12px; font-size: 11.5px; margin-left: 6px; }
 .tesis-alt { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: auto; }
 .tesis-indirim { font-size: 11px; color: var(--pos); font-weight: 700; }
 .tesis-indirim s { color: var(--ink-3); font-weight: 400; margin-left: 4px; }

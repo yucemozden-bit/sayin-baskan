@@ -197,6 +197,7 @@ export function selectClub(G, tier, identity = null, opts = {}) {
   G.worldSeason = 0;                        // D1: AI drift sayacı (ilk sezon drift yok)
   G.tesisBakim = {}; for (const t of TESIS_BAKIM) G.tesisBakim[t] = 0; // bakım saati kariyer başında kurulur
   G.flags = {}; G.rival = { attractiveness: 0 }; G.sozTutmaBirikim = 0; G.sezonKar = 0; // yıllık kâr vergisi izleyicisi
+  G.gayrimenkul = { deger: 0, kira: 0, adet: 0 }; // Gayrimenkul Ofisi portföyü (değer mn · aylık kira mn · adet)
   G.promises = []; G.history = { seasons: [] };
   G.term = { income: 0, wage: 0, starBought: false, maxTicket: G.economy.ticketPrice, weeks: 0, ticari: 0, academyGraduates: 0, socialProjects: 0 };
   G.termStartBorc = G.economy.borc;
@@ -2818,6 +2819,18 @@ export function endSeason(G) {
       const vergi = Math.round(fazla * (SV.ORAN ?? 0.5));
       G.economy.kasa = Math.max(0, G.economy.kasa - vergi);
       pushInbox(G, { cat: 'mali', t: `Servet vergisi (kasa fazlası): −${fmt1(vergi)}mn`, b: `Kasa ${fmt1(esikS)}mn tamponunu aştı; fazlanın %${Math.round((SV.ORAN ?? 0.5) * 100)}'i kesildi. Zengin kulüp parayı çürütmez — sahaya, tesise, şehir projesine yatır.`, noQueue: true });
+    }
+  }
+  // GAYRİMENKUL PORTFÖYÜ — sezon ekonomisi: kira geliri (kasaya) + değerlenme + emlak vergisi.
+  {
+    const gm = G.gayrimenkul || (G.gayrimenkul = { deger: 0, kira: 0, adet: 0 });
+    if (gm.deger > 0) {
+      const C = TUNING.ECONOMY.GAYRIMENKUL || {};
+      const kira = Math.round((gm.kira || 0) * (C.AY_PER_SEZON ?? 2.5) * 10) / 10; // sezonluk kira
+      gm.deger = Math.round(gm.deger * (1 + (C.DEGERLENME ?? 0.02))); // değerlenme
+      const vergi = Math.round(gm.deger * (C.EMLAK_VERGISI ?? 0.0075) * 10) / 10; // emlak vergisi
+      G.economy.kasa += kira - vergi;
+      pushInbox(G, { cat: 'mali', t: `Gayrimenkul: +${fmt1(kira)}mn kira · −${fmt1(vergi)}mn emlak vergisi`, b: `${gm.adet} mülk · portföy ${fmt1(gm.deger)}mn (değerlendi). Kira kasaya aktı, emlak vergisi kesildi. Gayrimenkul, servet vergisinden muaf üretken varlık.`, noQueue: true });
     }
   }
   const table = standings(G.league);
