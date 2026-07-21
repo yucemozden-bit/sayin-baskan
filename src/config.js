@@ -222,7 +222,7 @@ export const TUNING = {
     BORC_KOMPOUND: 0.02,       // borç ANAPARA bileşiği: faizi ödesen bile borç ~%2/yıl büyür (öde, sürüncemede bırakma) — gentle, spiral yok
     // SERVET VERGİSİ (bakiye tavanı): kasa tier tamponunu aşarsa fazlası vergilenir → hazine milyarlarda
     // kalmaz ("yatır ya da kaybet"). Kâr vergisi AKIŞI, bu STOKU sınırlar → ikisi birlikte gerçek tavan.
-    SERVET_VERGISI: { ESIK: { kucuk: 25, orta: 70, buyuk: 160, dev: 300, efsane: 420 }, ORAN: 0.5 },
+    SERVET_VERGISI: { ESIK: { kucuk: 60, orta: 160, buyuk: 380, dev: 750, efsane: 1050 }, ORAN: 0.30 },
     VARLIK_VERGISI: 0.02,      // başkanın kişisel varlık değerinin %2'si/sezon (ev/araba/uçak/yat/sanat) — oz.nakit'ten (lüksün kalıcı bedeli)
     SPONSOR_BASE: { kucuk: 6, orta: 22, buyuk: 45, dev: 68, efsane: 95 }, // göğüs baz (sezonluk mn) — küçük/orta ×1.5 (daha ağır); büyük zaten devasa, net bandında kalsın
     SPONSOR_ITIBAR_BASE: 0.5, SPONSOR_ITIBAR_DIV: 100, // itibarFactor = 0.5 + itibar/100
