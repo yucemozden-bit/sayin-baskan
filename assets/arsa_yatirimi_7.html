@@ -212,8 +212,9 @@
   let month = 0;
   let lastRent = 0;
   const INSAAT_BIRIM = 0.013;       // mn / m²
-  const BUILD_MONTHS = 4;
-  const MONTH_SECONDS = 3.0;        // 1 ay = 3 sn
+  // İnşaat süresi = OYUN HAFTASI (parent'tan ?ih=). Portal kendi saatinde ilerletMEZ; süreyi kulüp (oyun haftaları) tüketir.
+  const INSAAT_HAFTA = (() => { const n = parseInt(new URLSearchParams(location.search).get('ih'), 10); return Number.isFinite(n) && n > 0 ? n : 12; })();
+  const MONTH_SECONDS = 3.0;        // 1 ay = 3 sn (piyasa endeksi/kira temposu — inşaatı ETKİLEMEZ)
 
   function priceMn(p) {
     if (p.type === 'land') return p.landBase * arsaIndex;
@@ -248,7 +249,7 @@
       const p = { id: nm + '-' + pn, cx, cz, w: 24, d: 24, side, area, loc, unit, landBase,
         type: isBld ? 'building' : 'land', status: 'sale', wear: isBld ? rand(0.1, 0.4) : 0,
         constrBase: isBld ? area * INSAAT_BIRIM : 0, rentRate: rand(0.007, 0.011), rented: false,
-        building: false, buildMonthsLeft: 0, buildTotal: 0, paid: 0, buildMesh: null, constrGroup: null };
+        building: false, buildWeeksLeft: 0, buildWeeksTotal: 0, paid: 0, buildMesh: null, constrGroup: null };
       parcels.push(p); pn++;
     }); });
   }); });
@@ -315,8 +316,12 @@
 
   // ---- INSAAT ----
   function startConstruction(p) {
-    p.building = true; p.buildTotal = BUILD_MONTHS; p.buildMonthsLeft = BUILD_MONTHS;
+    p.building = true; p.buildWeeksTotal = INSAAT_HAFTA; p.buildWeeksLeft = INSAAT_HAFTA;
     p.targetH = 4 + Math.floor(R() * 3) * 3.3 + 8;
+    buildConstructionMesh(p);
+  }
+  // İnşaat görselini (vinç + büyüyen gövde) kur — restore'da da kullanılır (targetH/buildWeeksLeft dışarıdan gelir)
+  function buildConstructionMesh(p) {
     const g = new THREE.Group(); g.position.set(p.cx, 0, p.cz); scene.add(g); p.constrGroup = g;
     // vinc
     const cpole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, p.targetH + 6, 8), mat(0xd9a93a)); cpole.position.set(-5, (p.targetH + 6) / 2, -4); g.add(cpole);
@@ -329,7 +334,7 @@
     updateConstr(p);
   }
   function updateConstr(p) {
-    const pr = Math.max(0.05, 1 - p.buildMonthsLeft / p.buildTotal);
+    const pr = Math.max(0.05, 1 - p.buildWeeksLeft / p.buildWeeksTotal);
     p.partBox.scale.y = pr; p.partBox.position.y = p.targetH * pr / 2;
   }
   function finishConstruction(p) {
@@ -362,7 +367,7 @@
     const cost = p.area * INSAAT_BIRIM;
     if (budget < cost) { toast('İnşaat için yetersiz bakiye · ' + TL(cost - budget) + ' eksik', 'warn'); return; }
     budget -= cost; p.paid += cost; startConstruction(p); refreshParcel(p); updateWallet(); updatePanel(p);
-    toast('🏗️ İnşaat başladı · ' + TL(cost) + ' · ' + p.buildTotal + ' ay sürecek');
+    toast('🏗️ İnşaat başladı · ' + TL(cost) + ' · ' + p.buildWeeksTotal + ' oyun haftası (ofis kapalıyken de ilerler)');
   }
   function rentOut(p) { p.rented = true; refreshParcel(p); if (p.buildMesh) { scene.remove(p.buildMesh); p.buildMesh = makeBuilding(p, true); } updateWallet(); updatePanel(p); toast('🔑 ' + p.id + ' kiraya verildi · aylık ' + TL(priceMn(p) * p.rentRate)); }
 
@@ -376,9 +381,9 @@
     const a = dEl('btnA'), b = dEl('btnB');
     b.style.display = 'none'; a.disabled = false; a.className = '';
     if (p.building) {
-      const pr = Math.round((1 - p.buildMonthsLeft / p.buildTotal) * 100);
+      const pr = Math.round((1 - p.buildWeeksLeft / p.buildWeeksTotal) * 100);
       dEl('pPrice').textContent = 'İnşaat sürüyor';
-      dEl('pStat').innerHTML = '<span class="dot" style="background:#e6913a"></span>İnşaat · %' + pr + ' · ' + p.buildMonthsLeft + ' ay kaldı';
+      dEl('pStat').innerHTML = '<span class="dot" style="background:#e6913a"></span>İnşaat · %' + pr + ' · ' + p.buildWeeksLeft + ' oyun haftası kaldı (maçlar oynandıkça ilerler)';
       a.disabled = true; a.textContent = '🏗️ İnşa ediliyor…'; return;
     }
     if (p.status === 'sale') {
@@ -408,15 +413,49 @@
   let toastTimer = null;
   function toast(msg, cls) { const t = dEl('toast'); t.textContent = msg; t.className = cls || ''; t.style.opacity = '1'; t.style.top = '84px'; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.opacity = '0'; t.style.top = '74px'; }, 2800); }
 
+  // Sahip olunan parsellerin TAM durumu — kulübe kaydedilir, tekrar açılışta birebir geri yüklenir
+  function snapshotOwned() {
+    return ownedList().map(p => ({
+      id: p.id, type: p.type, area: p.area, landBase: p.landBase, constrBase: p.constrBase || 0,
+      wear: p.wear || 0, rentRate: p.rentRate || 0.009, paid: p.paid || 0, rented: !!p.rented, status: 'owned',
+      building: !!p.building, buildWeeksLeft: p.buildWeeksLeft || 0, buildWeeksTotal: p.buildWeeksTotal || 0, targetH: p.targetH || 0
+    }));
+  }
+  let bridgeReady = false; // parent'tan restore gelene (ya da fallback'e) kadar DIŞARI YAZMA — boş başlangıç, kayıtlı portföyü ezmesin
   function updateWallet() {
     const ow = ownedList();
     dEl('wBal').textContent = TL(budget);
     dEl('wOwn').textContent = ow.length + ' · ' + fmt(ow.reduce((s, p) => s + p.area, 0)) + ' m²';
     dEl('wPort').textContent = TL(ownedValue());
     dEl('wInc').textContent = TL(projRent());
-    // ENTEGRASYON KÖPRÜSÜ: durumu kulübe (parent pencere) bildir — kasa senkronu + portföy
-    try { parent.postMessage({ type: 'arsaYatirim', kasa: budget, deger: ownedValue(), kira: projRent(), adet: ow.length }, '*'); } catch (e) {}
+    // ENTEGRASYON KÖPRÜSÜ: durumu kulübe (parent) bildir — kasa + portföy + PARSEL LİSTESİ (kalıcı) + piyasa endeksleri
+    if (!bridgeReady) return;
+    try { parent.postMessage({ type: 'arsaYatirim', kasa: budget, deger: ownedValue(), kira: projRent(), adet: ow.length, mulkler: snapshotOwned(), arsaIndex, binaIndex, month }, '*'); } catch (e) {}
   }
+  // Kulüpten gelen kayıtlı portföyü sahneye geri yükle: parseli ID ile bul, kayıtlı durumu (alan/fiyat/tip/kira/ödenen) ez
+  function restoreState(data) {
+    if (!data) { bridgeReady = true; updateWallet(); return; }
+    if (data.arsaIndex > 0) arsaIndex = data.arsaIndex;
+    if (data.binaIndex > 0) binaIndex = data.binaIndex;
+    if (data.month >= 0) month = data.month;
+    (data.mulkler || []).forEach(s => {
+      const p = parcels.find(q => q.id === s.id);
+      if (!p) return;
+      if (p.buildMesh) { scene.remove(p.buildMesh); p.buildMesh = null; }
+      if (p.constrGroup) { scene.remove(p.constrGroup); p.constrGroup = null; }
+      p.type = s.type; p.area = s.area; p.landBase = s.landBase; p.constrBase = s.constrBase || 0;
+      p.wear = s.wear || 0; p.rentRate = s.rentRate || 0.009; p.paid = s.paid || 0;
+      p.rented = !!s.rented; p.status = 'owned';
+      p.building = !!s.building; p.buildWeeksLeft = s.buildWeeksLeft || 0; p.buildWeeksTotal = s.buildWeeksTotal || 0; p.targetH = s.targetH || 0;
+      if (p.building && p.buildWeeksTotal > 0) buildConstructionMesh(p);      // inşaat sürüyordu → vinç + gövde (oyun-haftası ilerlemesiyle) geri gelsin
+      else if (p.type === 'building') p.buildMesh = makeBuilding(p, p.rented); // hazır bina
+      refreshParcel(p);
+    });
+    bridgeReady = true;   // köprü açıldı — bundan sonra her değişiklik kulübe yazılır
+    updateClock(); updateWallet();
+    if (sel >= 0) selectParcel(sel);
+  }
+  window.addEventListener('message', (e) => { const d = e && e.data; if (d && d.type === 'arsaRestore') restoreState(d); });
   function updateClock() {
     const ar = (arsaIndex - 1) * 100, bn = (binaIndex - 1) * 100;
     dEl('hMkt').innerHTML = 'Ay ' + month + ' · Arsa <span class="' + (ar >= 0 ? 'up' : 'dn') + '">' + (ar >= 0 ? '▲%' : '▼%') + Math.abs(ar).toFixed(1) + '</span> · Bina <span class="' + (bn >= 0 ? 'up' : 'dn') + '">' + (bn >= 0 ? '▲%' : '▼%') + Math.abs(bn).toFixed(1) + '</span>';
@@ -430,7 +469,7 @@
     if (R() < 0.0025) { const c = rand(0.2, 0.35); arsaIndex *= (1 - c); binaIndex *= (1 - c); toast('📉 PİYASA ÇÖKÜŞÜ! −%' + Math.round(c * 100), 'crash'); }
     arsaIndex = Math.max(0.5, arsaIndex); binaIndex = Math.max(0.5, binaIndex);
     parcels.forEach(p => { if (p.type === 'building' && !p.building) p.wear = Math.min(0.6, p.wear + 0.0015); });
-    parcels.forEach(p => { if (p.building) { p.buildMonthsLeft--; if (p.buildMonthsLeft <= 0) finishConstruction(p); else updateConstr(p); } });
+    // İNŞAAT portal saatinde İLERLEMEZ — oyun haftalarıyla ilerler (kulüp buildWeeksLeft'i düşürür, restore ile yansır).
     // gelir
     let rent = 0;
     ownedList().forEach(p => { if (p.type === 'building' && p.rented) { if (R() < 0.88) rent += priceMn(p) * p.rentRate; } });
@@ -504,6 +543,8 @@
   window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
   const loader = document.getElementById('loading'); if (loader) loader.style.display = 'none';
   updateWallet(); updateClock(); selectParcel(featIdx);
+  try { parent.postMessage({ type: 'arsaHazir' }, '*'); } catch (e) {}              // kulübe "hazırım" → kayıtlı portföyü geri göndersin (restore)
+  setTimeout(() => { if (!bridgeReady) { bridgeReady = true; updateWallet(); } }, 1200); // parent yanıt vermezse (tek başına test) köprüyü yine de aç
   if (location.hash === '#dbg') { window.__orbit = orbit; window.__apply = applyCamera; window.__select = selectParcel; window.__parcels = parcels; window.__feat = featIdx; window.__tick = tickMonth; window.__A = () => document.getElementById('btnA').click(); window.__B = () => document.getElementById('btnB').click(); window.__state = () => ({ budget, arsaIndex, binaIndex, month, port: ownedValue(), rent: projRent() }); }
   applyCamera(); animate();
 })();

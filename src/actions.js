@@ -197,7 +197,7 @@ export function selectClub(G, tier, identity = null, opts = {}) {
   G.worldSeason = 0;                        // D1: AI drift sayacı (ilk sezon drift yok)
   G.tesisBakim = {}; for (const t of TESIS_BAKIM) G.tesisBakim[t] = 0; // bakım saati kariyer başında kurulur
   G.flags = {}; G.rival = { attractiveness: 0 }; G.sozTutmaBirikim = 0; G.sezonKar = 0; // yıllık kâr vergisi izleyicisi
-  G.gayrimenkul = { deger: 0, kira: 0, adet: 0 }; // Gayrimenkul Ofisi portföyü (değer mn · aylık kira mn · adet)
+  G.gayrimenkul = { deger: 0, kira: 0, adet: 0, mulkler: [], arsaIndex: 1, binaIndex: 1, month: 0 }; // Gayrimenkul Ofisi portföyü (değer mn · aylık kira mn · adet · parsel listesi + piyasa endeksleri: ofis tekrar açılınca birebir geri yüklenir)
   G.promises = []; G.history = { seasons: [] };
   G.term = { income: 0, wage: 0, starBought: false, maxTicket: G.economy.ticketPrice, weeks: 0, ticari: 0, academyGraduates: 0, socialProjects: 0 };
   G.termStartBorc = G.economy.borc;
@@ -1369,8 +1369,28 @@ function finishWeekTail(G, lateMove) {
   }
   if (gelisimOldu) { G.club.kadroDeger = squadMarketValue(G.squad); G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G); }
   G.meta.week++;
+  gmIlerleInsaat(G); // GAYRİMENKUL: inşaatlar oyun haftasıyla ilerler (ofis kapalıyken de)
   eventBus.emit('TICK_END', { week: wk, res: myRes });
   return { ok: true };
+}
+
+// ── GAYRİMENKUL İNŞAATI — oyun zamanıyla ilerler: her oyun haftası 1 adım; ofis kapalıyken bile sürer.
+// Portal artık inşaatı kendi saatinde ilerletmez; süre burada (buildWeeksLeft) tükenir, biten bina portföye yazılır.
+export function gmIlerleInsaat(G) {
+  const gm = G && G.gayrimenkul;
+  if (!gm || !Array.isArray(gm.mulkler)) return 0;
+  let bitti = 0;
+  for (const p of gm.mulkler) {
+    if (!p || !p.building) continue;
+    p.buildWeeksLeft = (p.buildWeeksLeft ?? 0) - 1;
+    if (p.buildWeeksLeft <= 0) {
+      p.building = false; p.type = 'building'; p.wear = 0; p.buildWeeksLeft = 0;
+      gm.deger = Math.round((gm.deger || 0) + (p.constrBase || 0) * (gm.binaIndex || 1)); // biten bina değeri portföye
+      bitti++;
+      pushInbox(G, { cat: 'mali', t: `🏗️ ${p.id} inşaatı tamamlandı`, b: 'Bina hazır — Gayrimenkul Ofisi\'nden kiraya verip aylık gelir bağlayabilirsin. Portföy değeri arttı.', noQueue: true, sig: `gm-insaat-${p.id}` });
+    }
+  }
+  return bitti;
 }
 
 // ── Telkin yardımcıları (v4.1-2) ──
@@ -2827,7 +2847,9 @@ export function endSeason(G) {
     if (gm.deger > 0) {
       const C = TUNING.ECONOMY.GAYRIMENKUL || {};
       const kira = Math.round((gm.kira || 0) * (C.AY_PER_SEZON ?? 2.5) * 10) / 10; // sezonluk kira
-      gm.deger = Math.round(gm.deger * (1 + (C.DEGERLENME ?? 0.02))); // değerlenme
+      const dOran = 1 + (C.DEGERLENME ?? 0.02);
+      gm.deger = Math.round(gm.deger * dOran); // değerlenme
+      gm.arsaIndex = (gm.arsaIndex || 1) * dOran; gm.binaIndex = (gm.binaIndex || 1) * dOran; // portal aynı oranı taşısın (tekrar açılışta değer kaybolmaz)
       const vergi = Math.round(gm.deger * (C.EMLAK_VERGISI ?? 0.0075) * 10) / 10; // emlak vergisi
       G.economy.kasa += kira - vergi;
       pushInbox(G, { cat: 'mali', t: `Gayrimenkul: +${fmt1(kira)}mn kira · −${fmt1(vergi)}mn emlak vergisi`, b: `${gm.adet} mülk · portföy ${fmt1(gm.deger)}mn (değerlendi). Kira kasaya aktı, emlak vergisi kesildi. Gayrimenkul, servet vergisinden muaf üretken varlık.`, noQueue: true });
