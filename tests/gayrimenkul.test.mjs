@@ -56,17 +56,17 @@ setSeed(2718);
   es(gm.adet, 2, 'yükleme: adet korundu');
 }
 
-// 3) SEZON EKONOMİSİ (endSeason): kira kasaya, değerlenme + endeks aynı oranda taşınır, NaN yok.
+// 3) SEZON EKONOMİSİ (endSeason): kira OFİS NAKİTİNE, değerlenme + endeks aynı oranda taşınır, NaN yok.
 {
   const G = kur();
-  G.gayrimenkul = { deger: 100, kira: 2, adet: 2, arsaIndex: 1.2, binaIndex: 1.1, month: 8, mulkler: [] };
+  G.gayrimenkul = { deger: 100, kira: 2, adet: 2, nakit: 0, arsaIndex: 1.2, binaIndex: 1.1, month: 8, mulkler: [] };
   const kasa0 = G.economy.kasa;
   A.endSeason(G);
   const gm = G.gayrimenkul;
   es(gm.deger, 102, 'endSeason: portföy %2 değerlendi (100→102)');
   yakin(gm.arsaIndex, 1.224, 'endSeason: arsaIndex aynı oranda taşındı (portal değeri kaybolmaz)');
   yakin(gm.binaIndex, 1.122, 'endSeason: binaIndex aynı oranda taşındı');
-  es(G.economy.kasa > kasa0, true, 'endSeason: kira kasaya aktı (kasa arttı)');
+  es(gm.nakit > 0, true, 'endSeason: kira ofis nakitine aktı (nakit arttı, kasaya değil)');
   const msg = (G.inbox || []).find((m) => m.t && m.t.startsWith('Gayrimenkul:'));
   es(!!msg, true, 'endSeason: kira/vergi bildirimi geldi');
   es(nanAv(G), null, 'endSeason: NaN yok');

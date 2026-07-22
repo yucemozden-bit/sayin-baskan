@@ -48,13 +48,13 @@
 <body>
 <div id="loading">MAHALLE YÜKLENİYOR…</div>
 <canvas id="c"></canvas>
-<div id="hud"><b>ARSA &amp; GAYRİMENKUL</b><span class="sub">Yeşil Vadi Mahallesi · parsele tıkla · sürükle döndür · tekerlek yakınlaş</span><span class="mkt" id="hMkt">Ay 0 · piyasa</span></div>
+<div id="hud"><b>ARSA &amp; GAYRİMENKUL</b><span class="sub">Yeşil Vadi Mahallesi · parsele tıkla · sürükle döndür · tekerlek yakınlaş</span><span class="mkt" id="hMkt">Hafta 0 · piyasa</span></div>
 <div id="legend">Satılık arsa <i style="background:#e8c14e"></i><br>Satılık bina <i style="background:#c98f4f"></i><br>Arsanız <i style="background:#56b877"></i><br>Kirada <i style="background:#5fc8e6"></i><br>İnşaat <i style="background:#e6913a"></i></div>
 <div id="wallet">
   <div class="wrow"><span>Bakiye</span><b id="wBal">₺ 0</b></div>
   <div class="wrow"><span>Mülklerim</span><b id="wOwn">0 · 0 m²</b></div>
   <div class="wrow"><span>Portföy</span><b id="wPort">₺ 0</b></div>
-  <div class="wrow"><span>Aylık gelir</span><b class="g" id="wInc">₺ 0</b></div>
+  <div class="wrow"><span>Haftalık gelir</span><b class="g" id="wInc">₺ 0</b></div>
 </div>
 <div id="panel">
   <div class="pid" id="pPid">PARSEL —</div>
@@ -209,7 +209,7 @@
   // ======================= EKONOMİ =======================
   let budget = (() => { const k = parseFloat(new URLSearchParams(location.search).get('kasa')); return Number.isFinite(k) && k >= 0 ? k : 120; })(); // mn ₺ — kulüp kasasından (?kasa=); yoksa 120
   let arsaIndex = 1, binaIndex = 1; // piyasa endeksleri
-  let month = 0;
+  let month = (() => { const n = parseInt(new URLSearchParams(location.search).get('hafta'), 10); return Number.isFinite(n) && n >= 0 ? n : 0; })(); // OYUN HAFTASINDAN (?hafta=); portal gerçek-zamanda ilerletmez — restore ile de güncellenir (değişken adı "month" ama değeri HAFTA)
   let lastRent = 0;
   const INSAAT_BIRIM = 0.013;       // mn / m²
   // İnşaat süresi = OYUN HAFTASI (parent'tan ?ih=). Portal kendi saatinde ilerletMEZ; süreyi kulüp (oyun haftaları) tüketir.
@@ -248,7 +248,7 @@
       const isBld = R() < 0.4;
       const p = { id: nm + '-' + pn, cx, cz, w: 24, d: 24, side, area, loc, unit, landBase,
         type: isBld ? 'building' : 'land', status: 'sale', wear: isBld ? rand(0.1, 0.4) : 0,
-        constrBase: isBld ? area * INSAAT_BIRIM : 0, rentRate: rand(0.007, 0.011), rented: false,
+        constrBase: isBld ? area * INSAAT_BIRIM : 0, rentRate: rand(0.0016, 0.0024), rented: false,
         building: false, buildWeeksLeft: 0, buildWeeksTotal: 0, paid: 0, buildMesh: null, constrGroup: null };
       parcels.push(p); pn++;
     }); });
@@ -339,7 +339,7 @@
   }
   function finishConstruction(p) {
     if (p.constrGroup) { scene.remove(p.constrGroup); p.constrGroup = null; }
-    p.building = false; p.type = 'building'; p.constrBase = p.area * INSAAT_BIRIM; p.wear = 0; p.rented = false; p.rentRate = rand(0.007, 0.011); p.status = 'owned';
+    p.building = false; p.type = 'building'; p.constrBase = p.area * INSAAT_BIRIM; p.wear = 0; p.rented = false; p.rentRate = rand(0.0016, 0.0024); p.status = 'owned';
     p.buildMesh = makeBuilding(p, false);
     refreshParcel(p);
     // mahalle gelisimi: yakin arsalar sicrar
@@ -369,7 +369,7 @@
     budget -= cost; p.paid += cost; startConstruction(p); refreshParcel(p); updateWallet(); updatePanel(p);
     toast('🏗️ İnşaat başladı · ' + TL(cost) + ' · ' + p.buildWeeksTotal + ' oyun haftası (ofis kapalıyken de ilerler)');
   }
-  function rentOut(p) { p.rented = true; refreshParcel(p); if (p.buildMesh) { scene.remove(p.buildMesh); p.buildMesh = makeBuilding(p, true); } updateWallet(); updatePanel(p); toast('🔑 ' + p.id + ' kiraya verildi · aylık ' + TL(priceMn(p) * p.rentRate)); }
+  function rentOut(p) { p.rented = true; refreshParcel(p); if (p.buildMesh) { scene.remove(p.buildMesh); p.buildMesh = makeBuilding(p, true); } updateWallet(); updatePanel(p); toast('🔑 ' + p.id + ' kiraya verildi · haftalık ' + TL(priceMn(p) * p.rentRate)); }
 
   // ---- PANEL ----
   let sel = -1;
@@ -390,7 +390,7 @@
       const price = priceMn(p);
       dEl('pPrice').textContent = TL(price);
       dEl('pStat').innerHTML = p.type === 'building'
-        ? '<span class="dot" style="background:#c98f4f"></span>Satılık bina · potansiyel kira ' + TL(price * p.rentRate) + '/ay'
+        ? '<span class="dot" style="background:#c98f4f"></span>Satılık bina · potansiyel kira ' + TL(price * p.rentRate) + '/hafta'
         : '<span class="dot" style="background:#f0d372"></span>Satılık arsa · hızlı değerlenir (gelir yok)';
       a.textContent = 'Satın Al · ' + TL(price); a.onclick = () => buy(p);
     } else if (p.type === 'land') {
@@ -402,8 +402,8 @@
     } else {
       const val = priceMn(p), rent = val * p.rentRate;
       dEl('pPrice').textContent = 'Değer: ' + TL(val);
-      dEl('pStat').innerHTML = '<span class="dot" style="background:' + (p.rented ? '#5fc8e6' : '#56b877') + '"></span>' + (p.rented ? 'Kirada · ' + TL(rent) + '/ay · ' : 'Binanız (boş) · ') + plProfit(val - p.paid, p.paid);
-      if (!p.rented) { a.className = 'rent'; a.textContent = 'Kiraya Ver · ' + TL(rent) + '/ay'; a.onclick = () => rentOut(p); }
+      dEl('pStat').innerHTML = '<span class="dot" style="background:' + (p.rented ? '#5fc8e6' : '#56b877') + '"></span>' + (p.rented ? 'Kirada · ' + TL(rent) + '/hafta · ' : 'Binanız (boş) · ') + plProfit(val - p.paid, p.paid);
+      if (!p.rented) { a.className = 'rent'; a.textContent = 'Kiraya Ver · ' + TL(rent) + '/hafta'; a.onclick = () => rentOut(p); }
       else { a.className = 'rent'; a.disabled = true; a.textContent = '🔑 Kirada ✓'; }
       b.style.display = ''; b.className = 'sell'; b.textContent = 'Sat · ' + TL(val); b.onclick = () => sell(p);
     }
@@ -437,7 +437,7 @@
     if (!data) { bridgeReady = true; updateWallet(); return; }
     if (data.arsaIndex > 0) arsaIndex = data.arsaIndex;
     if (data.binaIndex > 0) binaIndex = data.binaIndex;
-    if (data.month >= 0) month = data.month;
+    if (data.hafta >= 0) month = data.hafta;
     (data.mulkler || []).forEach(s => {
       const p = parcels.find(q => q.id === s.id);
       if (!p) return;
@@ -458,7 +458,7 @@
   window.addEventListener('message', (e) => { const d = e && e.data; if (d && d.type === 'arsaRestore') restoreState(d); });
   function updateClock() {
     const ar = (arsaIndex - 1) * 100, bn = (binaIndex - 1) * 100;
-    dEl('hMkt').innerHTML = 'Ay ' + month + ' · Arsa <span class="' + (ar >= 0 ? 'up' : 'dn') + '">' + (ar >= 0 ? '▲%' : '▼%') + Math.abs(ar).toFixed(1) + '</span> · Bina <span class="' + (bn >= 0 ? 'up' : 'dn') + '">' + (bn >= 0 ? '▲%' : '▼%') + Math.abs(bn).toFixed(1) + '</span>';
+    dEl('hMkt').innerHTML = 'Hafta ' + month + ' · Arsa <span class="' + (ar >= 0 ? 'up' : 'dn') + '">' + (ar >= 0 ? '▲%' : '▼%') + Math.abs(ar).toFixed(1) + '</span> · Bina <span class="' + (bn >= 0 ? 'up' : 'dn') + '">' + (bn >= 0 ? '▲%' : '▼%') + Math.abs(bn).toFixed(1) + '</span>';
   }
 
   // ---- AYLIK DÖNGÜ ----
@@ -532,7 +532,8 @@
   function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05); const t = clock.elapsedTime;
-    macc += dt; if (macc >= MONTH_SECONDS) { macc -= MONTH_SECONDS; tickMonth(); }
+    // Piyasa saati GERÇEK-ZAMANDA ilerlemez — ay + endeksler oyunun sezon takviminden gelir (?ay= + restore).
+    // Portal açıkken donuk; oyun sezon ilerletince (kulüp) değer/tarih artar. (eski: macc>=MONTH_SECONDS → tickMonth)
     if (orbit.tw) { orbit.target.lerp(orbit.gTarget, 0.06); orbit.radius += (orbit.gRadius - orbit.radius) * 0.06; if (orbit.target.distanceTo(orbit.gTarget) < 0.4 && Math.abs(orbit.radius - orbit.gRadius) < 1) orbit.tw = false; }
     if (orbit.userActive > 0) orbit.userActive -= dt;
     if (orbit.userActive <= 0 && !orbit.dragging) orbit.theta += orbit.autoSpeed * dt;

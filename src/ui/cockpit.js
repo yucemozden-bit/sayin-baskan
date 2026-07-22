@@ -198,6 +198,7 @@ const NAV_SB = [
   ['transfer', 'Transfer', '<path d="M4 8h11l-3.2-3.2"/><path d="M16 12H5l3.2 3.2"/>'],
   ['tesis', 'Tesisler', '<rect x="4" y="3" width="12" height="14" rx="1.2"/><path d="M8 6.5h.5M11.5 6.5h.5M8 9.5h.5M11.5 9.5h.5M8 12.5h.5M11.5 12.5h.5"/>'],
   ['finans', 'Finans', '<path d="M3 3v14h14"/><path d="M6 14l3.2-3.4 2.6 1.8L17 6.5"/>'],
+  ['gayrimenkul', 'Gayrimenkul', '<rect x="3.5" y="7.5" width="5" height="9.5" rx="1"/><rect x="10" y="3.5" width="6" height="13.5" rx="1"/><path d="M5 10h2M5 12.5h2M12 6.5h2.5M12 9h2.5M12 11.5h2.5"/><path d="M3 17.2h14"/>'],
   ['medya', 'Medya', '<circle cx="10" cy="13.5" r="1.6"/><path d="M10 11.4V4"/><path d="M6.4 6.4a6 6 0 000 8M13.6 6.4a6 6 0 010 8"/>'],
   ['kongre', 'Kongre', '<path d="M3 7l7-4 7 4"/><path d="M4.5 7.5v7M8 7.5v7M12 7.5v7M15.5 7.5v7"/><path d="M3 16.5h14"/>'],
   ['veri', 'Veri', '<rect x="3" y="10" width="3" height="7" rx=".6"/><rect x="8.5" y="4.5" width="3" height="12.5" rx=".6"/><rect x="14" y="8" width="3" height="9" rx=".6"/>'],

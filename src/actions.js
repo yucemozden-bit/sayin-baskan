@@ -197,7 +197,7 @@ export function selectClub(G, tier, identity = null, opts = {}) {
   G.worldSeason = 0;                        // D1: AI drift sayacı (ilk sezon drift yok)
   G.tesisBakim = {}; for (const t of TESIS_BAKIM) G.tesisBakim[t] = 0; // bakım saati kariyer başında kurulur
   G.flags = {}; G.rival = { attractiveness: 0 }; G.sozTutmaBirikim = 0; G.sezonKar = 0; // yıllık kâr vergisi izleyicisi
-  G.gayrimenkul = { deger: 0, kira: 0, adet: 0, mulkler: [], arsaIndex: 1, binaIndex: 1, month: 0 }; // Gayrimenkul Ofisi portföyü (değer mn · aylık kira mn · adet · parsel listesi + piyasa endeksleri: ofis tekrar açılınca birebir geri yüklenir)
+  G.gayrimenkul = { deger: 0, kira: 0, adet: 0, nakit: 0, mulkler: [], arsaIndex: 1, binaIndex: 1, month: 0 }; // Gayrimenkul Ofisi portföyü — nakit: ofisin AYRI cüzdanı (kulüp kasasından bağımsız; sadece alım/satım/kira/aktarım ile değişir), deger/adet/kira portföy, mulkler+endeksler kalıcı
   G.promises = []; G.history = { seasons: [] };
   G.term = { income: 0, wage: 0, starBought: false, maxTicket: G.economy.ticketPrice, weeks: 0, ticari: 0, academyGraduates: 0, socialProjects: 0 };
   G.termStartBorc = G.economy.borc;
@@ -2834,25 +2834,32 @@ export function endSeason(G) {
   {
     const SV = TUNING.ECONOMY.SERVET_VERGISI || {};
     const esikS = (SV.ESIK && SV.ESIK[G.club.tier]) || 100;
-    const fazla = Math.max(0, Math.round(G.economy.kasa) - esikS);
+    const nakitGm = Math.round((G.gayrimenkul && G.gayrimenkul.nakit) || 0); // ofis nakiti de "kasa gibi" nakit → park-kaçağı olmasın
+    const fazla = Math.max(0, Math.round(G.economy.kasa) + nakitGm - esikS);
     if (fazla > 0.5) {
       const vergi = Math.round(fazla * (SV.ORAN ?? 0.5));
-      G.economy.kasa = Math.max(0, G.economy.kasa - vergi);
-      pushInbox(G, { cat: 'mali', t: `Servet vergisi (kasa fazlası): −${fmt1(vergi)}mn`, b: `Kasa ${fmt1(esikS)}mn tamponunu aştı; fazlanın %${Math.round((SV.ORAN ?? 0.5) * 100)}'i kesildi. Zengin kulüp parayı çürütmez — sahaya, tesise, şehir projesine yatır.`, noQueue: true });
+      const kasaKes = Math.min(vergi, Math.max(0, G.economy.kasa)); // önce kulüp kasasından
+      G.economy.kasa = Math.max(0, G.economy.kasa - kasaKes);
+      const kalan = vergi - kasaKes;                                // yetmezse ofis nakitinden
+      if (kalan > 0 && G.gayrimenkul) G.gayrimenkul.nakit = Math.max(0, (G.gayrimenkul.nakit || 0) - kalan);
+      pushInbox(G, { cat: 'mali', t: `Servet vergisi (nakit fazlası): −${fmt1(vergi)}mn`, b: `Kasa + ofis nakiti ${fmt1(esikS)}mn tamponunu aştı; fazlanın %${Math.round((SV.ORAN ?? 0.5) * 100)}'i kesildi. Nakit (kasa ya da ofis) çürür — sahaya, tesise, gayrimenkul MÜLKÜNE yatır (mülk muaf).`, noQueue: true });
     }
   }
-  // GAYRİMENKUL PORTFÖYÜ — sezon ekonomisi: kira geliri (kasaya) + değerlenme + emlak vergisi.
+  // GAYRİMENKUL PORTFÖYÜ — sezon ekonomisi: kira geliri (OFİS NAKİTİNE) + değerlenme + emlak vergisi (ofis nakitinden).
+  // Ofis nakiti kulüp kasasından AYRI: kira futbol kasasına karışmaz, ofis cüzdanında birikir (kural: bakiye sadece
+  // alım/satım/kira ile değişir). Kulübe geçirmek istersen Finans'tan "Çek".
   {
-    const gm = G.gayrimenkul || (G.gayrimenkul = { deger: 0, kira: 0, adet: 0 });
+    const gm = G.gayrimenkul || (G.gayrimenkul = { deger: 0, kira: 0, adet: 0, nakit: 0 });
     if (gm.deger > 0) {
       const C = TUNING.ECONOMY.GAYRIMENKUL || {};
-      const kira = Math.round((gm.kira || 0) * (C.AY_PER_SEZON ?? 2.5) * 10) / 10; // sezonluk kira
+      const haftaSezon = TUNING.SEASON_WEEKS ?? 34;
+      const kira = Math.round((gm.kira || 0) * haftaSezon * 10) / 10; // HAFTALIK kira × sezondaki hafta = sezonluk toplam kira
       const dOran = 1 + (C.DEGERLENME ?? 0.02);
       gm.deger = Math.round(gm.deger * dOran); // değerlenme
       gm.arsaIndex = (gm.arsaIndex || 1) * dOran; gm.binaIndex = (gm.binaIndex || 1) * dOran; // portal aynı oranı taşısın (tekrar açılışta değer kaybolmaz)
       const vergi = Math.round(gm.deger * (C.EMLAK_VERGISI ?? 0.0075) * 10) / 10; // emlak vergisi
-      G.economy.kasa += kira - vergi;
-      pushInbox(G, { cat: 'mali', t: `Gayrimenkul: +${fmt1(kira)}mn kira · −${fmt1(vergi)}mn emlak vergisi`, b: `${gm.adet} mülk · portföy ${fmt1(gm.deger)}mn (değerlendi). Kira kasaya aktı, emlak vergisi kesildi. Gayrimenkul, servet vergisinden muaf üretken varlık.`, noQueue: true });
+      gm.nakit = Math.round(((gm.nakit || 0) + kira - vergi) * 10) / 10; // kira ofis cüzdanına akar, emlak vergisi oradan kesilir
+      pushInbox(G, { cat: 'mali', t: `Gayrimenkul: +${fmt1(kira)}mn kira · −${fmt1(vergi)}mn emlak vergisi`, b: `${gm.adet} mülk · portföy ${fmt1(gm.deger)}mn (değerlendi). Kira ofis nakitine aktı (kulüp kasasına değil), emlak vergisi oradan kesildi. Portföy servet vergisinden muaf; ofis nakiti kasa gibi vergilenir — kulübe geçirmek için Finans'tan Çek.`, noQueue: true });
     }
   }
   const table = standings(G.league);
@@ -4178,6 +4185,21 @@ const nudgeBoyut = (G, k, v) => { (G.boyutNudge = G.boyutNudge || {})[k] = ((G.b
 // B4b: UI için kimlik çevirici (rng motoru saf kalsın diye buradan köprü)
 export function rollIdentity(G, tier) { return rollClubIdentity(tier, G.data.teams); }
 
+// ── GAYRİMENKUL OFİS CÜZDANI — kulüp kasası ↔ ofis nakiti aktarımı (oran 0..1). Ofis nakiti kulüp kasasından AYRI. ──
+export function gmYatir(G, oran) { // kulüp kasasından ofis nakitine
+  const gm = G.gayrimenkul || (G.gayrimenkul = { deger: 0, kira: 0, adet: 0, nakit: 0 });
+  const tasi = Math.round(Math.max(0, G.economy.kasa) * Math.min(1, Math.max(0, +oran || 0)));
+  if (tasi > 0) { G.economy.kasa -= tasi; gm.nakit = Math.round(((gm.nakit || 0) + tasi) * 10) / 10; }
+  return tasi;
+}
+export function gmCek(G, oran) { // ofis nakitinden kulüp kasasına
+  const gm = G.gayrimenkul;
+  if (!gm || (gm.nakit || 0) <= 0) return 0;
+  const tasi = Math.round((gm.nakit || 0) * Math.min(1, Math.max(0, +oran || 0)));
+  gm.nakit = Math.round(((gm.nakit || 0) - tasi) * 10) / 10; G.economy.kasa += tasi;
+  return tasi;
+}
+
 // ── B6h: KAYIT SÜRÜM GÖÇÜ — eski kayıt yeni alanlarla güvenli varsayılanlara tamamlanır ──
 export function migrateLoaded(G) {
   const v = G.stateVersion || 1;
@@ -4204,6 +4226,8 @@ export function migrateLoaded(G) {
   // TESİS BAKIM GÖÇÜ (2026-07-22): eski kayıtta sayaç yok — şimdiki sezondan başlat
   // (eski kariyer ANINDA yıpranmaz; kural yüklemeden itibaren 3 sezon sayar).
   if (!G.tesisBakim) { G.tesisBakim = {}; for (const t of TESIS_BAKIM) G.tesisBakim[t] = G.worldSeason ?? 1; }
+  // GAYRİMENKUL OFİS CÜZDANI GÖÇÜ (2026-07-22): eski kayıtta ayrı ofis nakiti yok — 0 kur (kira/aktarımla birikir).
+  if (G.gayrimenkul && G.gayrimenkul.nakit == null) G.gayrimenkul.nakit = 0;
   // TD ZIRHI (kaos bulgusu 2026-07-22): coach alanı düşmüş/bozuk kayıt ilk haftada
   // teknikEkip(c.taktik) okurken çöküyordu — vekil antrenörle aç, oyun kayıpsız sürer.
   if (!G.coach || typeof G.coach !== 'object' || !Number.isFinite(G.coach.taktik)) {

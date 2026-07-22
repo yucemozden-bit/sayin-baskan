@@ -11,6 +11,7 @@ import * as promiseSelect from './ui/promiseSelect.js';
 import * as cockpit from './ui/cockpit.js';
 import * as inbox from './ui/inbox.js';
 import * as finance from './ui/finance.js';
+import * as gayrimenkulView from './ui/gayrimenkul.js';
 import * as matchday from './ui/matchday.js';
 import * as seasonEnd from './ui/seasonEnd.js';
 import * as electionNight from './ui/electionNight.js';
@@ -224,11 +225,11 @@ function render() {
           html = shell(G, { content: matchday.render(G), center: true, devam: needsChoice ? null : { label: 'DEVAM ►', pulse: true } });
         }
       } else {
-        const screens = { cockpit, kadro: squadView, transfer: transferView, tesis: facilitiesView, finans: finance, medya: media, kongre: congress, veri: dataHub, kulup: clubView, ozel: ozelHayat, inbox, ayarlar: settings };
+        const screens = { cockpit, kadro: squadView, transfer: transferView, tesis: facilitiesView, finans: finance, gayrimenkul: gayrimenkulView, medya: media, kongre: congress, veri: dataHub, kulup: clubView, ozel: ozelHayat, inbox, ayarlar: settings };
         const screen = screens[G.nav] || cockpit;
         if (G.nav === 'ozel' && !G.ozel && G.club) A.initOzel(G); // eski kayıt: özel hayat katmanı tembel kurulur
         // sb- görsel katmana göç etmiş nav ekranları — kendi tam-ekran sbShell kabuğunu üretir
-        const SB_NAV = new Set(['cockpit', 'kadro', 'transfer', 'tesis', 'finans', 'medya', 'kongre', 'veri', 'kulup', 'ozel', 'inbox', 'ayarlar']);
+        const SB_NAV = new Set(['cockpit', 'kadro', 'transfer', 'tesis', 'finans', 'gayrimenkul', 'medya', 'kongre', 'veri', 'kulup', 'ozel', 'inbox', 'ayarlar']);
         const hazir = (G.hazirlik || 0) > 0;
         if (SB_NAV.has(G.nav)) {
           // sb- göç etmiş nav ekranı — kendi tam-ekran sbShell kabuğunu üretir (shell() ile sarmalanmaz)
@@ -613,10 +614,12 @@ function dispatch(act, arg) {
     case 'pcardClose': G._pcard = null; break;
     case 'tesis3d': G._tesis3d = arg; break;                                                   // tam ekran 3D tesis vitrini aç
     case 'tesis3dClose': G._tesis3d = null; break;
-    case 'gayrimenkulAc': _arsaSon = null; G._gayrimenkul = true; break;                        // Gayrimenkul Ofisi portalını aç (kasa = bütçe)
+    case 'gayrimenkulAc': _arsaSon = null; G._gayrimenkul = true; break;                        // Gayrimenkul Ofisi portalını aç (bütçe = ofis nakiti)
+    case 'gmYatir': { const _e = app.querySelector('#gm-pct'); A.gmYatir(G, (_e ? +_e.value : 50) / 100); break; } // kulüp kasası → ofis nakiti (yüzde: #gm-pct)
+    case 'gmCek': { const _e = app.querySelector('#gm-pct'); A.gmCek(G, (_e ? +_e.value : 100) / 100); break; }    // ofis nakiti → kulüp kasası (yüzde: #gm-pct)
     case 'gayrimenkulKapat': commitGayrimenkul(G); autoSave(); break;                            // ofisten çık → commit + anında otokayıt (mülk kalıcı olsun)
     case 'gayrimenkulSat': {                                                                    // portföyü nakde çevir (likidite iskontosu)
-      const gm = G.gayrimenkul; if (gm && gm.deger > 0) { const isk = TUNING.ECONOMY.GAYRIMENKUL?.SATIS_ISKONTO ?? 0.05; G.economy.kasa += Math.round(gm.deger * (1 - isk)); G.gayrimenkul = { deger: 0, kira: 0, adet: 0, mulkler: [], arsaIndex: 1, binaIndex: 1, month: 0 }; }
+      const gm = G.gayrimenkul; if (gm && gm.deger > 0) { const isk = TUNING.ECONOMY.GAYRIMENKUL?.SATIS_ISKONTO ?? 0.05; G.economy.kasa += Math.round(gm.deger * (1 - isk)) + Math.max(0, Math.round(gm.nakit || 0)); G.gayrimenkul = { deger: 0, kira: 0, adet: 0, nakit: 0, mulkler: [], arsaIndex: 1, binaIndex: 1, month: 0 }; } // tam çıkış: portföy iskontolu + ofis nakiti kulübe döner
       break;
     }
     case 'kiralikListe': A.toggleKiralikListe(G, arg); break;                                  // kiralık listesine koy/çek
@@ -1039,17 +1042,51 @@ eventBus.on('TICK_END', () => {}); // ui eventBus dinler (ileride canlı widget'
 
 // AÇILIŞ 1f: kart hover'ında görsel renk parıltısı CSS ile kalır; uğultu sesi kaldırıldı (kullanıcı isteği)
 globalThis.SBhover = () => {};
+// Gayrimenkul aktarım modülü: slider (yana sürükle) değişince % etiketini, Yatır/Çek TUTARINI ve dolu-iz görselini
+// canlı güncelle — render TETİKLEMEDEN (state'e dokunmaz; gerçek aktarım Yatır/Çek'e basınca dispatch'te olur).
+globalThis.SBgmPrev = () => {
+  const el = document.getElementById('gm-pct'); if (!el) return;
+  const pct = Math.min(100, Math.max(0, +el.value || 0));
+  const f = pct / 100;
+  const tl = (n) => (Math.round(n * 10) / 10).toLocaleString('tr-TR'); // fmt ile aynı biçim
+  const lbl = document.getElementById('gm-pct-lbl'); if (lbl) lbl.textContent = Math.round(pct);
+  const y = document.getElementById('gm-yat-p'); if (y) y.textContent = tl(Math.round((+el.dataset.kasa || 0) * f));
+  const c = document.getElementById('gm-cek-p'); if (c) c.textContent = tl(Math.round((+el.dataset.nakit || 0) * f));
+  el.style.setProperty('--gm-fill', pct + '%'); // dolu-iz (gold track)
+};
+// ± ince ayar (elle artır/azalt) — slider'ı d kadar oynatıp önizlemeyi tazeler (render yok).
+globalThis.SBgmStep = (d) => {
+  const el = document.getElementById('gm-pct'); if (!el) return;
+  el.value = Math.min(100, Math.max(0, (+el.value || 0) + d));
+  SBgmPrev();
+};
 
 // ── GAYRİMENKUL OFİSİ (arsa/bina yatırım portalı) — tam ekran 3D iframe + kulüp kasası köprüsü ──
 let _arsaSon = null; // portal açıkken gelen son durum {kasa, deger, kira, adet}; kapanışta commit edilir
+// Gayrimenkul portalının "Hafta" takvimi = MUTLAK OYUN HAFTASI (gerçek-zaman değil). Her oyun-haftası ilerleyişinde +1.
+// Portal açıkken oyun duraklı → sabit; oyun 1 hafta ilerleyince sayaç 1 artar.
+function gmGameHafta(G) {
+  const spt = TUNING.SEASONS_PER_TERM || 3, sw = TUNING.SEASON_WEEKS || 34, pw = TUNING.PRESEASON_WEEKS || 0;
+  const absSezon = ((G.meta?.term || 1) - 1) * spt + (G.meta?.season || 1);          // 1,2,3,… monotonik sezon no
+  const haz = G.hazirlik || 0;                                                       // hazırlık (maçsız) haftaları da sayılır
+  const icHafta = haz > 0 ? (pw - haz) : (pw + ((G.meta?.week || 1) - 1));           // hazırlık ilerleyişi + maç haftaları
+  return (absSezon - 1) * (pw + sw) + icHafta + 1;                                   // mutlak oyun haftası (hazırlık DAHİL) — her ilerlemede +1
+}
 function renderGayrimenkulOfisi(G) {
-  const kasa = Math.max(0, Math.round(G.economy.kasa)); // portal bütçesi = kulüp kasası (mn)
-  const gm = G.gayrimenkul || { deger: 0, kira: 0, adet: 0 };
-  const mevcut = gm.deger > 0 ? `<span class="gmo-mevcut">Mevcut portföy: <b>${Math.round(gm.deger)}mn</b> · ${gm.adet} mülk · kira ${Math.round((gm.kira || 0) * 10) / 10}mn/ay</span>` : '<span class="gmo-mevcut">Henüz mülkün yok — ofiste al, sat, inşa et, kiraya ver.</span>';
+  const gm = G.gayrimenkul || { deger: 0, kira: 0, adet: 0, nakit: 0 };
+  // Portal bütçesi = OFİSİN AYRI CÜZDANI (gm.nakit), kulüp kasası DEĞİL → maç geliri/hafta geçişi bakiyeyi oynatmaz.
+  // İlk açılışta gm.nakit; sonraki her re-render'da (iframe yeniden kurulur) portalın GÜNCEL bütçesi (_arsaSon.kasa) —
+  // böylece reload, harcanmış-ama-commit-edilmemiş parayı geri şişirmez → "bakiye sürekli artıyor" biter.
+  const kasa = _arsaSon ? Math.max(0, Math.round(_arsaSon.kasa)) : Math.max(0, Math.round(gm.nakit || 0)); // mn
+  const mevcut = gm.deger > 0
+    ? `<span class="gmo-mevcut">Portföy: <b>${Math.round(gm.deger)}mn</b> · ${gm.adet} mülk · kira ${Math.round((gm.kira || 0) * 10) / 10}mn/ay</span>`
+    : (kasa > 0
+      ? `<span class="gmo-mevcut">Ofis nakiti <b>${kasa}mn</b> — al, sat, inşa et, kiraya ver.</span>`
+      : `<span class="gmo-mevcut">Ofiste nakit yok — Finans'tan "Yatır" ile kasadan aktar, sonra al/inşa et.</span>`);
   return `<div class="tesis3d-overlay gmo-overlay">
     <div class="tesis3d-box">
-      <div class="gmo-bar"><span class="gmo-t">🏙️ GAYRİMENKUL OFİSİ</span>${mevcut}<button class="tesis3d-kapat gmo-kapat" data-act="gayrimenkulKapat" data-tip="Ofisten çık — bu oturumdaki alımlar portföye eklenir, kalan nakit kasaya döner">Ofisten çık ✕</button></div>
-      <iframe class="tesis3d-frame gmo-frame" src="assets/arsa_yatirimi_7.html?kasa=${kasa}&ih=${TUNING.ECONOMY.GAYRIMENKUL?.INSAAT_HAFTA ?? 12}" title="Gayrimenkul Yatırımı" scrolling="no"></iframe>
+      <div class="gmo-bar"><span class="gmo-t">🏙️ GAYRİMENKUL OFİSİ</span>${mevcut}<button class="tesis3d-kapat gmo-kapat" data-act="gayrimenkulKapat" data-tip="Ofisten çık — alımlar portföye, kalan nakit OFİS cüzdanında kalır (kulübe geçirmek için Finans'tan Çek)">Ofisten çık ✕</button></div>
+      <iframe class="tesis3d-frame gmo-frame" src="assets/arsa_yatirimi_7.html?kasa=${kasa}&ih=${TUNING.ECONOMY.GAYRIMENKUL?.INSAAT_HAFTA ?? 12}&hafta=${gmGameHafta(G)}" title="Gayrimenkul Yatırımı" scrolling="no"></iframe>
     </div>
   </div>`;
 }
@@ -1072,20 +1109,34 @@ window.addEventListener('message', (e) => {
     const gm = (G && G.gayrimenkul) || {};
     let mulkler = gm.mulkler;
     if ((!mulkler || !mulkler.length) && gm.deger > 0) mulkler = gmLegacyMulkler(gm); // eski kayıt: aggregate → parsel
-    try { e.source && e.source.postMessage({ type: 'arsaRestore', mulkler: mulkler || [], arsaIndex: gm.arsaIndex || 1, binaIndex: gm.binaIndex || 1, month: gm.month || 0 }, '*'); } catch (err) {}
+    try { e.source && e.source.postMessage({ type: 'arsaRestore', mulkler: mulkler || [], arsaIndex: gm.arsaIndex || 1, binaIndex: gm.binaIndex || 1, hafta: gmGameHafta(G) }, '*'); } catch (err) {}
     return;
   }
   if (d.type !== 'arsaYatirim') return;
   _arsaSon = { kasa: +d.kasa || 0, deger: +d.deger || 0, kira: +d.kira || 0, adet: +d.adet || 0,
     mulkler: Array.isArray(d.mulkler) ? d.mulkler : [], arsaIndex: +d.arsaIndex || 1, binaIndex: +d.binaIndex || 1, month: +d.month || 0 };
+  // CANLI COMMIT: gömülü/açık portalda alım-satım oldukça gm'i güncelle + kartları tazele — RENDER YOK (iframe reset olmaz).
+  // (Ekranın 3D'si her değişimde reload olmadan cüzdan/portföy senkron kalır; kayıt/nav-away zaten güncel gm'i tutar.)
+  if (G && G.gayrimenkul) {
+    const g = G.gayrimenkul;
+    g.nakit = Math.max(0, Math.round(_arsaSon.kasa));
+    g.deger = Math.round(_arsaSon.deger || 0);
+    g.kira = Math.round((_arsaSon.kira || 0) * 10) / 10;
+    g.adet = _arsaSon.adet || 0;
+    if (Array.isArray(_arsaSon.mulkler)) g.mulkler = _arsaSon.mulkler;
+    g.arsaIndex = _arsaSon.arsaIndex || 1; g.binaIndex = _arsaSon.binaIndex || 1;
+    const tl = (v) => (Math.round(v * 10) / 10).toLocaleString('tr-TR') + 'mn';
+    const nEl = document.getElementById('gms-nakit'); if (nEl) nEl.textContent = tl(g.nakit);
+    const dEl = document.getElementById('gms-deger'); if (dEl) dEl.textContent = tl(g.deger);
+  }
 });
-// Ofisten çıkış (buton/ESC/SPACE) → commit: kalan nakit kasaya. Portal ARTIK OTORİTE: portföy = portaldaki güncel
-// durum (biriktirme yok → çift sayım da sıfırlanma da olmaz). Parsel listesi kayda yazılır → tekrar açılışta geri gelir.
+// Ofisten çıkış (buton/ESC/SPACE) → commit: kalan bütçe OFİS NAKİTİNE (gm.nakit) yazılır — kulüp kasasına DÖNMEZ (ayrı hesap).
+// Portal ARTIK OTORİTE: portföy = portaldaki güncel durum (biriktirme yok → çift sayım da sıfırlanma da olmaz). Parsel listesi kayda yazılır.
 function commitGayrimenkul(G) {
   G._gayrimenkul = null;
   if (!_arsaSon) return; // portaldan hiç durum gelmediyse (köprü açılmadan kapandı) mevcut portföy korunur
-  G.economy.kasa = Math.max(0, Math.round(_arsaSon.kasa));
   G.gayrimenkul = {
+    nakit: Math.max(0, Math.round(_arsaSon.kasa)),   // ofis cüzdanı — kulüp kasasına DÖNMEZ (ayrı hesap; kulübe için Finans'tan Çek)
     deger: Math.round(_arsaSon.deger || 0),
     kira: Math.round((_arsaSon.kira || 0) * 10) / 10,
     adet: _arsaSon.adet || 0,

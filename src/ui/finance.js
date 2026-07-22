@@ -45,15 +45,7 @@ export function render(G) {
     <span class="fin-vergi-not">${servetVergi > 0 || karVergi > 0 ? 'yatır ya da kaybet — parayı çürütme' : e.borc > 0 ? 'borcunu öde, vergiden muafsın' : 'kasa temiz, vergi yok'}</span>
   </div>`;
 
-  // ── GAYRİMENKUL PORTFÖYÜ — servet vergisine karşı üretken çıkış (Gayrimenkul Ofisi portalı) ──
-  const gm = G.gayrimenkul || { deger: 0, kira: 0, adet: 0 };
-  const gmBar = `<div class="fin-vergi gmo-bar-fin">
-    <span class="fin-vergi-t">🏙️ GAYRİMENKUL</span>
-    <span class="fin-vergi-i" data-tip="Portföy değeri — servet vergisinden MUAF üretken varlık (kasadaki para vergilenir, gayrimenkul vergilenmez).">Portföy <b class="pos">${fmt(gm.deger)}mn</b>${gm.adet ? ` <i>${gm.adet} mülk</i>` : ''}</span>
-    <span class="fin-vergi-i" data-tip="Aylık kira geliri — her sezon kasaya akar (${Math.round((VT.GAYRIMENKUL?.AY_PER_SEZON ?? 2.5))} ay/sezon). Yalnız binalar kira üretir, arsalar değerlenir.">Kira <b class="pos">${fmt(gm.kira)}mn</b>/ay</span>
-    <button class="cx-btn on" data-act="gayrimenkulAc" data-tip="Gayrimenkul Ofisi'ni aç — kasan bütçe olur, arsa/bina al, sat, inşa et, kiraya ver">🏙️ Ofisi Aç</button>
-    ${gm.deger > 0 ? `<button class="cx-btn" data-act="gayrimenkulSat" data-tip="Tüm portföyü nakde çevir — %${Math.round((VT.GAYRIMENKUL?.SATIS_ISKONTO ?? 0.05) * 100)} likidite iskontosu">Portföyü Sat</button>` : ''}
-  </div>`;
+  // Gayrimenkul artık kendi nav ekranında (src/ui/gayrimenkul.js) — finans ekranından çıkarıldı.
 
   // ── Nakit akışı: TAM GENİŞLİK YATAY BANT — gelir | gider | NET üç kolonda (vitrin başrol, akış dipnot)
   let akisPanel;
@@ -241,7 +233,6 @@ export function render(G) {
   const body = `<div class="fin-root">
     <div class="fin-strip">${biletPanel}${borcPanel}${ffpPanel}${primPanel}</div>
     ${vergiSerit}
-    ${gmBar}
     ${sponsorPanel}
     ${akisPanel}
   </div>`;
