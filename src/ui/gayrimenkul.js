@@ -18,7 +18,6 @@ export function render(G) {
   const kasa = Math.round(G.economy.kasa || 0);
   const pct0 = 0.5;
   const varTransfer = kasa > 0.5 || nakit > 0;
-  const haftaSezon = TUNING.SEASON_WEEKS ?? 34;
   const isk = Math.round((TUNING.ECONOMY.GAYRIMENKUL?.SATIS_ISKONTO ?? 0.05) * 100);
   const ih = TUNING.ECONOMY.GAYRIMENKUL?.INSAAT_HAFTA ?? 12;
   const src = `assets/arsa_yatirimi_7.html?kasa=${nakit}&ih=${ih}&hafta=${gameHafta(G)}`;
@@ -35,8 +34,8 @@ export function render(G) {
       <button class="gm-step" type="button" onclick="SBgmStep(5)" data-tip="+%5" aria-label="artır">+</button>
     </div>
     <div class="gm-slider-btns">
-      ${kasa > 0.5 ? `<button class="cx-btn gm-yat" data-act="gmYatir" data-tip="Slider'daki yüzde kadar kulüp kasasından ofise aktar">▲ Yatır <b id="gm-yat-p">${fmt(Math.round(kasa * pct0))}</b>mn</button>` : ''}
-      ${nakit > 0 ? `<button class="cx-btn gm-cek" data-act="gmCek" data-tip="Slider'daki yüzde kadar ofis nakitini kulübe çek">▼ Çek <b id="gm-cek-p">${fmt(Math.round(nakit * pct0))}</b>mn</button>` : ''}
+      <button class="cx-btn gm-yat${kasa > 0.5 ? '' : ' gm-off'}" data-act="gmYatir"${kasa > 0.5 ? '' : ' disabled'} data-tip="Slider'daki yüzde kadar kulüp kasasından ofise aktar">▲ Yatır <b id="gm-yat-p">${fmt(Math.round(kasa * pct0))}</b>mn</button>
+      <button class="cx-btn gm-cek${nakit > 0 ? '' : ' gm-off'}" data-act="gmCek"${nakit > 0 ? '' : ' disabled'} data-tip="Slider'daki yüzde kadar ofis nakitini kulübe çek">▼ Çek <b id="gm-cek-p">${fmt(Math.round(nakit * pct0))}</b>mn</button>
     </div>
   </div>` : '<p class="gms-uyari">Kasan boş — para gelince buradan ofise aktarabilirsin.</p>';
 
@@ -48,7 +47,7 @@ export function render(G) {
 
   const body = `<div class="gms-root">
     <div class="gms-cards">
-      ${kart('Kulüp Kasası', kasa, 'Yatır ile ofise aktarabilirsin', false)}
+      ${kart('Kulüp Kasası', kasa, 'Yatır ile ofise aktarabilirsin', false, 'gms-kasa')}
       ${kart('Ofis Nakiti', nakit, 'Çek ile kulübe geri alabilirsin', nakit > 0, 'gms-nakit')}
       ${kart('Portföy Değeri', gm.deger, gm.adet ? `${gm.adet} mülk · kira ${fmt(gm.kira)}mn/hafta · vergiden MUAF` : 'Henüz mülkün yok · vergiden MUAF', true, 'gms-deger')}
     </div>
@@ -61,9 +60,9 @@ export function render(G) {
         </div>
         <div class="tr-panel gms-bilgi">
           <ul class="gms-list">
-            <li><b>Ayrı cüzdan:</b> ofis nakiti maç/hafta geçişinden etkilenmez; yalnız alım, satım, kira ve aktarımla değişir.</li>
+            <li><b>Ayrı cüzdan:</b> ofis nakiti maç sonucundan/kulüp kasasından bağımsız; alım, satım, kira ve aktarımla değişir.</li>
             <li><b>Arsa</b> değerlenir (kirasız) · <b>bina</b> kiraya verilir/satılır.</li>
-            <li><b>Kira</b> haftalık işler, sezon sonunda (${haftaSezon} hafta) ofise akar. <b>Mülk</b> servet vergisinden muaftır.</li>
+            <li><b>Kira HER HAFTA</b> ofis nakitine akar; emlak vergisi sezon sonunda kesilir. <b>Mülk</b> servet vergisinden muaftır.</li>
           </ul>
         </div>
       </div>

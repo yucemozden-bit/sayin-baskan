@@ -327,8 +327,10 @@ check('anlatı şablonu tekrarı (6 hafta) = 0', totalViolations === 0, `${total
 // (bilinçli: uygunluk cezası gerçek) → ayrı gevşek bant.
 // DIP_FREN (2026-07-22, kullanıcı "spiral yumuşasın"): dipteki oyuncuda yenilgi kaybı yarıya
 // iner — Dengeli'nin kötü serileri de biraz hızlı toparlanır → tavan 67→68 (ölçüm %67.3).
-check('well-played oyOranı — Dengeli %55-68 · Cimri %45-68 · Popülist <%35',
-  RESULTS['Cimri'].oy >= 45 && RESULTS['Cimri'].oy <= 68 && RESULTS['Dengeli'].oy >= 55 && RESULTS['Dengeli'].oy <= 68 && RESULTS['Popülist'].oy < 35,
+// LİG SIRA İKRAMİYESİ (2026-07-23, kullanıcı "tüm takımlara sıra ikramiyesi"): orta tier küçük
+// ikramiye alır (TABAN 4) → oyOranı ~+0.8 (ölçüm %68.1). Dengeli tavanı 68→69 (küçük, ikramiye kaynaklı).
+check('well-played oyOranı — Dengeli %55-69 · Cimri %45-68 · Popülist <%35',
+  RESULTS['Cimri'].oy >= 45 && RESULTS['Cimri'].oy <= 68 && RESULTS['Dengeli'].oy >= 55 && RESULTS['Dengeli'].oy <= 69 && RESULTS['Popülist'].oy < 35,
   `Cimri %${RESULTS['Cimri'].oy.toFixed(1)}, Dengeli %${RESULTS['Dengeli'].oy.toFixed(1)}, Popülist %${RESULTS['Popülist'].oy.toFixed(1)}`);
 // ── ÇOK DÖNEM HAYATTA KALMA (Cimri vs Dengeli — yatırımın uzun vade getirisi) ──
 function playCareer(bot, seed, maxTerms = 4) {

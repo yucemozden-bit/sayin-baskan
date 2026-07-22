@@ -202,6 +202,10 @@ export const TUNING = {
   LEAGUE: {
     EUROPE_SPOTS: 4,           // 1-4. Avrupa
     RELEGATION_FROM: 16,       // 16-18. küme (18 takım)
+    // BÜYÜK-3/4 REKABETİ (2026-07-22, kullanıcı "büyük kulüp her yıl kazanıyor, çok abartı"):
+    // şampiyonluk beklentili kulüpte (büyük/dev/efsane) en güçlü RIVAL_N rakip her sezon oyuncu
+    // gücüne yakın tabana çekilir (oyuncu − RIVAL_GAP) → tepede rakipsiz kalmaz. Orta/küçük tier'a dokunmaz.
+    RIVAL_N: 4, RIVAL_GAP: 3,   // ölçülen: büyük kulüp şampiyonluk oranı ~%83 → ~%72 (oynanan sezonlarda)
     // 2. LİG sistemi: küme düşünce ertesi sezon zayıf rakipli + düşük gelirli 2. lig
     PROMOTION_TO: 3,           // 2. ligde ilk 3 → terfi
     LIG2_HEDEF: 3,             // 2. ligde hedef sıra (terfi bandı)
@@ -220,6 +224,10 @@ export const TUNING = {
     KAR_VERGISI_ESIK: 55,      // ilk 55mn kâr vergisiz (küçük/orta kulüp korunur; yalnız zengin fazlası vergilenir)
     KAR_VERGISI_BORC_MUAF: 20, // borç > bu ise kâr vergisi ALINMAZ ("önce borcunu öde; borçluyken zengin sayılmazsın") — Batan Dev / toparlanan kulüp korunur, yalnız borçsuz-zengin vergilenir
     BORC_KOMPOUND: 0.02,       // borç ANAPARA bileşiği: faizi ödesen bile borç ~%2/yıl büyür (öde, sürüncemede bırakma) — gentle, spiral yok
+    // LİG SIRA İKRAMİYESİ (2026-07-23, kullanıcı: "şampiyon çok, 2. biraz az... tüm sıralara para"):
+    // sezon sonu finiş ikramiyesi — 1. sıra TABAN, son sıra TABAN×SON_ORAN, aradaki sıralar LİNEER azalır.
+    // Tier ölçekli (büyük kulüp ligi daha çok öder → başarı maaş yükünü karşılar, kazanan kulüp mali nefes alır).
+    SIRA_ODUL: { TABAN: { kucuk: 3, orta: 4, buyuk: 45, dev: 58, efsane: 75 }, SON_ORAN: 0.12, LIG2: 0.4 },
     // SERVET VERGİSİ (bakiye tavanı): kasa tier tamponunu aşarsa fazlası vergilenir → hazine milyarlarda
     // kalmaz ("yatır ya da kaybet"). Kâr vergisi AKIŞI, bu STOKU sınırlar → ikisi birlikte gerçek tavan.
     SERVET_VERGISI: { ESIK: { kucuk: 60, orta: 160, buyuk: 380, dev: 750, efsane: 1050 }, ORAN: 0.30 },

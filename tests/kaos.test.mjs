@@ -183,7 +183,9 @@ console.log('\n── TESİS YIPRANMASI YUMUŞATMA (2026-07: sezonda 1 tesis; na
   G.economy.kasa = 100; // bakım ücreti karşılanabilir
   A.endSeason(G);
   check('nakit varsa: akademi seviye KORUNUR (bakım ödendi)', G.facilities.akademi === 4, `akademi ${G.facilities.akademi}`);
-  check('bakım MEKTUPLA bildirildi + ücret kesildi', G.inbox.some((m) => (m.t || '').includes('bakımı yapıldı')) && G.economy.kasa < 100);
+  // ücret kesildiğini "bakımı yapıldı" mektubu kanıtlar (o mesaj yalnız kasa>=ucret → kasa-=ucret dalında basılır);
+  // net kasa artık lig sıra ikramiyesiyle (bakımdan sonra eklenir) dolabildiğinden "kasa<100" proxy'si geçersiz.
+  check('bakım MEKTUPLA bildirildi + ücret kesildi', G.inbox.some((m) => (m.t || '').includes('bakımı yapıldı')));
   check('stadyum MUAF (hiç düşmez)', G.facilities.stadyum === stad0);
   check('bakımlı tesis dokunulmaz (antrenman sayacı taze)', G.facilities.antrenman === ant0);
   check('sv0 tesis negatife inmez', G.facilities.ticari === 0 && G.facilities.tibbi === 0, `ticari ${G.facilities.ticari} tibbi ${G.facilities.tibbi}`);

@@ -1740,6 +1740,7 @@ table thead th { color: var(--ink-3); font-size: 10.5px; letter-spacing: 1.2px; 
 .gm-slider-btns { display: flex; gap: 8px; }
 .gm-slider-btns .cx-btn { flex: 1 1 0; justify-content: center; }
 .gm-slider-btns .gm-yat { color: var(--pos); } .gm-slider-btns .gm-cek { color: var(--warn); }
+.gm-slider-btns .gm-off { opacity: .32; filter: grayscale(.6); cursor: not-allowed; pointer-events: none; } /* bakiye yok → pasif (kasa/nakit 0) */
 .tesis-alt { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: auto; }
 .tesis-indirim { font-size: 11px; color: var(--pos); font-weight: 700; }
 .tesis-indirim s { color: var(--ink-3); font-weight: 400; margin-left: 4px; }

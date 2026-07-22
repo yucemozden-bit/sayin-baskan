@@ -455,7 +455,12 @@
     updateClock(); updateWallet();
     if (sel >= 0) selectParcel(sel);
   }
-  window.addEventListener('message', (e) => { const d = e && e.data; if (d && d.type === 'arsaRestore') restoreState(d); });
+  window.addEventListener('message', (e) => {
+    const d = e && e.data; if (!d) return;
+    if (d.type === 'arsaRestore') { restoreState(d); return; }
+    // Kulüp Yatır/Çek yaptı → bütçeyi RELOAD OLMADAN güncelle (sahne/kamera sıfırlanmaz); seçili parselin alınabilirliği tazelenir
+    if (d.type === 'arsaButce') { budget = Math.max(0, +d.butce || 0); updateWallet(); if (sel >= 0) selectParcel(sel); }
+  });
   function updateClock() {
     const ar = (arsaIndex - 1) * 100, bn = (binaIndex - 1) * 100;
     dEl('hMkt').innerHTML = 'Hafta ' + month + ' · Arsa <span class="' + (ar >= 0 ? 'up' : 'dn') + '">' + (ar >= 0 ? '▲%' : '▼%') + Math.abs(ar).toFixed(1) + '</span> · Bina <span class="' + (bn >= 0 ? 'up' : 'dn') + '">' + (bn >= 0 ? '▲%' : '▼%') + Math.abs(bn).toFixed(1) + '</span>';

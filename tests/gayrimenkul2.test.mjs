@@ -111,18 +111,19 @@ setSeed(2718);
 
 // ═══ H) SEZON EKONOMİSİ — kira ofis nakitine, değerlenme, vergi (8) ═══
 {
-  let G = kur(); G.gayrimenkul = { deger: 100, kira: 2, adet: 2, nakit: 0, arsaIndex: 1.2, binaIndex: 1.1, month: 0, mulkler: [] };
+  let G = kur(); G.gayrimenkul = { deger: 100, kira: 2, adet: 2, nakit: 50, arsaIndex: 1.2, binaIndex: 1.1, month: 0, mulkler: [] };
   A.endSeason(G); const gm = G.gayrimenkul;
   es(gm.deger, 102, 'H1 endSeason: portföy %2 değerlendi');
-  dogru(gm.nakit > 0, 'H2 endSeason: kira OFİS NAKİTİNE aktı (nakit arttı)');
+  dogru(gm.nakit < 50 && gm.nakit > 0, 'H2 endSeason: emlak vergisi OFİS NAKİTİNDEN kesildi (kira artık HAFTALIK, sezon sonu toplu YOK)');
   yakin(gm.arsaIndex, 1.224, 'H3 endSeason: arsaIndex aynı oranda taşındı');
   yakin(gm.binaIndex, 1.122, 'H4 endSeason: binaIndex aynı oranda taşındı');
-  dogru((G.inbox || []).some((m) => m.t && m.t.startsWith('Gayrimenkul:')), 'H5 endSeason: kira/vergi bildirimi geldi');
+  yakin(gm.kira, 2.04, 'H4b endSeason: kira da değerle büyür (%2)', 0.01);
+  dogru((G.inbox || []).some((m) => m.t && m.t.startsWith('Gayrimenkul:')), 'H5 endSeason: değerlenme/vergi bildirimi geldi');
   es(nanAv(G), null, 'H6 endSeason: NaN yok');
   let G2 = kur(); G2.gayrimenkul = { deger: 0, kira: 0, adet: 0, nakit: 0, mulkler: [] }; const n0 = G2.gayrimenkul.nakit;
   A.endSeason(G2); es(G2.gayrimenkul.nakit, n0, 'H7 endSeason: boş portföyde nakit değişmez, çökme yok');
   let G3 = kur(); G3.gayrimenkul = { deger: 200, kira: 4, adet: 3, nakit: 10, arsaIndex: 1, binaIndex: 1, month: 0, mulkler: [] };
-  const nOnce = G3.gayrimenkul.nakit; A.endSeason(G3); dogru(G3.gayrimenkul.nakit > nOnce, 'H8 endSeason: kira mevcut nakite EKLENİR (üstüne yazmaz)');
+  A.gmHaftalikKira(G3); es(G3.gayrimenkul.nakit, 14, 'H8 haftalık kira: mevcut nakite EKLENİR (10+4=14, üstüne yazmaz)');
 }
 
 // ═══ I) SERVET VERGİSİ — ofis nakiti park-kaçağı kapalı (6) ═══

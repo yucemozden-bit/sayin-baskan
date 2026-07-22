@@ -342,6 +342,16 @@ function initSeason(G, opts = {}) {
     // oyuncu kadrosu kariyer boyu büyürken lig yerinde sayarsa uzun kariyer gerilimi ölür.
     // Determinist (rand YOK); merdivenin GÖRELİ sırası korunur, senin fazladan büyümen yine sıra oynatır.
     for (const o of G.opponents || []) o.strength = Math.min(92, o.strength + TUNING.LIG_GELISIM);
+    // ŞAMPİYONLUK BEKLENTİLİ KULÜP (büyük/dev/efsane) tepede rakipsiz kalmasın: oyuncunun kadrosu
+    // kariyer boyu büyürken (78→89) lig +0.4 ile geride kalıyordu → 18/20 şampiyonluk. En güçlü 2 rakip
+    // her sezon oyuncu gücüne YAKIN bir tabana çekilir (kendini ölçekleyen "büyük 3"). Determinist, rand YOK.
+    // Yalnız üst ligde + şampiyonluk beklentili kulüpte; orta/küçük tier'a DOKUNMAZ.
+    if ((G.lig || 1) === 1 && (TUNING.EXPECT.HEDEF_SIRA[G.club.beklenti] ?? 15) <= 2 && (G.opponents || []).length >= 2) {
+      const taban = Math.round(G.temelGuc) - (TUNING.LEAGUE.RIVAL_GAP ?? 5); // en güçlü N rakibin gücü ≥ oyuncu − RIVAL_GAP
+      const n = TUNING.LEAGUE.RIVAL_N ?? 2;
+      const sirali = [...G.opponents].sort((a, b) => b.strength - a.strength);
+      for (let i = 0; i < n; i++) if (sirali[i] && sirali[i].strength < taban) sirali[i].strength = Math.min(92, taban);
+    }
     const { news, crises } = aiSeasonStart(G.opponents);
     if (news.length) { G.leagueNews = news[0]; for (const n of news.slice(0, 2)) pushInbox(G, { cat: 'lig', t: 'Lig Gündemi', b: n }); }
     // B1d: AI FFP baskısı — aşırı harcayan AI zorunlu satışa düşer → KELEPİR dosyası (motivasyon görünür)
@@ -1370,6 +1380,7 @@ function finishWeekTail(G, lateMove) {
   if (gelisimOldu) { G.club.kadroDeger = squadMarketValue(G.squad); G.temelGuc = temelGuc(powerCtx(G)); refreshPower(G); }
   G.meta.week++;
   gmIlerleInsaat(G); // GAYRİMENKUL: inşaatlar oyun haftasıyla ilerler (ofis kapalıyken de)
+  gmHaftalikKira(G); // GAYRİMENKUL: kira HER HAFTA ofis nakitine akar (bakiye haftalık büyür; emlak vergisi sezon sonu)
   eventBus.emit('TICK_END', { week: wk, res: myRes });
   return { ok: true };
 }
@@ -1387,10 +1398,19 @@ export function gmIlerleInsaat(G) {
       p.building = false; p.type = 'building'; p.wear = 0; p.buildWeeksLeft = 0;
       gm.deger = Math.round((gm.deger || 0) + (p.constrBase || 0) * (gm.binaIndex || 1)); // biten bina değeri portföye
       bitti++;
-      pushInbox(G, { cat: 'mali', t: `🏗️ ${p.id} inşaatı tamamlandı`, b: 'Bina hazır — Gayrimenkul Ofisi\'nden kiraya verip aylık gelir bağlayabilirsin. Portföy değeri arttı.', noQueue: true, sig: `gm-insaat-${p.id}` });
+      pushInbox(G, { cat: 'mali', t: `🏗️ ${p.id} inşaatı tamamlandı`, b: 'Bina hazır — Gayrimenkul Ofisi\'nden kiraya verip haftalık gelir bağlayabilirsin. Portföy değeri arttı.', noQueue: true, sig: `gm-insaat-${p.id}` });
     }
   }
   return bitti;
+}
+
+// ── GAYRİMENKUL HAFTALIK KİRA — kirada binaların HAFTALIK kirası ofis nakitine akar (deterministik; RNG çekilişi YOK).
+// Sezon toplamı = kira × 34 (eski sezon-sonu topluyla aynı), ama bakiye artık her hafta görünür büyür. Emlak vergisi sezon sonunda.
+export function gmHaftalikKira(G) {
+  const gm = G && G.gayrimenkul;
+  if (!gm || !(gm.deger > 0) || !(gm.kira > 0)) return 0;
+  gm.nakit = Math.round(((gm.nakit || 0) + gm.kira) * 100) / 100; // 2 ondalık: küçük haftalık kira yuvarlanıp kaybolmasın
+  return gm.kira;
 }
 
 // ── Telkin yardımcıları (v4.1-2) ──
@@ -2637,7 +2657,10 @@ function tesisBakimTouch(G, tesis) {
 }
 
 // İFLAS EŞİĞİ — tek kaynak (finishWeekTail + Finans UI çizgisi aynı sayıyı okur)
-export function iflasEsigi(G) { return Math.max(500, Math.round((G.iflasTaban ?? 60) * 1.25) + 150); }
+// İFLAS EŞİĞİ headroom (2026-07-22, kullanıcı: "büyük kulüp ~%90 iflas ediyor, eşiği gevşet"):
+// çarpan 1.25→1.5 → yüksek-borçlu kulüpte (büyük 400 → 750; dev 700 → 1200) agresif oyun daha geç batar.
+// Düşük-borçlu kulüp 500 tabanında kalır (orta 60 → 500; küçük 15 → 500 — DOKUNULMAZ).
+export function iflasEsigi(G) { return Math.max(500, Math.round((G.iflasTaban ?? 60) * (TUNING.ECONOMY.IFLAS_MULT ?? 1.5)) + 150); }
 
 // ŞANTİYE SİSTEMİ: ihale seçimi işi BAŞLATIR — kademe, süre dolunca gelir (santiyeTick).
 // Zarlar SEÇİM ANINDA atılır (oyuncu aksiyonu; tip başına 1 rand — ESKİ yapıyla birebir aynı
@@ -2845,21 +2868,21 @@ export function endSeason(G) {
       pushInbox(G, { cat: 'mali', t: `Servet vergisi (nakit fazlası): −${fmt1(vergi)}mn`, b: `Kasa + ofis nakiti ${fmt1(esikS)}mn tamponunu aştı; fazlanın %${Math.round((SV.ORAN ?? 0.5) * 100)}'i kesildi. Nakit (kasa ya da ofis) çürür — sahaya, tesise, gayrimenkul MÜLKÜNE yatır (mülk muaf).`, noQueue: true });
     }
   }
-  // GAYRİMENKUL PORTFÖYÜ — sezon ekonomisi: kira geliri (OFİS NAKİTİNE) + değerlenme + emlak vergisi (ofis nakitinden).
-  // Ofis nakiti kulüp kasasından AYRI: kira futbol kasasına karışmaz, ofis cüzdanında birikir (kural: bakiye sadece
-  // alım/satım/kira ile değişir). Kulübe geçirmek istersen Finans'tan "Çek".
+  // GAYRİMENKUL PORTFÖYÜ — sezon-sonu ekonomisi: değerlenme + emlak vergisi (ofis nakitinden). Kira ARTIK HAFTALIK akar
+  // (bkz. gmHaftalikKira, finishWeek) — sezon sonunda toplu kira YOK. Ofis nakiti kulüp kasasından AYRI (Finans'tan Çek).
   {
     const gm = G.gayrimenkul || (G.gayrimenkul = { deger: 0, kira: 0, adet: 0, nakit: 0 });
     if (gm.deger > 0) {
       const C = TUNING.ECONOMY.GAYRIMENKUL || {};
       const haftaSezon = TUNING.SEASON_WEEKS ?? 34;
-      const kira = Math.round((gm.kira || 0) * haftaSezon * 10) / 10; // HAFTALIK kira × sezondaki hafta = sezonluk toplam kira
+      const kiraYil = Math.round((gm.kira || 0) * haftaSezon * 10) / 10; // sezon boyu HAFTALIK akan toplam kira (bilgi amaçlı — bildirimde)
       const dOran = 1 + (C.DEGERLENME ?? 0.02);
       gm.deger = Math.round(gm.deger * dOran); // değerlenme
       gm.arsaIndex = (gm.arsaIndex || 1) * dOran; gm.binaIndex = (gm.binaIndex || 1) * dOran; // portal aynı oranı taşısın (tekrar açılışta değer kaybolmaz)
-      const vergi = Math.round(gm.deger * (C.EMLAK_VERGISI ?? 0.0075) * 10) / 10; // emlak vergisi
-      gm.nakit = Math.round(((gm.nakit || 0) + kira - vergi) * 10) / 10; // kira ofis cüzdanına akar, emlak vergisi oradan kesilir
-      pushInbox(G, { cat: 'mali', t: `Gayrimenkul: +${fmt1(kira)}mn kira · −${fmt1(vergi)}mn emlak vergisi`, b: `${gm.adet} mülk · portföy ${fmt1(gm.deger)}mn (değerlendi). Kira ofis nakitine aktı (kulüp kasasına değil), emlak vergisi oradan kesildi. Portföy servet vergisinden muaf; ofis nakiti kasa gibi vergilenir — kulübe geçirmek için Finans'tan Çek.`, noQueue: true });
+      gm.kira = Math.round((gm.kira || 0) * dOran * 100) / 100; // kira da değerle büyür → gelecek sezon haftalık kira artar (reopen beklemeden portalla tutarlı)
+      const vergi = Math.round(gm.deger * (C.EMLAK_VERGISI ?? 0.0075) * 10) / 10; // emlak vergisi (yıllık) — sezon sonunda ofis nakitinden kesilir
+      gm.nakit = Math.max(0, Math.round(((gm.nakit || 0) - vergi) * 10) / 10); // kira zaten haftalık aktı; sezon sonunda yalnız emlak vergisi kesilir (ofis nakiti negatife düşmez)
+      pushInbox(G, { cat: 'mali', t: `Gayrimenkul: portföy ${fmt1(gm.deger)}mn (+%${Math.round((C.DEGERLENME ?? 0.02) * 100)}) · −${fmt1(vergi)}mn emlak vergisi`, b: `${gm.adet} mülk değerlendi. Kira sezon boyunca HAFTALIK ofis nakitine aktı (~${fmt1(kiraYil)}mn); sezon sonunda yalnız yıllık emlak vergisi kesildi. Portföy servet vergisinden muaf; ofis nakiti kasa gibi vergilenir — kulübe geçirmek için Finans'tan Çek.`, noQueue: true });
     }
   }
   const table = standings(G.league);
@@ -3033,6 +3056,24 @@ export function endSeason(G) {
       } else {
         G.facilities[t] -= 1; G.tesisBakim[t] = ws;
         pushInbox(G, { cat: 'tesis', t: `⚠ ${TESIS_TR[t]} yıprandı`, b: `Kasa bakıma yetmedi (${fmt1(ucret)}mn gerekti) — ${TESIS_TR[t]} Sv.${G.facilities[t] + 1} → ${G.facilities[t]}. Nakit toparlayınca yükselt.${kalanNot}`, noQueue: true });
+      }
+    }
+  }
+  // LİG SIRA İKRAMİYESİ: sezon sonu finiş ödülü — şampiyon en çok, sırayla lineer azalarak son sıra en az.
+  // Tier ölçekli (büyük kulüp ligi daha çok öder → başarı maaş yükünü karşılar, kazanan kulüp mali nefes alır).
+  // Vergi + bakımdan SONRA gelir (mevcut yıl kararlarını etkilemez; gelecek yıla nakit olarak taşınır).
+  {
+    const oynanan = (G.season?.W || 0) + (G.season?.D || 0) + (G.season?.L || 0); // maç oynanmadıysa (yapay endSeason) ikramiye yok
+    if (oynanan > 0) {
+      const N = TUNING.LEAGUE_TEAMS || 18;
+      const SO = TUNING.ECONOMY.SIRA_ODUL || {};
+      const taban = (SO.TABAN && SO.TABAN[G.club.tier]) || 12;
+      const ligKat = lig === 2 ? (SO.LIG2 ?? 0.4) : 1;
+      const oran = (SO.SON_ORAN ?? 0.12) + (1 - (SO.SON_ORAN ?? 0.12)) * (N - pos) / Math.max(1, N - 1); // pos 1 → 1.0, pos N → SON_ORAN
+      const odul = Math.max(0, Math.round(taban * ligKat * oran));
+      if (odul > 0) {
+        G.economy.kasa += odul;
+        pushInbox(G, { cat: 'mali', t: `Lig sıra ikramiyesi: +${fmt1(odul)}mn (${pos}. sıra)`, b: `Sezonu ${pos}. bitirdin — yayın/federasyon havuzundan sıra ikramiyesi kasaya girdi. Üst sıra daha çok pay alır${champion && lig === 1 ? '; şampiyona en yüksek pay.' : ' — bir üst basamak daha çok gelir demek.'}`, noQueue: true });
       }
     }
   }

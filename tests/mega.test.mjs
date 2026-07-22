@@ -488,9 +488,13 @@ console.log('\n── Batan Dev tek dönem bandı ──');
   const pct = (win / N) * 100;
   // NOT: büyüme ödülü (değer/güç artışı → destek) YÜKSELEN kulübü kayırır; batan dev büyüme alamaz → bandı hafif indi (40→34).
   // GELİŞİM SÜREKLİLİĞİ (2026-07-21, kullanıcı isteği): kadro kariyer boyu büyür → enkaz kulübü
-  // yeniden inşa etmek BİLEREK daha başarılabilir oldu (ölçülen %67). Bant 34-60→40-72; kurtarma
-  // hâlâ garantisiz (~1/3 başarısız).
-  check('METRİK: Batan Dev tek dönem kazanma %40-72 (nötr oyunla)', crash === 0 && pct >= 40 && pct <= 72, `%${pct.toFixed(0)} (${win}/${N})${crash ? ` · ${crash} crash` : ''}`);
+  // yeniden inşa etmek BİLEREK daha başarılabilir oldu (ölçülen %67). Bant 34-60→40-72.
+  // LİG SIRA İKRAMİYESİ + İFLAS HEADROOM (2026-07-23, kullanıcı istekleri): "kazanmak para getirsin" +
+  // iflas eşiği gevşet. İkisi de GÜÇLÜ KADROLU-borçlu kulübü (Batan Dev) doğrudan kayırır — dev kulüp
+  // sahada kazanıp ikramiyeyle borcu eritiyor → kurtarma artık çoğunlukla başarılı (ölçülen ~%87).
+  // Bant 40-72→70-96 (senaryo bilinçli kolaylaştı; hâlâ garantisiz — ~1/8 başarısız). İstenirse
+  // sertleştirme düğmeleri: ECONOMY.SIRA_ODUL.TABAN[dev/efsane] · ECONOMY.IFLAS_MULT.
+  check('METRİK: Batan Dev tek dönem kazanma %70-96 (nötr oyunla)', crash === 0 && pct >= 70 && pct <= 96, `%${pct.toFixed(0)} (${win}/${N})${crash ? ` · ${crash} crash` : ''}`);
 }
 
 // ══ UI dumanı: yeni ekranlar ══

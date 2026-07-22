@@ -615,8 +615,8 @@ function dispatch(act, arg) {
     case 'tesis3d': G._tesis3d = arg; break;                                                   // tam ekran 3D tesis vitrini aç
     case 'tesis3dClose': G._tesis3d = null; break;
     case 'gayrimenkulAc': _arsaSon = null; G._gayrimenkul = true; break;                        // Gayrimenkul Ofisi portalını aç (bütçe = ofis nakiti)
-    case 'gmYatir': { const _e = app.querySelector('#gm-pct'); A.gmYatir(G, (_e ? +_e.value : 50) / 100); break; } // kulüp kasası → ofis nakiti (yüzde: #gm-pct)
-    case 'gmCek': { const _e = app.querySelector('#gm-pct'); A.gmCek(G, (_e ? +_e.value : 100) / 100); break; }    // ofis nakiti → kulüp kasası (yüzde: #gm-pct)
+    case 'gmYatir': { const _e = app.querySelector('#gm-pct'); A.gmYatir(G, (_e ? +_e.value : 50) / 100); gmLiveSync(); return; } // kulüp kasası → ofis nakiti; RENDER YOK (gömülü 3D reload olmasın) → gmLiveSync DOM+portal tazeler
+    case 'gmCek': { const _e = app.querySelector('#gm-pct'); A.gmCek(G, (_e ? +_e.value : 100) / 100); gmLiveSync(); return; }    // ofis nakiti → kulüp kasası; RENDER YOK → gmLiveSync
     case 'gayrimenkulKapat': commitGayrimenkul(G); autoSave(); break;                            // ofisten çık → commit + anında otokayıt (mülk kalıcı olsun)
     case 'gayrimenkulSat': {                                                                    // portföyü nakde çevir (likidite iskontosu)
       const gm = G.gayrimenkul; if (gm && gm.deger > 0) { const isk = TUNING.ECONOMY.GAYRIMENKUL?.SATIS_ISKONTO ?? 0.05; G.economy.kasa += Math.round(gm.deger * (1 - isk)) + Math.max(0, Math.round(gm.nakit || 0)); G.gayrimenkul = { deger: 0, kira: 0, adet: 0, nakit: 0, mulkler: [], arsaIndex: 1, binaIndex: 1, month: 0 }; } // tam çıkış: portföy iskontolu + ofis nakiti kulübe döner
@@ -1060,6 +1060,26 @@ globalThis.SBgmStep = (d) => {
   el.value = Math.min(100, Math.max(0, (+el.value || 0) + d));
   SBgmPrev();
 };
+// Yatır/Çek SONRASI canlı tazeleme: ekranı YENİDEN RENDER ETMEDEN (gömülü 3D iframe reload olmasın → kamera/sahne
+// sıfırlanmasın) kartları/slider'ı/crumb'ı DOM'da güncelle + yeni bütçeyi gömülü portala postMessage ile bildir.
+function gmLiveSync() {
+  if (!G || !G.gayrimenkul) return;
+  const gm = G.gayrimenkul;
+  const kasa = Math.round(G.economy.kasa || 0);
+  const nakit = Math.round(gm.nakit || 0);
+  const num = (n) => (Math.round(n * 10) / 10).toLocaleString('tr-TR');
+  const kEl = document.getElementById('gms-kasa'); if (kEl) kEl.textContent = num(kasa) + 'mn';
+  const nEl = document.getElementById('gms-nakit'); if (nEl) nEl.textContent = num(nakit) + 'mn';
+  const sl = document.getElementById('gm-pct'); if (sl) { sl.dataset.kasa = kasa; sl.dataset.nakit = nakit; }
+  const wrap = document.querySelector('.gm-slider-mod'); if (wrap) { wrap.dataset.kasa = kasa; wrap.dataset.nakit = nakit; }
+  const yat = document.querySelector('[data-act="gmYatir"]'); if (yat) { const off = kasa <= 0.5; yat.disabled = off; yat.classList.toggle('gm-off', off); }
+  const cek = document.querySelector('[data-act="gmCek"]'); if (cek) { const off = nakit <= 0; cek.disabled = off; cek.classList.toggle('gm-off', off); }
+  globalThis.SBgmPrev(); // Yatır/Çek önizleme tutarlarını yeni bakiyeyle tazele (slider yüzdesi korunur)
+  const cr = document.querySelector('.sb-crumb'); if (cr) cr.textContent = `GAYRİMENKUL · KASA ${num(kasa)}MN · OFİS ${num(nakit)}MN · PORTFÖY ${num(Math.round(gm.deger || 0))}MN`;
+  const frame = document.querySelector('.gms-3d-frame');
+  if (frame && frame.contentWindow) { try { frame.contentWindow.postMessage({ type: 'arsaButce', butce: nakit }, '*'); } catch (e) {} } // portal bütçesini reload'suz güncelle
+  autoSave(); // para hareketi anında kalıcı olsun
+}
 
 // ── GAYRİMENKUL OFİSİ (arsa/bina yatırım portalı) — tam ekran 3D iframe + kulüp kasası köprüsü ──
 let _arsaSon = null; // portal açıkken gelen son durum {kasa, deger, kira, adet}; kapanışta commit edilir
@@ -1079,7 +1099,7 @@ function renderGayrimenkulOfisi(G) {
   // böylece reload, harcanmış-ama-commit-edilmemiş parayı geri şişirmez → "bakiye sürekli artıyor" biter.
   const kasa = _arsaSon ? Math.max(0, Math.round(_arsaSon.kasa)) : Math.max(0, Math.round(gm.nakit || 0)); // mn
   const mevcut = gm.deger > 0
-    ? `<span class="gmo-mevcut">Portföy: <b>${Math.round(gm.deger)}mn</b> · ${gm.adet} mülk · kira ${Math.round((gm.kira || 0) * 10) / 10}mn/ay</span>`
+    ? `<span class="gmo-mevcut">Portföy: <b>${Math.round(gm.deger)}mn</b> · ${gm.adet} mülk · kira ${Math.round((gm.kira || 0) * 10) / 10}mn/hafta</span>`
     : (kasa > 0
       ? `<span class="gmo-mevcut">Ofis nakiti <b>${kasa}mn</b> — al, sat, inşa et, kiraya ver.</span>`
       : `<span class="gmo-mevcut">Ofiste nakit yok — Finans'tan "Yatır" ile kasadan aktar, sonra al/inşa et.</span>`);

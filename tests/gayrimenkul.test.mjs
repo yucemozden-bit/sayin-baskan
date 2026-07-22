@@ -56,20 +56,33 @@ setSeed(2718);
   es(gm.adet, 2, 'yükleme: adet korundu');
 }
 
-// 3) SEZON EKONOMİSİ (endSeason): kira OFİS NAKİTİNE, değerlenme + endeks aynı oranda taşınır, NaN yok.
+// 3) SEZON EKONOMİSİ (endSeason): kira ARTIK HAFTALIK; sezon sonu = değerlenme + endeks + emlak vergisi (nakitten), NaN yok.
 {
   const G = kur();
-  G.gayrimenkul = { deger: 100, kira: 2, adet: 2, nakit: 0, arsaIndex: 1.2, binaIndex: 1.1, month: 8, mulkler: [] };
-  const kasa0 = G.economy.kasa;
+  G.gayrimenkul = { deger: 100, kira: 2, adet: 2, nakit: 50, arsaIndex: 1.2, binaIndex: 1.1, month: 8, mulkler: [] };
   A.endSeason(G);
   const gm = G.gayrimenkul;
   es(gm.deger, 102, 'endSeason: portföy %2 değerlendi (100→102)');
   yakin(gm.arsaIndex, 1.224, 'endSeason: arsaIndex aynı oranda taşındı (portal değeri kaybolmaz)');
   yakin(gm.binaIndex, 1.122, 'endSeason: binaIndex aynı oranda taşındı');
-  es(gm.nakit > 0, true, 'endSeason: kira ofis nakitine aktı (nakit arttı, kasaya değil)');
+  es(gm.nakit < 50, true, 'endSeason: emlak vergisi ofis nakitinden kesildi (kira haftalık aktı, sezon sonu toplu YOK)');
+  yakin(gm.kira, 2.04, 'endSeason: kira da değerle büyür (%2)', 0.01);
   const msg = (G.inbox || []).find((m) => m.t && m.t.startsWith('Gayrimenkul:'));
-  es(!!msg, true, 'endSeason: kira/vergi bildirimi geldi');
+  es(!!msg, true, 'endSeason: değerlenme/vergi bildirimi geldi');
   es(nanAv(G), null, 'endSeason: NaN yok');
+}
+
+// 3b) HAFTALIK KİRA: gmHaftalikKira (finishWeek'te) her hafta ofis nakitine kira ekler (birikir), portföy yoksa no-op.
+{
+  const G = kur();
+  G.gayrimenkul = { deger: 100, kira: 2, adet: 1, nakit: 0, arsaIndex: 1, binaIndex: 1, month: 0, mulkler: [] };
+  es(A.gmHaftalikKira(G), 2, 'haftalık kira: dönen değer = haftalık kira');
+  es(G.gayrimenkul.nakit, 2, 'haftalık kira: 1 hafta → nakit 0→2');
+  A.gmHaftalikKira(G); es(G.gayrimenkul.nakit, 4, 'haftalık kira: 2. hafta → nakit 4 (birikir)');
+  const bos = kur(); bos.gayrimenkul = { deger: 0, kira: 0, adet: 0, nakit: 5, mulkler: [] };
+  A.gmHaftalikKira(bos); es(bos.gayrimenkul.nakit, 5, 'haftalık kira: portföy yoksa no-op');
+  const kirasiz = kur(); kirasiz.gayrimenkul = { deger: 80, kira: 0, adet: 1, nakit: 3, mulkler: [] };
+  A.gmHaftalikKira(kirasiz); es(kirasiz.gayrimenkul.nakit, 3, 'haftalık kira: kira 0 (sadece arsa) → no-op');
 }
 
 // 4) LEGACY: eski kayıt (sadece aggregate, mulkler yok) yükleme+ekonomiyi kırmıyor.
