@@ -203,10 +203,21 @@ export function macGucu(efektif, opts = {}) {
   const P = TUNING.POWER;
   let mg = efektif;
   if (opts.isHome) {
-    // stadyum/taraftar verilmemişse orta değer varsayılır (NaN bekçisi — QA §6)
-    const stad = opts.stadyum ?? P.STAD_LEVEL_MAX / 2;
-    const trf = opts.taraftar ?? P.TARAFTAR_MAX / 2;
-    const q = (stad / P.STAD_LEVEL_MAX) * P.STAD_Q_W + (trf / P.TARAFTAR_MAX) * P.STAD_Q_W;
+    // İÇ SAHA = GERÇEK KOZ (2026-07-23, kullanıcı: "iç saha avantajı önemli bir koz olmalı DOLULUK
+    // ORANIYLA birlikte"). Eskiden avantaj yalnız stadyum SEVİYESİ + taraftar GÖSTERGESİ gibi vekil
+    // verilerden geliyordu ve %3–8'de kalıyordu (neredeyse görünmez). Artık varsa GERÇEK DOLULUK
+    // kullanılır: dolu tribün = ev kalesi. Bilet fiyatı böylece SPORTİF bir karara dönüşür —
+    // ucuz bilet → dolu stat → sahada avantaj. Küçük kulübün stadı küçüktür ama DOLDURABİLİR.
+    let q;
+    if (TUNING.DOLULUK_EV && opts.doluluk != null && Number.isFinite(opts.doluluk)) {
+      const dMin = TUNING.ATTEND?.min ?? 0.30;                       // taban doluluk → q=0
+      q = clamp((opts.doluluk - dMin) / Math.max(1e-6, 1 - dMin), 0, 1);
+    } else {
+      // doluluk yoksa (AI kulüp / eski çağrı) eski vekil hesap — NaN bekçisi korunur (QA §6)
+      const stad = opts.stadyum ?? P.STAD_LEVEL_MAX / 2;
+      const trf = opts.taraftar ?? P.TARAFTAR_MAX / 2;
+      q = (stad / P.STAD_LEVEL_MAX) * P.STAD_Q_W + (trf / P.TARAFTAR_MAX) * P.STAD_Q_W;
+    }
     mg *= 1 + lerp(TUNING.HOME_ADV[0], TUNING.HOME_ADV[1], q);
   }
   const motiv = opts.isDerby || opts.relegationBattle ? TUNING.MOTIV_UNDERDOG : 0;

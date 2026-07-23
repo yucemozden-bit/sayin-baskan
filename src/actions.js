@@ -10,7 +10,7 @@ import { temelGuc, efektifGuc, macGucu, moralMult, formMult, kondMult, computeUy
 import { idealXI } from './models/squad.js';
 import { simulateMatch, postMatch } from './engines/match.js';
 import { createLeague, playWeek, standings, simulateLeagueMatch, applyResult } from './engines/league.js';
-import { applyEconomy, payDebt, sponsorSlotWeekly } from './engines/economy.js';
+import { applyEconomy, payDebt, sponsorSlotWeekly, bilet as ecoBilet } from './engines/economy.js';
 import { generateSponsorOffer } from './engines/sponsorGen.js';
 import { extendMarketDet, shownRating } from './engines/market.js';
 import { MUHABIRLER } from './data/pressPool.js';
@@ -743,7 +743,9 @@ export function beginWeek(G) {
   // HİÇ girmiyordu; "MAÇ GÜNÜ" göstergesi kozmetikti. Bible-5.3: MaçGücü = EFEKTİF × saha çarpanları.
   // Artık bitkin kadro sahada gerçekten bedel öder; rotasyon/moral yönetimi gerçek karşılık bulur.
   const myStrength = efektifGuc(powerCtx(G)) * telkinFx.power * primPower * derbySwing * (isIntl ? CAL.INTL_POWER : 1);
-  const myMG = macGucu(myStrength, { isHome, stadyum: G.facilities.stadyum, taraftar: G.gauges.taraftar });
+  // İÇ SAHA KOZU: gerçek DOLULUK maç gücüne biner (dolu tribün = ev kalesi). bilet() rand TÜKETMEZ → RNG akışı aynı.
+  const evDoluluk = isHome ? ecoBilet(G).doluluk : null;
+  const myMG = macGucu(myStrength, { isHome, doluluk: evDoluluk, stadyum: G.facilities.stadyum, taraftar: G.gauges.taraftar });
   const oppMG = macGucu(G.league.table[oppId].strength * TUNING.MATCH.AI_EFEKTIF, { isHome: !isHome, stadyum: TUNING.MATCH.AI_STAD, taraftar: TUNING.MATCH.AI_TARAFTAR });
   // Y3: YARI 1 (45dk) simülasyonu — devre arası kararı 2. yarıyı ETKİLEYECEK
   const SEG = TUNING.YASAYAN.SEG;
@@ -1011,7 +1013,7 @@ function finishWeekTail(G, lateMove) {
   if (CAL.CUP_WEEKS.includes(wk) && G.cup && G.cup.alive) {
     const cupOpp = clamp(Math.round(G.temelGuc + rand(-CAL.CUP_SPREAD, CAL.CUP_SPREAD) + G.cup.round * CAL.CUP_RAMP), 30, 92);
     const cupYon = atakSavunma(G.squad).tilt; // kupa maçı da kadro yönünü hisseder
-    const cres = simulateMatch(macGucu(efektifGuc(powerCtx(G)), { isHome: true, stadyum: G.facilities.stadyum, taraftar: G.gauges.taraftar }), macGucu(cupOpp * TUNING.MATCH.AI_EFEKTIF, { isHome: false }), undefined, { tiltH: cupYon, tiltA: cupYon }); // kupada da EFEKTİF (bitkin kadro kupada da bedel öder; AI simetri oranı)
+    const cres = simulateMatch(macGucu(efektifGuc(powerCtx(G)), { isHome: true, doluluk: ecoBilet(G).doluluk, stadyum: G.facilities.stadyum, taraftar: G.gauges.taraftar }), macGucu(cupOpp * TUNING.MATCH.AI_EFEKTIF, { isHome: false }), undefined, { tiltH: cupYon, tiltA: cupYon }); // kupada da EFEKTİF (bitkin kadro kupada da bedel öder; AI simetri oranı)
     G.cup.round++;
     if (cres.result === 'L' || (cres.result === 'D' && rand(0, 1) < 0.5)) {
       G.cup.alive = false;
@@ -4086,6 +4088,40 @@ function buildLadder(G, boost = 0) {
   // 2. ligde hedef = terfi bandı (ilk 3); üst ligde kulüp beklentisi
   const hedef = lig === 2 ? L.LIG2_HEDEF : TUNING.EXPECT.HEDEF_SIRA[G.club.beklenti];
   G.club.hedefSira = hedef;
+
+  // ══ ÜST LİG: SABİT GÜÇ (2026-07-23, kullanıcı: "takımların güçleri belirli olsun") ══
+  // ESKİDEN: rakip güçleri SENİN gücünün etrafında üretiliyordu (base ± offset) → aynı takım bir
+  // kariyerde 35, ötekinde 66 olabiliyordu; Kartalspor'un 78'lik kimliği hiç sahaya çıkmıyordu. Dahası
+  // sen güçlendikçe lig de birlikte ölçeklendiği için GELİŞİMİNİN ETKİSİNİ göremiyordun (ölçüm:
+  // temelGuc 40→46 yapınca lig ort da 60.3→63.2, fark 11.0 → 11.1 sabit).
+  // ARTIK: rakipler teams.json'daki GERÇEK baseStrength'leriyle gelir (Kartalspor hep 78). Seviyene
+  // uygun 17 takım seçilir — hedef sıranın gerektirdiği kadarı sana EN YAKIN üstünden, kalanı en yakın
+  // altından. Böylece hem tam hedef sıranda başlarsın hem de lig gücünle ÖLÇEKLENMEZ: kadron büyüdükçe
+  // sıran gerçekten yükselir. Lig yine yaşar (sezon başı AI drift + LIG_GELISIM bu tabanın üstüne biner).
+  const havuzT = (G.data.teams || []).filter((t) => t.name !== G.club.name && Number.isFinite(t.baseStrength));
+  if (L.SABIT_GUC && lig !== 2 && havuzT.length >= 17) {
+    // ÖLÇEK DÜZELTMESİ: karşılaştırma EFEKTİF uzayda yapılmalı. Oyuncu sahaya temelGuc × ~0.87 ile
+    // (moral/form/kondisyon/uygunluk çarpanları), AI ise strength × AI_EFEKTIF (0.93) ile çıkıyor —
+    // yani aynı nominal sayıda AI ~%7 daha güçlü. Ham baseStrength ile kıyaslarsak oyuncu efektif
+    // olarak ligin altına düşer (ölçüldü: T2 ortalama sıra 15.5). Bu yüzden oyuncunun "AI-eşdeğeri"
+    // gücünü kullanırız: efektifGuc / AI_EFEKTIF. Kadro hazır değilse temelGuc×0.87'ye düşülür.
+    const efG = efektifGuc(powerCtx(G));
+    const esdeger = (Number.isFinite(efG) ? efG : G.temelGuc * 0.87) / (TUNING.MATCH.AI_EFEKTIF || 1);
+    const guc = esdeger + boost;
+    const ust = havuzT.filter((t) => t.baseStrength > guc).sort((a, b) => a.baseStrength - b.baseStrength);  // en yakın güçlüler önce
+    const alt = havuzT.filter((t) => t.baseStrength <= guc).sort((a, b) => b.baseStrength - a.baseStrength); // en yakın zayıflar önce
+    const nUst = Math.min(clamp(hedef - 1, 0, 17), ust.length);
+    let sec = [...ust.slice(0, nUst), ...alt.slice(0, 17 - nUst)];
+    if (sec.length < 17) sec = [...new Set([...sec, ...ust, ...alt])].slice(0, 17); // havuz dar kalırsa tamamla
+    sec.sort((a, b) => b.baseStrength - a.baseStrength);                            // en güçlü ilk (DEV başkan ataması buna dayanır)
+    const rIdx = sec.findIndex((t) => t.rival);                                     // teams.json ⚔ bayrağı → derbi rakibi 'o0' olsun
+    if (rIdx > 0) sec = [sec[rIdx], ...sec.filter((_, i) => i !== rIdx)];
+    G.opponents = initAIClubs(sec.map((t, i) => ({ id: 'o' + i, name: t.name, strength: clamp(t.baseStrength, 25, 92) })));
+    for (const o of G.opponents) o.baskan = uniqueName(G.data.names, G.usedNames || (G.usedNames = {})) || 'Rakip Başkan';
+    G.club.rivalName = G.opponents[0].name;
+    return;
+  }
+  // ══ 2. LİG (ve havuz yetersizse): eski GÖRELİ merdiven ══
   // Küme-kal ligde kadro merdivende DAR_YUKARI kadar yukarı konur: beklenti (hedefSira) aynı kalır —
   // yani başkandan hâlâ "küme-kal" beklenir — ama kadro dip sıra değil alt-orta olur. "Sürekli yenilme" biter,
   // hedefi aşmak da mümkün kalır. Orta/büyük'te DAR_YUKARI uygulanmaz (stronger = hedef−1 aynen).
