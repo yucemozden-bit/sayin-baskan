@@ -23,10 +23,19 @@ export function bilet(state) {
   const statBonus = state.staff && state.staff.stat ? state.staff.stat.skill / TUNING.STAFF.STAT_DOLULUK_DIV : 0;
   // KONFOR (2026-07-22): stadyum seviyesi doluluğa işler — köhne stat seyirci kaçırır, modern çeker
   const konfor = ((state.facilities?.stadyum ?? A.KONFOR_NOTR) - A.KONFOR_NOTR) * A.KONFOR_SV;
-  const doluluk = clamp(
-    A.base + state.gauges.taraftar / A.taraftarDiv + state.gauges.sportif / A.sportifDiv - (ticketPrice - 1) * A.priceSlope + statBonus + konfor,
-    A.min, 1.0,
-  );
+  // YUMUŞAK TAVAN (2026-07-23, kullanıcı: "büyük kulüp de doluluk baskısı hissetsin"): eskiden toplam
+  // 1.0'a SERT kırpılıyordu → büyük/dev kulüpte doluluk tavana yapışıyor, bilet fiyatı sahada HİÇ
+  // hissedilmiyordu (ölçüldü: dev şampiyon ×1 → %100, ×2 → %93; yalnız 7 puan. Küçük kulüp aynı zamda
+  // 25 puan kaybediyordu). Artık doyum YALNIZ KALİTE kısmına uygulanır — fiyat tepkisi her tier'da
+  // TAM güçte kalır (ölçüldü: ×1 → ×2 arası kayıp her tier'da −32 puan). "Kaliteyle doldurursun,
+  // ama zam her zaman keser." Tavan 0.98: tıklım tribün bile tam %100 değildir.
+  // KONFOR de doyumun DIŞINDA (fiyat gibi): modern stat kulüp ne kadar büyük olursa olsun çeker,
+  // köhne stat kaçırır. Doyumun içinde kalsaydı stadyum yatırımının etkisi büyük kulüpte %45'e
+  // inerdi (kaos.test: sv0→sv10 farkı 12 puan olmalı; doyum içindeyken 5.4 puana düşüyordu).
+  let kalite = A.base + state.gauges.taraftar / A.taraftarDiv + state.gauges.sportif / A.sportifDiv + statBonus;
+  const knee = A.KALITE_KNEE ?? 9;
+  if (kalite > knee) kalite = knee + (kalite - knee) * (A.KALITE_YUMUSAK ?? 1);
+  const doluluk = clamp(kalite + konfor - (ticketPrice - 1) * A.priceSlope, A.min, A.TAVAN ?? 1.0);
   // KAPASİTE = SEVİYE EĞRİSİ (2026-07-22): stadKapasite tek kaynak — yükselen stat gişeyi büyütür
   const gelir = stadKapasite(state) * doluluk * ticketPrice * TUNING.TICKET_K * ligMult(state, 'gate');
   return { doluluk, gelir, kapasite: stadKapasite(state) };
@@ -119,7 +128,7 @@ export function maliHedef(state, gelirHafta, giderHafta) {
 
 // Bir haftalık ekonomiyi uygula. state.economy'yi MUTASYONA uğratır; ledger döner.
 // kasa<0 → otomatik borçlanma (kasa 0'a çekilir, borç artar, faiz +AUTO_DEBT_PENALTY ceza).
-export function applyEconomy(state, { isHomeMatch = false, isSeasonWeek = true, ticketMult = 1 } = {}) {
+export function applyEconomy(state, { isHomeMatch = false, isSeasonWeek = true, ticketMult = 1, maliKriz = false } = {}) {
   const gelir = haftalikGelir(state, { isHomeMatch, isSeasonWeek, ticketMult });
   const gider = haftalikGider(state);
   const net = gelir.toplam - gider.toplam; // P&L (faiz gider olarak dahil) — yıllık kâr vergisi bunu izler
@@ -138,9 +147,15 @@ export function applyEconomy(state, { isHomeMatch = false, isSeasonWeek = true, 
     state.economy.kasa = 0;
     // TAVAN (2026-07-20): ceza sınırsız tırmanmasın — geçici nakit sıkışması faizi kalıcı
     // uçurmasın; "krizde ama kurtarılabilir" felsefesi. Sezon başı sönümleme (initSeason) tabana çeker.
-    state.economy.faizOrani = Math.min(TUNING.RATE_MAX, state.economy.faizOrani + TUNING.AUTO_DEBT_PENALTY);
+    // MALİ KRİZ YAPILANDIRMASI (2026-07-23): kriz modunda ceza ratchet'i DONAR — alacaklılar kulübü
+    // kayyuma göndermektense faizi dondurur (gerçek standstill). Böylece harcaması dondurulan kulüp
+    // faiz sarmalına yenilmeden operasyonel fazla + satışla borcu eritebilir. İyi kulüp bu moda GİRMEZ.
+    if (!maliKriz) { state.economy.faizOrani = Math.min(TUNING.RATE_MAX, state.economy.faizOrani + TUNING.AUTO_DEBT_PENALTY); }
     penalty = true;
   }
+  // Kriz modunda faiz oranı yapılandırma tabanına doğru HAFİF geri çekilir (standstill anlaşması) —
+  // sarmalı kırar ama borcu silmez; çıkış hâlâ satış/ödeme ister.
+  if (maliKriz && state.economy.borc > 0) state.economy.faizOrani = Math.max(TUNING.RATE_BASE ?? 0.32, state.economy.faizOrani - (TUNING.RATE_SEASON_DECAY ?? 0.02));
 
   const hedef = maliHedef(state, gelir.toplam, gider.toplam);
   return { gelir, gider, net, autoBorrow, penalty, kasa: state.economy.kasa, borc: state.economy.borc, maliHedef: hedef };

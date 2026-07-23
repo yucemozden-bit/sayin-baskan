@@ -78,10 +78,12 @@ const BOTS = {
     directive: () => ({ budget: 400, line: 'yildiz' }),                 // GM'e: yıldız getir, para önemsiz
     window: (G) => { if (!G.ilan) A.ilanVer(G, { pos: 'FWD', yasMax: 29, tavan: 60 }); }, // MEGA B3a: İLANCI — golcü arıyoruz, herkes duysun
     files: (G) => { // yıldızsa (aslında her dosyayı) borçla bile onaylar; satışı taraftar korkusuyla reddeder
+      const kriz = A.maliKriz(G); // MALİ KRİZ: kulübü kayyuma vermektense pervasız başkan bile satar (kaçış kapısı)
       for (const m of G.inbox) {
         if (m.resolved) continue;
-        if (m.action === 'tfile') A.resolveTransferFile(G, m.id, 'onay');
-        else if (m.action === 'sfile') A.resolveSaleFile(G, m.id, 'red');
+        if (m.action === 'tfile') A.resolveTransferFile(G, m.id, 'onay');       // krizde motor zaten reddeder
+        else if (m.action === 'sfile') A.resolveSaleFile(G, m.id, kriz ? 'sat' : 'red'); // normalde satmaz; KRİZDE satar
+        else if (m.action === 'kayyum') A.kayyumPaket(G, m.id, 'sat');          // KAYYUM paketi: kurtuluş için sat
         else if (m.action === 'event') A.resolveEvent(G, m.id, 0);            // ilk (cömert) seçenek
         else if (m.action === 'board') A.resolveBoard(G, m.id, 'taraftar');
         else if (m.action === 'lfile') A.resolveLoanFile(G, m.id, 'gonder');
@@ -421,7 +423,14 @@ console.log('\n── HEDEF ──');
 // düğmeleri: DEV_GEC_CARPAN · POT_ESNEME.kariyerCap · WIN_LINE/zorluk presetleri. Tavan 95→96.
 // EFEKTİF-GÜÇ (2026-07-21): Dengeli 64-96 ana bant; Cimri (ince kadro) 40-80 — kondisyon/derinlik
 // yönetimi artık gerçek karşılık, kemer sıkmanın tek-dönem bedeli görünür (ölçülen C 62 / D 84).
-check('tek dönem: Dengeli %64-96 · Cimri %40-80', RESULTS['Dengeli'].win >= 64 && RESULTS['Dengeli'].win <= 96 && RESULTS['Cimri'].win >= 40 && RESULTS['Cimri'].win <= 80, `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
+// BİLET FİYATI ARTIK SPORTİF (2026-07-23, kullanıcı: "iç saha avantajı gerçekten hissedilsin" +
+// "büyük kulüp de doluluk baskısı hissetsin"): HOME_ADV [0.03,0.08] → [0.01,0.20] ve ATTEND'e yumuşak
+// tavan geldi. Cimri'nin ayırt edici hamlesi PAHALI BİLET (×1.25) — eskiden yalnız kasaya yarıyordu,
+// artık tribünü boşaltıp sahada bedel ödetiyor (ölçüldü: zam ×1→×2 her tier'da −30 puan doluluk,
+// −3.8 puan maç gücü). Cimri tek dönem hayatta kalma 66 → 30-37 bandına indi; ölçüm seed'e göre
+// 30/34/37 arasında salınıyor (bandın kendi notu: kenarlarda ±4 gürültü). Taban 40 → 28: strateji
+// hâlâ YAŞIYOR ama kemer sıkmanın bedeli artık sahada da görünür. Dengeli tavanı 96'da korunur.
+check('tek dönem: Dengeli %64-96 · Cimri %28-80', RESULTS['Dengeli'].win >= 64 && RESULTS['Dengeli'].win <= 96 && RESULTS['Cimri'].win >= 28 && RESULTS['Cimri'].win <= 80, `Cimri %${RESULTS['Cimri'].win.toFixed(0)}, Dengeli %${RESULTS['Dengeli'].win.toFixed(0)}`);
 check('tek dönem: Dengeli ≥ Cimri (aktif yönetim üstün)', RESULTS['Dengeli'].win >= RESULTS['Cimri'].win, `Dengeli %${RESULTS['Dengeli'].win.toFixed(0)} vs Cimri %${RESULTS['Cimri'].win.toFixed(0)}`);
 check('çok dönem: alan Dengeli ≥ Cimri×0.7', areaD >= areaC * 0.7, `alan D ${areaD.toFixed(0)} vs C×0.7 ${(areaC * 0.7).toFixed(0)}`);
 // Eskalasyon revizyonu (v4.2) hayatta kalma bantları: zor ama efsane mümkün.

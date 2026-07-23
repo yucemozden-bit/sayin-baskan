@@ -28,7 +28,13 @@ export const TUNING = {
   // Ölçüm: +8 güç fazlası %44→%49, +12 güç %46→%54 galibiyet. Gösterilen oran (SIGMOID_DIV 25) zaten
   // bu dik eğriyi vaat ediyordu — artık gerçek sonuç ona UYUYOR (önce vaat fazla, sim yatıktı).
   // NOT: k'yı daha yükseltmek (4.2) seçimleri idealde %97-99'a taşıyıp determinizmi bozuyordu → 3.0 tutuldu.
-  BASE_GOALS: 2.6, SHARPNESS_K: 3.0, HOME_ADV: [0.03, 0.08], LUCK: [0.95, 1.05],
+  // İÇ SAHA BANDI (2026-07-23, kullanıcı: "iç saha avantajı gerçekten hissedilsin"): eski [0.03, 0.08]
+  // ÖLÇÜLDÜ — bomboş stat ile tıklım stat arası fark sahada yalnız 1.7 PUAN galibiyetti (görünmez).
+  // Yeni bant: boş stat neredeyse hiçbir şey (+%1), dolu stat gerçek kale (+%20) → aradaki fark
+  // 7.4 puan galibiyet (%41.8 → %49.2). Gerçek futboldaki ev sahibi avantajı (~%5-8 puan) bandında;
+  // ortalama ev galibiyeti de %41.2 → %45.1 ile gerçekçi orana oturuyor. Bilet fiyatı böylece
+  // sahada GERÇEKTEN hissedilen bir sportif karar olur (bkz. ATTEND — doluluk artık tavana yapışmıyor).
+  BASE_GOALS: 2.6, SHARPNESS_K: 3.0, HOME_ADV: [0.01, 0.20], LUCK: [0.95, 1.05],
   // İÇ SAHA = DOLULUK: açıkken ev avantajı gerçek doluluktan hesaplanır (bilet fiyatı sportif karara
   // dönüşür). ÖLÇÜLDÜ: açıkken Cimri (pahalı bilet) hayatta kalma %62→%36, Dengeli %86→%91 — yani
   // strateji dengesini kaydırıyor, bant ayarıyla düzelmiyor. Kalibrasyon yapılmadan AÇMA.
@@ -67,7 +73,11 @@ export const TUNING = {
   // TIER_SCALE: mali hedef/karne borç normalizasyonu — 5 KADEMENİN TAMAMI (dev/efsane eksikti:
   // DEV'e terfi eden kariyer maliHedef=NaN üretip güven/mali gauge'larını zehirliyordu — maraton D8 avı 2026-07-21)
   WAGE_RATIO_HEALTHY: 0.55, TIER_SCALE: { kucuk: 2, orta: 6, buyuk: 14, dev: 24, efsane: 36 },
-  TV_BASE: { kucuk: 20, orta: 50, buyuk: 261, dev: 360, efsane: 480 }, TICKET_K: 0.00019, // [kalibre: gelir ölçeği; dev/efsane yalnız oyunla ulaşılır]
+  TV_BASE: { kucuk: 20, orta: 50, buyuk: 261, dev: 360, efsane: 480 }, TICKET_K: 0.000213, // [kalibre: gelir ölçeği; dev/efsane yalnız oyunla ulaşılır]
+  // TICKET_K 0.00019→0.000213 (2026-07-23): ATTEND yumuşak tavanı doluluğu düşürdü (ölçüldü: küçük
+  // %82.4→%75.9 · orta %92.2→%81.4 · büyük %99.1→%85.4) → bilet geliri küçük −%7.8, orta −%11.7,
+  // büyük −%13.8. Tek global katsayıyla telafi: küçüğe net +%3.8, büyüğe net −%3.1 (kademeli
+  // yeniden dağıtım — büyük kulüp zaten fazla rahattı). Toplam gelir ölçeği ≈ nötr.
   // TICKET_K 0.0001→0.00022→0.00019 (2026-07-22): kapasite seviye tablosuna geçiş + kullanıcı
   // çıpaları (sv4 18.000 · sv7 35.000) gişeyi büyüttü — orta/büyük nötr akış bantlarına göre
   // yeniden kalibre edildi (ölçüm: orta +19 · büyük +7 civarı).
@@ -95,7 +105,10 @@ export const TUNING = {
   // KONFOR (kullanıcı tasarımı 2026-07-22: "stadyum kalitesi doluluğu etkilesin"): stadyum
   // seviyesi = konfor. Sv.5 nötr; her seviye doluluk ±%1.2 (sv0 −%6 köhne, sv10 +%6 modern).
   // Kapasite ayrı hikâye: tier + MEGA kompleks (×1.2) — kalite yüzdeyi, kompleks koltuğu büyütür.
-  ATTEND: { base: 0.45, taraftarDiv: 200, sportifDiv: 300, priceSlope: 0.25, min: 0.30, KONFOR_SV: 0.012, KONFOR_NOTR: 5 },
+  // priceSlope 0.25→0.32 + KALITE_KNEE/YUMUSAK/TAVAN (2026-07-23): doluluk artık tavana yapışmıyor,
+  // bilet fiyatı her tier'da eşit ısırıyor (bkz. economy.js bilet — yumuşak tavan yalnız kaliteye).
+  // min 0.30→0.25: boş tribün gerçekten boş olabilsin (yeni HOME_ADV bandının alt ucu anlamlansın).
+  ATTEND: { base: 0.45, taraftarDiv: 200, sportifDiv: 300, priceSlope: 0.30, min: 0.25, KONFOR_SV: 0.012, KONFOR_NOTR: 5, KALITE_KNEE: 0.72, KALITE_YUMUSAK: 0.55, TAVAN: 0.98 },
   AUTO_DEBT_PENALTY: 0.03, INFLATION: [0.06, 0.14], RATE_DRIFT: [-0.03, 0.06],
   RATE_MAX: 0.60,          // faiz tavanı: kasa<0 cezası sınırsız tırmanmasın (kurtarılabilir kriz)
   RATE_SEASON_DECAY: 0.05, // sezon başı faiz tabana doğru geri çekilir (autoplay-nötr, rand YOK)
@@ -203,7 +216,46 @@ export const TUNING = {
     INJURY_DUR_MIN: 1,
     RED_SUSP: [1, 3],          // kırmızı kart → 1..3 hafta ceza
     AI_STAD: 5, AI_TARAFTAR: 50, // lig sim'inde AI ev avantajı varsayılanı (q≈0.5)
-    AI_EFEKTIF: 0.93, // SİMETRİ (2026-07-21 efektif-güç düzeltmesi): maç artık EFEKTİF güçle oynanıyor; AI'nin moral/kond katmanı yok → rakip gücüne sağlıklı kadronun tipik maç-günü oranı (ölçülen ort. 0.936) uygulanır. Nötr yönetimde denge eski kalibrasyonla aynı; iyi/kötü kadro yönetimi gerçek uç yaratır (0.64–1.11).
+    // AI_DURUM açıkken bu sabit artık maçta KULLANILMAZ; yalnız (a) durum hesaplanamazsa yedek,
+    // (b) selectClub merdiveninin "AI-eşdeğeri güç" ölçeği (esdeger = efektifGuc / AI_EFEKTIF).
+    // Katmanın ölçülen lig ortalaması 0.857 — ama merdiven SEZON BAŞI efektif güçle kuruluyor;
+    // oyuncunun gücü sezon içinde (moral/form birikimiyle) yukarı kayıyor. 0.80, bu kaymayı da
+    // içeren KALİBRE değerdir: 0.85 → Dengeli tek dönem %97 (bant 64-96 taşıyor), 0.76 → %71 ama
+    // çok dönem eğrisi çöküyor. 0.80'de tek dönem %84, dönem-2 %75, dönem-3 %51 — bantlara oturuyor.
+    // (0.82 denendi: Dengeli tek dönem %95 ile bandın tavanına yapışıyor, ±4 seed gürültüsüyle taşar;
+    //  0.80'de çok dönem eğrisi sağlıklı kalıyor: 88 → 80 → 62 → 44, "koltuk emekle korunur".)
+    AI_EFEKTIF: 0.80,
+    // ── RAKİP DURUM KATMANI (2026-07-23, kullanıcı: "karşı takımın gücü hep %100, ben asla %100
+    // olamıyorum — onlara da uygulanmalı") ──────────────────────────────────────────────────
+    // ÖLÇÜLDÜ (6120 maç haftası): oyuncunun efektif/temel oranı küçük 0.777 · orta 0.884 · büyük 1.070
+    // ve hafta hafta 0.53–1.19 arası geziyordu; rakip ise HER HAFTA tam 0.93 sabitiydi (yayılım 0).
+    // Sakatlık, yorgunluk, moral çöküşü tek taraflı işliyordu. Artık AI takımlar da yaşar:
+    //   durum = sakat × moral × form   (kondisyon MVP'de oyuncuda da ~1.02 düz → AI'da yok)
+    // • sakat: hash-tabanlı dalga, BLOK hafta sürer; güçlü kadro daha az etkilenir (derinlik/tıbbi)
+    // • moral: SON5 maçın puanından — EMERGENT, rastgele değil (lider moralli, dipteki moralsiz)
+    // • form : yarı hash gürültüsü + yarı son5 (kazanan takım formda) — oyuncunun form eğrisiyle aynı ruh
+    // DETERMİNİZM: ana RNG'yi TÜKETMEZ (hash: takım id + sezon + hafta) — haftalık döngüye yeni çekiliş
+    // eklenmez, kayıt/seed determinizmi korunur (bkz. sponsorGen/market aynı desen).
+    // Bantlar oyuncununkiyle hizalı: CLAMP.uygunluk/moral/form ile aynı ruhta, lig ortalaması ≈ AI_EFEKTIF.
+    AI_DURUM: {
+      ON: true,
+      // SAKAT bandı, oyuncunun ÖLÇÜLEN uygunluk eğrisine oturtuldu: temel 52 → 0.870 · 63 → 0.887 ·
+      // 79 → 0.934. Aynı doğruyu AI gücüne uygulayınca [0.61, 1.00] + DERINLIK 0.82 çıkıyor
+      // (güç 40 → ort 0.842 · 60 → 0.890 · 92 → 0.965). Böylece rakip de senin kadar sakatlanır.
+      SAKAT: [0.61, 1.00],      // sakatlık/eksik yükü bandı — oyuncunun uygunluk çarpanıyla birebir hizalı
+      SAKAT_DERINLIK: 0.82,     // güçlü kadro sakatlığı daha iyi emer: alt sınır bu oranda yukarı çekilir
+      SAKAT_BLOK: 4,            // bir sakatlık dalgası kaç hafta sürer (hash bloğu)
+      // MORAL/FORM bantları, oyuncunun ÖLÇÜLEN moral×form eğrisine fit edildi (2436 hafta):
+      // son5 oranı %8 → 0.806 · %22 → 0.840 · %37 → 0.888 · %52 → 0.988 · %67 → 1.067 · %87 → 1.117.
+      // Ham CLAMP bantlarıyla AI düşük performansta %5-7 fazla cömert kalıyordu (kötü giden rakip
+      // oyuncu kadar çökmüyordu) — bantlar aşağı çekildi, kalan sapma ≤%3.
+      MORAL: [0.83, 1.12],      // son5 puan oranından — 0 puan → 0.83, tam puan → 1.12
+      FORM: [0.88, 1.10],
+      FORM_HASH_W: 0.45,        // form'un ne kadarı saf gürültü (kalanı son5 sonucu)
+      SON_N: 5,                 // moral/form penceresi (maç)
+      BANT: [0.62, 1.20],       // toplam durum çarpanı bu banda kırpılır (oyuncunun 0.53–1.19'u ile hizalı)
+      ILK_HAFTA: 0.86,          // sezon açılışı: geçmiş yokken nötr taban (= katmanın ölçülen lig ort. 0.857)
+    },
     PTS: { W: 3, D: 1, L: 0 }, // puanlama G3/B1/M0 (Bible-7)
   },
 
@@ -246,6 +298,16 @@ export const TUNING = {
     KAR_VERGISI_ESIK: 55,      // ilk 55mn kâr vergisiz (küçük/orta kulüp korunur; yalnız zengin fazlası vergilenir)
     KAR_VERGISI_BORC_MUAF: 20, // borç > bu ise kâr vergisi ALINMAZ ("önce borcunu öde; borçluyken zengin sayılmazsın") — Batan Dev / toparlanan kulüp korunur, yalnız borçsuz-zengin vergilenir
     BORC_KOMPOUND: 0.02,       // borç ANAPARA bileşiği: faizi ödesen bile borç ~%2/yıl büyür (öde, sürüncemede bırakma) — gentle, spiral yok
+    // MALİ KRİZ FRENİ (2026-07-23, kullanıcı: "pervasız harcama %100 iflas ediyor, agentle önlem koy"):
+    // Borç iflas eşiğinin ESIK_ORAN'ını aşınca kulüp "mali kriz" moduna girer — banka/kurul yeni
+    // HARCAMAYI kilitler: transfer dosyası GELMEZ (GM getirmez, imza da atılamaz), iş İLANI donar,
+    // maç primi NORMAL'e iner, ÖZEL prim verilemez. Gerçek futboldaki finansal ambargonun karşılığı.
+    // İYİ YÖNETİLEN KULÜBE SIFIR ETKİ: normal orta kulüp borç ~60'ta gezer, eşik (orta) 500×0.68=340 —
+    // kriz moduna asla girmez (ölçüldü: normal kulüp 0/40 iflas, kasa +234'e tırmanır). YALNIZ pervasız
+    // borçlanan kulübü frenler: spirali yavaşlatır, batmayı geciktirir (tam kurtarmaz — kredili yıldız
+    // bordrosu + faiz zaten birikmiştir; bilinçli KISMİ önlem). ÇIKIŞ: borç eşiğin CIK_ORAN'ının altına
+    // inince kriz kalkar (histerezis — mod titremesin).
+    MALI_KRIZ: { ESIK_ORAN: 0.68, CIK_ORAN: 0.55 },
     // LİG SIRA İKRAMİYESİ (2026-07-23, kullanıcı: "şampiyon çok, 2. biraz az... tüm sıralara para"):
     // sezon sonu finiş ikramiyesi — 1. sıra TABAN, son sıra TABAN×SON_ORAN, aradaki sıralar LİNEER azalır.
     // TIER'DAN BAĞIMSIZ (2026-07-23, kullanıcı: "kulüp seçimiyle alakası yok, tüm oyun modlarında aynı olmalı"):
@@ -537,7 +599,13 @@ export const TUNING = {
     // sessiz kalabiliyordu ("2-4 haftada teklif" sözü çiğneniyordu) — 4. haftada teklif GARANTİ.
     VITRIN: { MORAL: -3, DONUS_MORAL: 2, TEKLIF_HAFTA: [2, 4], TEKLIF_P: 0.35, PITY: 4 },
     // B4c: koltuk modları
-    MOD: { AILE_SERVET: 100, VITRIN_LOYALTY_CEZA: -20 },
+    // AILE_SERVET: aile modunda başkanın kişisel serveti (açıklar cepten). AILE_SERVET_TIER: tier'a
+    // göre EK servet — büyük/dev/efsane kulübü olan AİLE daha varlıklıdır (o borçlu devi zaten o aile
+    // taşıyor). LAUNCH FIX (2026-07-23 QA): eskiden düz 100mn'di → büyük tier (400mn borç) aile modunda
+    // servet 100−400 = −300 ile 1. HAFTADA iflas ediyordu (seçilebilir ama anında kaybedilen kombo).
+    // Artık büyük aile 100+380=480 (borç sonrası ~80 tampon — zor ama oynanabilir). Küçük/orta EK=0
+    // (buffer 85/40 aynen korunur → autoplay aile kalibrasyonu bit-aynı).
+    MOD: { AILE_SERVET: 100, AILE_SERVET_TIER: { kucuk: 0, orta: 0, buyuk: 380, dev: 800, efsane: 1100 }, VITRIN_LOYALTY_CEZA: -20 },
     // B6c: vaat umut tavanı
     UMUT_TARAFTAR_TAVAN: 92,
   },

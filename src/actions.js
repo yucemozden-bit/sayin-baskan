@@ -9,7 +9,7 @@ import { Player } from './models/player.js';
 import { temelGuc, efektifGuc, macGucu, moralMult, formMult, kondMult, computeUygunluk, teknikEkip, atakSavunma } from './engines/power.js';
 import { idealXI } from './models/squad.js';
 import { simulateMatch, postMatch } from './engines/match.js';
-import { createLeague, playWeek, standings, simulateLeagueMatch, applyResult } from './engines/league.js';
+import { createLeague, playWeek, standings, simulateLeagueMatch, applyResult, aiDurum } from './engines/league.js';
 import { applyEconomy, payDebt, sponsorSlotWeekly, bilet as ecoBilet } from './engines/economy.js';
 import { generateSponsorOffer } from './engines/sponsorGen.js';
 import { extendMarketDet, shownRating } from './engines/market.js';
@@ -187,7 +187,10 @@ export function selectClub(G, tier, identity = null, opts = {}) {
   buildLadder(G); // D1 canlı lig + B1b isimli rakip başkanlar (tek kaynaktan)
   G.board = G.mode === 'aile' ? [] : initBoard(G.data.boardnames); // D2 + B4c: AİLE modunda kurul YOK
   if (G.mode === 'aile') {
-    G.servet = TUNING.MEGA.MOD.AILE_SERVET;   // açıklar kişisel servetten
+    // Servet TIER'a göre ölçeklenir: büyük/dev/efsane kulübü olan aile daha varlıklı (o borçlu devi
+    // taşıyabilecek servet). Böylece büyük tier (400 borç) aile modunda başlangıçta iflas ETMEZ (QA fix).
+    const ekTier = (TUNING.MEGA.MOD.AILE_SERVET_TIER || {})[tier] || 0;
+    G.servet = TUNING.MEGA.MOD.AILE_SERVET + ekTier;   // açıklar kişisel servetten
     // Kural baştan işlesin: kulüp borçlanamaz → başlangıç borcu hemen servetten kapanır (borç 0)
     if (G.economy.borc > 0) { G.servet -= G.economy.borc; G.economy.borc = 0; }
   }
@@ -418,6 +421,7 @@ function initSeason(G, opts = {}) {
   // Sabit rakip merdiveni (selectClub'ta kuruldu) + kulüp GÜNCEL temelGüç'üyle.
   const teams = [{ id: MY, name: G.club.name, strength: Math.round(G.temelGuc), mine: true }, ...G.opponents];
   G.league = createLeague(teams);
+  G.league.season = G.meta.season; // RAKİP DURUM katmanının hash bağlamı (sezonlar arası desen tekrarlamasın)
   G.meta.week = 1;
   G.hazirlik = TUNING.PRESEASON_WEEKS || 0; // sezon başı hazırlık dönemi (UI akışı; ilk maç bundan sonra)
   G.season = { W: 0, D: 0, L: 0, GF: 0, GA: 0 };
@@ -746,7 +750,11 @@ export function beginWeek(G) {
   // İÇ SAHA KOZU: gerçek DOLULUK maç gücüne biner (dolu tribün = ev kalesi). bilet() rand TÜKETMEZ → RNG akışı aynı.
   const evDoluluk = isHome ? ecoBilet(G).doluluk : null;
   const myMG = macGucu(myStrength, { isHome, doluluk: evDoluluk, stadyum: G.facilities.stadyum, taraftar: G.gauges.taraftar });
-  const oppMG = macGucu(G.league.table[oppId].strength * TUNING.MATCH.AI_EFEKTIF, { isHome: !isHome, stadyum: TUNING.MATCH.AI_STAD, taraftar: TUNING.MATCH.AI_TARAFTAR });
+  // RAKİP DURUM (2026-07-23): rakip artık sabit 0.93 ile değil, KENDİ haftalık durumuyla çıkar —
+  // sakatlık dalgası + son 5 maçtan gelen moral + form. Ligin geri kalanına karşı hangi güçle
+  // oynuyorsa sana karşı da o güçle oynar (eskiden AI-AI maçları %100, senin maçın %93'tü).
+  const oppDurum = aiDurum(G.league.table[oppId], G.league.season ?? G.meta.season, wk);
+  const oppMG = macGucu(G.league.table[oppId].strength * oppDurum, { isHome: !isHome, stadyum: TUNING.MATCH.AI_STAD, taraftar: TUNING.MATCH.AI_TARAFTAR });
   // Y3: YARI 1 (45dk) simülasyonu — devre arası kararı 2. yarıyı ETKİLEYECEK
   const SEG = TUNING.YASAYAN.SEG;
   const T = TUNING.BASE_GOALS * telkinFx.goalsMult;
@@ -976,14 +984,16 @@ function finishWeekTail(G, lateMove) {
   for (const m of round) {
     if (m.home === MY || m.away === MY) continue; // benim maçım segmentli oynandı
     const h = G.league.table[m.home], a = G.league.table[m.away];
-    const r = simulateLeagueMatch(h.strength, a.strength);
+    // AI-AI maçları da DURUM katmanından geçer: aynı takım herkese karşı aynı güçle oynasın
+    // (eskiden rakipler birbirine %100, sana karşı %93 ile çıkıyordu — tablo tutarsızdı).
+    const r = simulateLeagueMatch(h.strength, a.strength, undefined, { home: h, away: a, season: G.league.season ?? G.meta.season, week: wk });
     applyResult(h, a, r.gH, r.gA);
   }
 
   const table = standings(G.league);
   G.myPos = table.find((t) => t.id === MY).rank;
 
-  const led = applyEconomy(G, { isHomeMatch: isHome, isSeasonWeek: true, ticketMult: isDerby && isHome ? TUNING.DERBY_TICKET : 1 });
+  const led = applyEconomy(G, { isHomeMatch: isHome, isSeasonWeek: true, ticketMult: isDerby && isHome ? TUNING.DERBY_TICKET : 1, maliKriz: maliKriz(G) });
   G.term.income += led.gelir.toplam; G.term.wage += led.gider.maas;
   G.term.weeks = (G.term.weeks || 0) + 1; // P16 haftalık ortalama için
   G.term.ticari = (G.term.ticari || 0) + led.gelir.sponsor + led.gelir.forma + led.gelir.uyelik; // ticari gelir izi
@@ -1291,6 +1301,12 @@ function finishWeekTail(G, lateMove) {
   // mirasla devraldığın borç suç değildir (Batan Dev 760'la doğar!) — SENİN yönetiminde
   // taban×1.25+150 aşılırsa kayyum gelir (normal kulüp 60 → eşik 500; Batan Dev 760 → 1100).
   const iflasEsik = iflasEsigi(G);
+  // MALİ KRİZ FRENİ (kayyumdan ÖNCEKİ savunma hattı): borç eşiğe dayanmadan mod devreye girer,
+  // yeni harcamayı kilitler. Giriş anında CFO bir kez uyarır (sezon başına tek).
+  if (G.phase === 'SEASON_LOOP' && maliKriz(G) && G._maliKrizUyari !== G.meta.season) {
+    G._maliKrizUyari = G.meta.season;
+    pushInbox(G, { cat: 'mali', t: `MALİ KRİZ MODU — borç ${Math.round(G.economy.borc)}mn`, b: `${G.staff?.cfo ? G.staff.cfo.name + ' (CFO)' : 'Mali masa'}: borç kayyum eşiğine (${iflasEsik}mn) tehlikeli yaklaştı. Banka yeni imzayı, kurul cömert primi DONDURDU — kriz kalkana dek yalnız SATIŞ yapabilirsin. Borcu ${Math.round(iflasEsik * (TUNING.ECONOMY.MALI_KRIZ?.CIK_ORAN ?? 0.55))}mn altına indir, ambargo kalksın.`, noQueue: true });
+  }
   if (G.phase === 'SEASON_LOOP' && G.economy.borc >= iflasEsik - 100 && G._kayyumUyari !== G.meta.season) {
     G._kayyumUyari = G.meta.season;
     // #3 KAYYUM KURTULUŞ PAKETİ — GM masaya acil satış dosyası koyar: en değerli 3 satılabilir oyuncu
@@ -1935,7 +1951,11 @@ export function resolveTicket(G, msgId, price) {
 
 // ── Telkin & prim aksiyonları (v4.1-2/3) — haftalık standing tercihler ──
 export function setTelkin(G, type) { G.telkin = type || null; }
-export function setMatchPrim(G, level) { G.matchPrim = ['yok', 'normal', 'yuksek'].includes(level) ? level : 'yok'; }
+export function setMatchPrim(G, level) {
+  let lv = ['yok', 'normal', 'yuksek'].includes(level) ? level : 'yok';
+  if (lv === 'yuksek' && maliKriz(G)) lv = 'normal'; // MALİ KRİZ: kurul cömert prim onaylamaz → tavan normal
+  G.matchPrim = lv;
+}
 export function toggleSeriPrim(G, on) { G.seriPrim = on ?? !G.seriPrim; }
 // Kritik hafta mı? (§5: özel prim yalnız derbi/kritik maçta) — sıra komşusu rakip,
 // ezeli rakip (en güçlü hasım) veya sezon finali haftaları.
@@ -1954,6 +1974,7 @@ export function isCriticalWeek(G) {
 
 export function armOzelPrim(G) {
   if (G.ozelUsed || G.ozelArmed) return { ok: false };
+  if (maliKriz(G)) return { ok: false, why: 'Mali kriz — kurul özel prim bütçesini dondurdu' }; // MALİ KRİZ: cömert özel prim yok
   if (!isCriticalWeek(G)) return { ok: false, why: 'Kritik maç değil — derbiye sakla' };
   G.ozelArmed = true;
   pushInbox(G, { cat: 'mali', t: 'Özel maç primi ilan edildi', b: 'Kritik maç için kadroya büyük koz kondu.' });
@@ -2030,6 +2051,8 @@ function gmTick(G, wk) {
     }
   }
   // Onay dosyası: direktife (ve P21 vaadine) göre aday
+  // MALİ KRİZ: banka/kurul yeni ALIM dosyasına izin vermez (satış aynası yukarıda çalıştı → nakit için satış gelir).
+  if (maliKriz(G)) return;
   if (budgetLeft <= 5 || rand(0, 1) > AP.FILE_CHANCE) return;
   const file = gmMakeFile(G, budgetLeft);
   if (!file) return;
@@ -2205,6 +2228,12 @@ export function resolveTransferFile(G, msgId, choice) {
     const sig = 'tfile-ban-' + (G.meta?.season || 1);
     if (!G.inbox.some((x) => x.sig === sig)) pushInbox(G, { cat: 'transfer', t: 'İmza atılamadı: TAHTA KAPALI', sig, b: `FFP cezası işliyor (kalan ${G.flags.transferBan} hafta) — bu pencere onay dosyası imzalanamaz. Dosya masada bekler.`, noQueue: true });
     return { ok: false, why: 'Transfer tahtası kapalı' };
+  }
+  // MALİ KRİZ: banka insolvent kulübe yeni imza attırmaz (son savunma — GM zaten dosya getirmez, ama masada kalan dosya varsa da imzalanamaz)
+  if (maliKriz(G)) {
+    const sig = 'tfile-kriz-' + (G.meta?.season || 1);
+    if (!G.inbox.some((x) => x.sig === sig)) pushInbox(G, { cat: 'mali', t: 'İmza atılamadı: MALİ KRİZ', sig, b: `Borç iflas sınırına dayandı — banka yeni imzaya izin vermiyor. Önce SAT, borcu eşiğin altına indir; kriz kalkınca yine alabilirsin.`, noQueue: true });
+    return { ok: false, why: 'Mali kriz — yeni imza yok' };
   }
   if (G.economy.kasa < f.fee * TUNING.TRANSFER.DEPOSIT) {
     const sig = 'tfile-pesinat-' + m.id;
@@ -2670,6 +2699,18 @@ function tesisBakimTouch(G, tesis) {
 // çarpan 1.25→1.5 → yüksek-borçlu kulüpte (büyük 400 → 750; dev 700 → 1200) agresif oyun daha geç batar.
 // Düşük-borçlu kulüp 500 tabanında kalır (orta 60 → 500; küçük 15 → 500 — DOKUNULMAZ).
 export function iflasEsigi(G) { return Math.max(500, Math.round((G.iflasTaban ?? 60) * (TUNING.ECONOMY.IFLAS_MULT ?? 1.5)) + 150); }
+
+// MALİ KRİZ FRENİ: borç iflas eşiğine dayanınca kulüp "mali kriz" moduna girer (banka/kurul yeni
+// harcamayı kilitler). Histerezisli: ESIK_ORAN'da girer, CIK_ORAN'ın altına inince çıkar → mod titremez.
+// İyi yönetilen kulüp bu eşiğe asla ulaşmaz (normal orta borç ~60, eşik ~340) → sıfır etki.
+export function maliKriz(G) {
+  const K = TUNING.ECONOMY.MALI_KRIZ; if (!K) return false;
+  const esik = iflasEsigi(G), borc = G.economy?.borc ?? 0;
+  // histerezis: aktifken CIK_ORAN'a kadar sürer, pasifken ESIK_ORAN'ı aşınca başlar
+  if (G._maliKrizAktif) { if (borc < esik * K.CIK_ORAN) G._maliKrizAktif = false; }
+  else if (borc > esik * K.ESIK_ORAN) G._maliKrizAktif = true;
+  return !!G._maliKrizAktif;
+}
 
 // ŞANTİYE SİSTEMİ: ihale seçimi işi BAŞLATIR — kademe, süre dolunca gelir (santiyeTick).
 // Zarlar SEÇİM ANINDA atılır (oyuncu aksiyonu; tip başına 1 rand — ESKİ yapıyla birebir aynı
@@ -4419,7 +4460,8 @@ export function ilanVer(G, opts) {
   // Ret gerekçeleri ARTIK SESSİZ DEĞİL (UI şeritleri de var — bu son savunma hattı, sig'li teksefer)
   const ilanRet = !G.transferWindow ? 'Pencere kapalı — ilan menajerlere ancak pencere açıkken gider.'
     : G.ilan ? `Zaten yayında bir ilanın var (${G.ilan.pos} · ${G.ilan.kalan} cevap hakkı) — biri kapanmadan yenisi verilmez.`
-      : (G.flags && G.flags.transferBan > 0) ? `Tahta kapalı — FFP cezası (kalan ${G.flags.transferBan} hafta), ilan verilemez.` : null;
+      : (G.flags && G.flags.transferBan > 0) ? `Tahta kapalı — FFP cezası (kalan ${G.flags.transferBan} hafta), ilan verilemez.`
+        : maliKriz(G) ? 'Mali kriz — banka yeni imzaya izin vermiyor; ilan verilemez. Önce borcu eşiğin altına indir.' : null;
   if (ilanRet) {
     const sig = 'ilan-ret-' + (G.meta?.season || 1) + '-' + (G.meta?.week || 1);
     if (!G.inbox.some((x) => x.sig === sig)) pushInbox(G, { cat: 'transfer', t: 'İlan verilemedi', sig, b: ilanRet, noQueue: true });

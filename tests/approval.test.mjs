@@ -30,13 +30,18 @@ function playUntilFile(G, act, maxWeeks = 4) {
     const f = firstFile(G, act);
     if (f) return f;
     // başka tip dosya GM'i bloklamasın (tek aktif dosya kuralı)
-    for (const other of ['sfile', 'tfile', 'event', 'board']) {
+    // NOT (2026-07-23): liste eksikti — 'captain' ve 'lfile' de masayı işgal edip GM'i bloklayabiliyor.
+    // Denge değişince (rakip durum katmanı) dosya sırası kaydı ve test 4 hafta içinde tfile göremedi;
+    // eksik iki tip eklenince aynı seed'de dosya yine 4. haftada geliyor. Kural değil, yardımcı düzeltildi.
+    for (const other of ['sfile', 'tfile', 'event', 'board', 'captain', 'lfile']) {
       if (other === act) continue;
       const o = firstFile(G, other);
       if (o && other === 'sfile') A.resolveSaleFile(G, o.id, 'red');
       else if (o && other === 'tfile') A.resolveTransferFile(G, o.id, 'red');
       else if (o && other === 'event') A.resolveEvent(G, o.id, 0);
       else if (o && other === 'board') A.resolveBoard(G, o.id, 'mali');
+      else if (o && other === 'captain') A.resolveCaptain(G, o.id, 'onay');
+      else if (o && other === 'lfile') A.resolveLoanFile(G, o.id, 'gonder');
     }
   }
   return null;
@@ -57,10 +62,15 @@ setSeed(11);
   // sarsıntı miktarı TUNING'den (−4→−3→−1 kullanıcı yumuşatmaları sabit eşiği kırıyordu)
   check('kimya sarsıldı (transfer etkisi korunur)', Math.abs(G.kimya.kimya - (kimya0 + TUNING.KIMYA_TRANSFER)) < 1e-9, `${kimya0.toFixed(1)} → ${G.kimya.kimya.toFixed(1)}`);
 
-  // RED yolu
-  setSeed(12);
-  const G2 = fresh(['P15'], { budget: 80, line: 'hazir' });
-  const f2 = playUntilFile(G2, 'tfile');
+  // RED yolu — GM her seed'de transfer dosyası getirmez (bazı seed'lerde masayı satış dosyası
+  // doldurur, bu normal davranış). Testin amacı RED yolunu doğrulamak; dosya gelen ilk seed kullanılır.
+  let G2 = null, f2 = null;
+  for (let s = 12; s < 40 && !f2; s++) {
+    setSeed(s);
+    G2 = fresh(['P15'], { budget: 80, line: 'hazir' });
+    f2 = playUntilFile(G2, 'tfile');
+  }
+  check('RED yolu için onay dosyası bulundu', !!f2, f2 ? f2.t : 'hiçbir seed dosya getirmedi');
   const n2 = G2.squad.length;
   A.resolveTransferFile(G2, f2.id, 'red');
   check('REDDET: dosya kapandı, kadro değişmedi', f2.resolved === true && G2.squad.length === n2);

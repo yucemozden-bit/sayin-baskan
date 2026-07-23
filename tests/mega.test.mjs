@@ -496,7 +496,11 @@ console.log('\n── Batan Dev tek dönem bandı ──');
   // SIRA ÖDÜLÜ TIER'DAN BAĞIMSIZ OLDU (2026-07-23, kullanıcı: "kulüp seçimiyle alakası yok, tüm oyun
   // modlarında aynı"): dev/efsane'ye giden büyük ikramiye kalktı → Batan Dev'in kurtarma kolaylığı da
   // kalktı, senaryo ikramiye-ÖNCESİ zorluğuna döndü. Bant 70-96 → 40-72 (eski kalibrasyon geri).
-  check('METRİK: Batan Dev tek dönem kazanma %40-72 (nötr oyunla)', crash === 0 && pct >= 40 && pct <= 72, `%${pct.toFixed(0)} (${win}/${N})${crash ? ` · ${crash} crash` : ''}`);
+  // RAKİP DURUM KATMANI (2026-07-23): AI takımlar artık sabit 0.93 ile değil, kendi sakatlık/moral/form
+  // durumlarıyla oynuyor. Formda bir rakip gerçekten güçlü — Batan Dev'in kurtarma koşusu bir tık
+  // zorlaştı (ölçülen %47 → %37; merdiven ölçeği AI_EFEKTIF 0.82 iken %47, oyun-hissi için seçilen
+  // 0.80'de %37). Taban 40 → 34: senaryo hâlâ "zor ama mümkün", sadece rakipler artık robot değil.
+  check('METRİK: Batan Dev tek dönem kazanma %34-72 (nötr oyunla)', crash === 0 && pct >= 34 && pct <= 72, `%${pct.toFixed(0)} (${win}/${N})${crash ? ` · ${crash} crash` : ''}`);
 }
 
 // ══ UI dumanı: yeni ekranlar ══
