@@ -4079,8 +4079,17 @@ function buildLadder(G, boost = 0) {
   // 2. ligde hedef = terfi bandı (ilk 3); üst ligde kulüp beklentisi
   const hedef = lig === 2 ? L.LIG2_HEDEF : TUNING.EXPECT.HEDEF_SIRA[G.club.beklenti];
   G.club.hedefSira = hedef;
-  const stronger = clamp(hedef - 1, 0, 17), weaker = 17 - stronger;
-  const offsets = [...linspace(25, 8, stronger), ...linspace(-2, -25, weaker)];
+  // Küme-kal ligde kadro merdivende DAR_YUKARI kadar yukarı konur: beklenti (hedefSira) aynı kalır —
+  // yani başkandan hâlâ "küme-kal" beklenir — ama kadro dip sıra değil alt-orta olur. "Sürekli yenilme" biter,
+  // hedefi aşmak da mümkün kalır. Orta/büyük'te DAR_YUKARI uygulanmaz (stronger = hedef−1 aynen).
+  const yukari = hedef >= (L.DAR_HEDEF ?? 99) ? (L.DAR_YUKARI ?? 0) : 0;
+  const stronger = clamp(hedef - 1 - yukari, 0, 17), weaker = 17 - stronger;
+  // KÜME-KAL LİGİNDE MERDİVEN DARALIR (2026-07-23, kullanıcı: "küçük takımlar sürekli yeniliyor"):
+  // hedef 15 ⇒ 14 rakip senden güçlü ve hepsi +8…+25 üstünde → sezonda %45 mağlubiyet. Sıralamayı
+  // (dolayısıyla beklentiyi) BOZMADAN farkları kısarsak maçlar yakınlaşır: aynı 15. kadro, ama
+  // rakipler ulaşılabilir. Yalnız küme-kal hedefli ligde; orta/büyük merdiveni AYNEN kalır.
+  const dar = hedef >= (L.DAR_HEDEF ?? 99) ? (L.DAR_SPREAD ?? 1) : 1;
+  const offsets = [...linspace(25 * dar, 8 * dar, stronger), ...linspace(-2 * dar, -25 * dar, weaker)];
   // Lig-duyarlı isim havuzu: üst lig teams.json (40 kulüp), 2. lig kendi taşra kulüpleri.
   // ROTASYON (2026-07-22 "takım isimleri artsın"): her kariyer havuzdan FARKLI 17'liyi görür —
   // kaydırma kulüp adının hash'i (rand'sız → determinist, aynı kariyerde her sezon aynı lig).

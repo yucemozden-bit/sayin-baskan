@@ -206,6 +206,12 @@ export const TUNING = {
     // şampiyonluk beklentili kulüpte (büyük/dev/efsane) en güçlü RIVAL_N rakip her sezon oyuncu
     // gücüne yakın tabana çekilir (oyuncu − RIVAL_GAP) → tepede rakipsiz kalmaz. Orta/küçük tier'a dokunmaz.
     RIVAL_N: 4, RIVAL_GAP: 3,   // ölçülen: büyük kulüp şampiyonluk oranı ~%83 → ~%72 (oynanan sezonlarda)
+    // KÜME-KAL LİGİNDE DAR MERDİVEN (2026-07-23, kullanıcı: "küçük takımlar sürekli yeniliyor"):
+    // merdiven hedef sıraya göre kurulur → küme-kal kulübünde 14 rakip +8…+25 üstünde, sezonda %45
+    // mağlubiyet. SPREAD farkları kısar: sıralama (ve beklenti) aynı kalır, maçlar yakınlaşır →
+    // ölçülen mağlubiyet %45 → %42, averaj −8 → −4. Yalnız hedef ≥ DAR_HEDEF olan ligde geçerli.
+    // YUKARI: kadroyu merdivende N sıra yukarı taşır (0 = kapalı; ölçümde galibiyeti artırmadı).
+    DAR_HEDEF: 12, DAR_SPREAD: 0.55, DAR_YUKARI: 0,
     // 2. LİG sistemi: küme düşünce ertesi sezon zayıf rakipli + düşük gelirli 2. lig
     PROMOTION_TO: 3,           // 2. ligde ilk 3 → terfi
     LIG2_HEDEF: 3,             // 2. ligde hedef sıra (terfi bandı)
