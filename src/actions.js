@@ -4103,7 +4103,7 @@ function buildLadder(G, boost = 0) {
   // tabanı (44) merdivenin −25 basamaklarını kırpıyor → hiç zayıf rakip yok, ort. sıra 17.4 ile her
   // sezon küme. Havuzu aşağı esnetmek ise ortayı fazla kolaylaştırıyor (Dengeli %97, ölçüldü).
   // Tematik olarak da doğru: isimli 40 kulüp üst liglerin kulüpleri; küçük kulüp taşra liginde oynar.
-  if (L.SABIT_GUC && lig !== 2 && hedef < (L.DAR_HEDEF ?? 99) && havuzT.length >= 17) {
+  if (L.KIMLIK_GUC && lig !== 2 && hedef < (L.DAR_HEDEF ?? 99) && havuzT.length >= 17) {
     // ÖLÇEK DÜZELTMESİ: karşılaştırma EFEKTİF uzayda yapılmalı. Oyuncu sahaya temelGuc × ~0.87 ile
     // (moral/form/kondisyon/uygunluk çarpanları), AI ise strength × AI_EFEKTIF (0.93) ile çıkıyor —
     // yani aynı nominal sayıda AI ~%7 daha güçlü. Ham baseStrength ile kıyaslarsak oyuncu efektif
@@ -4114,7 +4114,7 @@ function buildLadder(G, boost = 0) {
     // KÜME-KAL DESTEĞİ: havuzun tabanı 44 olduğu için küçük kulübün merdiveninde −25 basamakları kırpılıyor
     // (hiç zayıf rakip yok) → ortalama 17.1. ile her sezon küme. Seçimde küçük bir destekle rakipler
     // bir tık aşağı kayar, küme savaşı KAZANILABİLİR olur. Yalnız küme-kal hedefli kulüpte.
-    const destek = hedef >= (L.DAR_HEDEF ?? 99) ? (L.SABIT_ALT_DESTEK ?? 0) : 0;
+    const destek = hedef >= (L.DAR_HEDEF ?? 99) ? (L.KIMLIK_ALT_DESTEK ?? 0) : 0;
     const guc = esdeger + boost - destek; // destek DÜŞÜLÜR: merdiven hedefleri aşağı kayar → rakipler zayıflar
     // MERDİVEN ŞEKLİ KORUNUR, BASAMAKLARA GERÇEK TAKIM OTURUR: "sana en yakın 7 güçlüyü al" demek ligi
     // oyuncunun etrafına sıkıştırıyordu (ölçüldü: orta çok kolay, küçük çok zor — havuz 54-63'te yığılı).

@@ -221,10 +221,13 @@ export const TUNING = {
     // ölçülen mağlubiyet %45 → %42, averaj −8 → −4. Yalnız hedef ≥ DAR_HEDEF olan ligde geçerli.
     // YUKARI: kadroyu merdivende N sıra yukarı taşır (0 = kapalı; ölçümde galibiyeti artırmadı).
     DAR_HEDEF: 12, DAR_SPREAD: 0.55, DAR_YUKARI: 0,
-    // SABİT GÜÇ: rakipler teams.json baseStrength ile gelsin mi? (false = eski göreli merdiven)
+    // KİMLİK GÜCÜ: rakipler teams.json baseStrength ile BAŞLASIN mı? (false = eski göreli merdiven)
+    // NOT: bu bir DONDURMA DEĞİL — yalnız BAŞLANGIÇ değeridir. Lig sonra her sezon yaşar:
+    // AI başkan tipleri (popülist +4 / kriz −10 / dev +1…), LIG_GELISIM +0.4, TD şokları.
+    // Ölçüldü (8 sezon): Kartalspor 78→81, Taşköprü 44→53, lig tavanı 78→83.
     // NOT: havuz 44-78 aralığında ve 54-63te yığılı; eski merdivenin ±25 yayılımını üretemiyor →
     // açıkken kalibre bantlar kayıyor (orta kolaylaşıyor, küçük zorlaşıyor). Havuz genişletilmeden AÇMA.
-    SABIT_GUC: true, SABIT_ALT_DESTEK: 5,
+    KIMLIK_GUC: true, KIMLIK_ALT_DESTEK: 5,
     // 2. LİG sistemi: küme düşünce ertesi sezon zayıf rakipli + düşük gelirli 2. lig
     PROMOTION_TO: 3,           // 2. ligde ilk 3 → terfi
     LIG2_HEDEF: 3,             // 2. ligde hedef sıra (terfi bandı)
