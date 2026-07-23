@@ -32,7 +32,7 @@ export const TUNING = {
   // İÇ SAHA = DOLULUK: açıkken ev avantajı gerçek doluluktan hesaplanır (bilet fiyatı sportif karara
   // dönüşür). ÖLÇÜLDÜ: açıkken Cimri (pahalı bilet) hayatta kalma %62→%36, Dengeli %86→%91 — yani
   // strateji dengesini kaydırıyor, bant ayarıyla düzelmiyor. Kalibrasyon yapılmadan AÇMA.
-  DOLULUK_EV: false,
+  DOLULUK_EV: true, DOLULUK_HARMAN: 0.5,
   // — Kadro YÖNÜ (hücum/savunma ayrışması): tilt = 1 + (atakHat − savunmaHat) × YON.K, BANT'a kırpılır.
   // Savunma ağırlıklı kadro → düşük skorlu maçlar (az yer, az atar) · hücum ağırlıklı → açık maçlar.
   // W/M/G olasılık ORANI değişmez (xG paylaşımına dokunmaz — abartı sonuç freni BANT ±%12).
@@ -224,7 +224,7 @@ export const TUNING = {
     // SABİT GÜÇ: rakipler teams.json baseStrength ile gelsin mi? (false = eski göreli merdiven)
     // NOT: havuz 44-78 aralığında ve 54-63te yığılı; eski merdivenin ±25 yayılımını üretemiyor →
     // açıkken kalibre bantlar kayıyor (orta kolaylaşıyor, küçük zorlaşıyor). Havuz genişletilmeden AÇMA.
-    SABIT_GUC: false,
+    SABIT_GUC: true, SABIT_ALT_DESTEK: 5,
     // 2. LİG sistemi: küme düşünce ertesi sezon zayıf rakipli + düşük gelirli 2. lig
     PROMOTION_TO: 3,           // 2. ligde ilk 3 → terfi
     LIG2_HEDEF: 3,             // 2. ligde hedef sıra (terfi bandı)

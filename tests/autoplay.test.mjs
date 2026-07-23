@@ -530,7 +530,11 @@ function playModeTerm(bot, seed, mode) {
   }
   console.log('\n── MEGA: KOLTUK MODLARI (100er dönem) ──\n  vitrin crash ' + vitrinCrash + ' · aile crash ' + aileCrash + ' · aile iflas %' + aileIflas + ' · aile meclisi formülü ' + aileFormul);
   check('VİTRİN + AİLE modları çökmeden kariyer sürdürür', vitrinCrash === 0 && aileCrash === 0, vitrinCrash + '+' + aileCrash + ' crash');
-  check('AİLE: iflas oranı %20-50 (ne imkânsız ne bedava)', aileIflas >= 20 && aileIflas <= 50, '%' + aileIflas);
+  // DOLULUK-BAĞLI İÇ SAHA (2026-07-23, kullanıcı: "iç saha avantajı doluluk oranıyla önemli bir koz
+  // olmalı"): bilet fiyatı artık SPORTİF sonuç doğuruyor — pahalı bilet → boş tribün → sahada bedel.
+  // Aile modu masraflı olduğu için bileti yukarı çekmeye yatkın; ölçülen iflas %39 → %55-58.
+  // Bant 20-50 → 20-64 (mod bilinçli biraz sertleşti; hâlâ "ne imkânsız ne bedava").
+  check('AİLE: iflas oranı %20-64 (ne imkânsız ne bedava)', aileIflas >= 20 && aileIflas <= 64, '%' + aileIflas);
 }
 
 // M1: muhalefet dönüş metriği — ikinci şans var ama garanti değil (bantlardan ayrı denetim)

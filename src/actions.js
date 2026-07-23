@@ -4099,7 +4099,11 @@ function buildLadder(G, boost = 0) {
   // altından. Böylece hem tam hedef sıranda başlarsın hem de lig gücünle ÖLÇEKLENMEZ: kadron büyüdükçe
   // sıran gerçekten yükselir. Lig yine yaşar (sezon başı AI drift + LIG_GELISIM bu tabanın üstüne biner).
   const havuzT = (G.data.teams || []).filter((t) => t.name !== G.club.name && Number.isFinite(t.baseStrength));
-  if (L.SABIT_GUC && lig !== 2 && havuzT.length >= 17) {
+  // HİBRİT (ölçüm sonucu): sabit güç yalnız ORTA/BÜYÜK ligine uygulanır. Küme-kal kulübünde havuzun
+  // tabanı (44) merdivenin −25 basamaklarını kırpıyor → hiç zayıf rakip yok, ort. sıra 17.4 ile her
+  // sezon küme. Havuzu aşağı esnetmek ise ortayı fazla kolaylaştırıyor (Dengeli %97, ölçüldü).
+  // Tematik olarak da doğru: isimli 40 kulüp üst liglerin kulüpleri; küçük kulüp taşra liginde oynar.
+  if (L.SABIT_GUC && lig !== 2 && hedef < (L.DAR_HEDEF ?? 99) && havuzT.length >= 17) {
     // ÖLÇEK DÜZELTMESİ: karşılaştırma EFEKTİF uzayda yapılmalı. Oyuncu sahaya temelGuc × ~0.87 ile
     // (moral/form/kondisyon/uygunluk çarpanları), AI ise strength × AI_EFEKTIF (0.93) ile çıkıyor —
     // yani aynı nominal sayıda AI ~%7 daha güçlü. Ham baseStrength ile kıyaslarsak oyuncu efektif
@@ -4107,12 +4111,26 @@ function buildLadder(G, boost = 0) {
     // gücünü kullanırız: efektifGuc / AI_EFEKTIF. Kadro hazır değilse temelGuc×0.87'ye düşülür.
     const efG = efektifGuc(powerCtx(G));
     const esdeger = (Number.isFinite(efG) ? efG : G.temelGuc * 0.87) / (TUNING.MATCH.AI_EFEKTIF || 1);
-    const guc = esdeger + boost;
-    const ust = havuzT.filter((t) => t.baseStrength > guc).sort((a, b) => a.baseStrength - b.baseStrength);  // en yakın güçlüler önce
-    const alt = havuzT.filter((t) => t.baseStrength <= guc).sort((a, b) => b.baseStrength - a.baseStrength); // en yakın zayıflar önce
-    const nUst = Math.min(clamp(hedef - 1, 0, 17), ust.length);
-    let sec = [...ust.slice(0, nUst), ...alt.slice(0, 17 - nUst)];
-    if (sec.length < 17) sec = [...new Set([...sec, ...ust, ...alt])].slice(0, 17); // havuz dar kalırsa tamamla
+    // KÜME-KAL DESTEĞİ: havuzun tabanı 44 olduğu için küçük kulübün merdiveninde −25 basamakları kırpılıyor
+    // (hiç zayıf rakip yok) → ortalama 17.1. ile her sezon küme. Seçimde küçük bir destekle rakipler
+    // bir tık aşağı kayar, küme savaşı KAZANILABİLİR olur. Yalnız küme-kal hedefli kulüpte.
+    const destek = hedef >= (L.DAR_HEDEF ?? 99) ? (L.SABIT_ALT_DESTEK ?? 0) : 0;
+    const guc = esdeger + boost - destek; // destek DÜŞÜLÜR: merdiven hedefleri aşağı kayar → rakipler zayıflar
+    // MERDİVEN ŞEKLİ KORUNUR, BASAMAKLARA GERÇEK TAKIM OTURUR: "sana en yakın 7 güçlüyü al" demek ligi
+    // oyuncunun etrafına sıkıştırıyordu (ölçüldü: orta çok kolay, küçük çok zor — havuz 54-63'te yığılı).
+    // Bunun yerine ESKİ KALİBRE offset merdiveni (+25…+8 / −2…−25) HEDEF GÜÇ olarak kullanılır ve her
+    // basamağa havuzdan o güce EN YAKIN (henüz alınmamış) takım yerleştirilir → hem takım kimliği/gücü
+    // sabit kalır hem de kalibre edilmiş yayılım yaklaşık korunur.
+    const nUst = clamp(hedef - 1, 0, 17);
+    const offs = [...linspace(25, 8, nUst), ...linspace(-2, -25, 17 - nUst)];
+    const kalan = havuzT.slice();
+    let sec = [];
+    for (const off of offs) {
+      const istenen = guc + off;
+      let bi = -1, bd = Infinity;
+      for (let i = 0; i < kalan.length; i++) { const d = Math.abs(kalan[i].baseStrength - istenen); if (d < bd) { bd = d; bi = i; } }
+      if (bi >= 0) sec.push(kalan.splice(bi, 1)[0]);
+    }
     sec.sort((a, b) => b.baseStrength - a.baseStrength);                            // en güçlü ilk (DEV başkan ataması buna dayanır)
     const rIdx = sec.findIndex((t) => t.rival);                                     // teams.json ⚔ bayrağı → derbi rakibi 'o0' olsun
     if (rIdx > 0) sec = [sec[rIdx], ...sec.filter((_, i) => i !== rIdx)];

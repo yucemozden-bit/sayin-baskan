@@ -208,15 +208,18 @@ export function macGucu(efektif, opts = {}) {
     // verilerden geliyordu ve %3–8'de kalıyordu (neredeyse görünmez). Artık varsa GERÇEK DOLULUK
     // kullanılır: dolu tribün = ev kalesi. Bilet fiyatı böylece SPORTİF bir karara dönüşür —
     // ucuz bilet → dolu stat → sahada avantaj. Küçük kulübün stadı küçüktür ama DOLDURABİLİR.
-    let q;
+    // Vekil taban (stadyum seviyesi + taraftar göstergesi) — NaN bekçisi korunur (QA §6)
+    const stad = opts.stadyum ?? P.STAD_LEVEL_MAX / 2;
+    const trf = opts.taraftar ?? P.TARAFTAR_MAX / 2;
+    let q = (stad / P.STAD_LEVEL_MAX) * P.STAD_Q_W + (trf / P.TARAFTAR_MAX) * P.STAD_Q_W;
     if (TUNING.DOLULUK_EV && opts.doluluk != null && Number.isFinite(opts.doluluk)) {
-      const dMin = TUNING.ATTEND?.min ?? 0.30;                       // taban doluluk → q=0
-      q = clamp((opts.doluluk - dMin) / Math.max(1e-6, 1 - dMin), 0, 1);
-    } else {
-      // doluluk yoksa (AI kulüp / eski çağrı) eski vekil hesap — NaN bekçisi korunur (QA §6)
-      const stad = opts.stadyum ?? P.STAD_LEVEL_MAX / 2;
-      const trf = opts.taraftar ?? P.TARAFTAR_MAX / 2;
-      q = (stad / P.STAD_LEVEL_MAX) * P.STAD_Q_W + (trf / P.TARAFTAR_MAX) * P.STAD_Q_W;
+      // GERÇEK DOLULUK harmanlanır (tam ikame DEĞİL): saf doluluk kullanınca pahalı-bilet stratejisi
+      // çöküyordu (ölçüldü: Cimri hayatta kalma %62 → %36). HARMAN ağırlığı ile etki dozlanır —
+      // bilet fiyatı sahada gerçekten hissedilir ama tek başına kariyeri bitirmez.
+      const dMin = TUNING.ATTEND?.min ?? 0.30;
+      const qDol = clamp((opts.doluluk - dMin) / Math.max(1e-6, 1 - dMin), 0, 1);
+      const w = clamp(TUNING.DOLULUK_HARMAN ?? 0.5, 0, 1);
+      q = (1 - w) * q + w * qDol;
     }
     mg *= 1 + lerp(TUNING.HOME_ADV[0], TUNING.HOME_ADV[1], q);
   }
