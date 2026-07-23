@@ -343,12 +343,12 @@ function initSeason(G, opts = {}) {
     // Determinist (rand YOK); merdivenin GÖRELİ sırası korunur, senin fazladan büyümen yine sıra oynatır.
     for (const o of G.opponents || []) o.strength = Math.min(92, o.strength + TUNING.LIG_GELISIM);
     // ŞAMPİYONLUK BEKLENTİLİ KULÜP (büyük/dev/efsane) tepede rakipsiz kalmasın: oyuncunun kadrosu
-    // kariyer boyu büyürken (78→89) lig +0.4 ile geride kalıyordu → 18/20 şampiyonluk. En güçlü 2 rakip
-    // her sezon oyuncu gücüne YAKIN bir tabana çekilir (kendini ölçekleyen "büyük 3"). Determinist, rand YOK.
+    // kariyer boyu büyürken (78→89) lig +0.4 ile geride kalıyordu → 18/20 şampiyonluk. En güçlü RIVAL_N rakip
+    // her sezon oyuncu gücüne YAKIN bir tabana çekilir (kendini ölçekleyen "büyük N"). Determinist, rand YOK.
     // Yalnız üst ligde + şampiyonluk beklentili kulüpte; orta/küçük tier'a DOKUNMAZ.
     if ((G.lig || 1) === 1 && (TUNING.EXPECT.HEDEF_SIRA[G.club.beklenti] ?? 15) <= 2 && (G.opponents || []).length >= 2) {
       const taban = Math.round(G.temelGuc) - (TUNING.LEAGUE.RIVAL_GAP ?? 5); // en güçlü N rakibin gücü ≥ oyuncu − RIVAL_GAP
-      const n = TUNING.LEAGUE.RIVAL_N ?? 2;
+      const n = TUNING.LEAGUE.RIVAL_N ?? 4;
       const sirali = [...G.opponents].sort((a, b) => b.strength - a.strength);
       for (let i = 0; i < n; i++) if (sirali[i] && sirali[i].strength < taban) sirali[i].strength = Math.min(92, taban);
     }
@@ -3067,10 +3067,10 @@ export function endSeason(G) {
     if (oynanan > 0) {
       const N = TUNING.LEAGUE_TEAMS || 18;
       const SO = TUNING.ECONOMY.SIRA_ODUL || {};
-      const taban = (SO.TABAN && SO.TABAN[G.club.tier]) || 12;
+      const taban = SO.TABAN ?? 12; // TIER'DAN BAĞIMSIZ: kulüp seçimi ikramiyeyi değiştirmez, yalnız SIRA belirler
       const ligKat = lig === 2 ? (SO.LIG2 ?? 0.4) : 1;
       const oran = (SO.SON_ORAN ?? 0.12) + (1 - (SO.SON_ORAN ?? 0.12)) * (N - pos) / Math.max(1, N - 1); // pos 1 → 1.0, pos N → SON_ORAN
-      const odul = Math.max(0, Math.round(taban * ligKat * oran));
+      const odul = Math.max(0, Math.round(taban * ligKat * oran * 10) / 10); // 1 ondalık: taban küçük olduğu için 1.-2. eşitlenmesin (şampiyon hep daha çok alır)
       if (odul > 0) {
         G.economy.kasa += odul;
         pushInbox(G, { cat: 'mali', t: `Lig sıra ikramiyesi: +${fmt1(odul)}mn (${pos}. sıra)`, b: `Sezonu ${pos}. bitirdin — yayın/federasyon havuzundan sıra ikramiyesi kasaya girdi. Üst sıra daha çok pay alır${champion && lig === 1 ? '; şampiyona en yüksek pay.' : ' — bir üst basamak daha çok gelir demek.'}`, noQueue: true });

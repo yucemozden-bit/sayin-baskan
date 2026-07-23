@@ -25,15 +25,29 @@ export function kupaSkor(s) {
 // KISMİ DÖNEM (canlı projeksiyon): sezonlar EN YENİ ağırlığa SAĞDAN hizalanır ve kullanılan ağırlıkla
 // NORMALİZE edilir — böylece dönem başında tek (mevcut) sezon en yüksek ağırlığı alır, "hayalet" eksik
 // sezonlar sportifi 5 kat düşürmez. 3 tam sezonda (dönem sonu seçimi) sonuç birebir AYNIdır (Σağırlık=1).
-export function sportifKarne(seasons) {
+// BEKLENTİ-GÖRELİ ÖDÜL (2026-07-23, ölçüm: küçük kulüp hedefini AŞIYOR ama sandıkta 5/5 kaybediyordu):
+// ligSkor MUTLAK sıradır — 18 takımlı ligde 11. hep ~41 puan. Küme-kal kulübü hedefi 15.'yi 11. ile
+// aşsa bile "başarısız" görünüyordu. Delege mutlak sırayı değil BU KULÜPTEN BEKLENENİ oylar:
+//   • yalnız hedefi AŞMA ödüllendirilir (hedefin altı zaten mutlak skorla cezalı → çifte ceza yok)
+//   • ödül hedefin mütevazılığıyla ölçeklenir (hedef/18): küme-kal kulübünde 4 sıra yukarısı büyük
+//     başarı; şampiyonluk beklentili kulüpte hedef=1 → ödül SIFIR (büyük/dev/efsane'ye DOKUNMAZ).
+export function sportifKarne(seasons, hedefSira = 0) {
   const W = TUNING.SEASON_W;
   if (!seasons || !seasons.length) return N; // veri yok → nötr (0 değil)
   const n = Math.min(seasons.length, W.length);
   const use = seasons.slice(-n);          // en yeni n sezon
   const wts = W.slice(W.length - n);      // ağırlıkları sona hizala (en yeni → en yüksek)
-  let sum = 0, wsum = 0;
-  use.forEach((s, i) => { sum += wts[i] * (ligSkor(s.pos) + kupaSkor(s)); wsum += wts[i]; });
-  return clamp(sum / (wsum || 1), 0, 100);
+  let sum = 0, wsum = 0, psum = 0;
+  use.forEach((s, i) => { sum += wts[i] * (ligSkor(s.pos) + kupaSkor(s)); psum += wts[i] * s.pos; wsum += wts[i]; });
+  const taban = sum / (wsum || 1);
+  let odul = 0;
+  const E = TUNING.ELECTION;
+  if (hedefSira >= (E.BEKLENTI_MIN_HEDEF ?? 99)) { // yalnız küme-kal beklentili kulüp (orta/büyük bit-aynı kalır)
+    const asma = Math.max(0, hedefSira - psum / (wsum || 1));            // hedefin kaç sıra üstünde bitirdi
+    const olcek = hedefSira / (TUNING.LEAGUE_TEAMS || 18);               // hedef ne kadar mütevazıysa ödül o kadar anlamlı
+    odul = clamp(asma * (E.BEKLENTI_K ?? 0) * olcek, 0, E.BEKLENTI_CAP ?? 0);
+  }
+  return clamp(taban + odul, 0, 100);
 }
 
 // Mali karne: dönem başı vs sonu borç farkı + mali gauge (Bible-16)
@@ -102,7 +116,7 @@ export function oyOrani({ sportif, taraftar, mali, itibar, soz, rival }) {
 // Tam seçim (Bible-16). opts: {baslangicBorc, tutulmayanVaat}. history son 3 sezon.
 export function eleksiyon(state, { baslangicBorc, tutulmayanVaat = 0 } = {}) {
   const H = state.history.seasons.slice(-TUNING.SEASONS_PER_TERM);
-  const sportif = sportifKarne(H);
+  const sportif = sportifKarne(H, state.club?.hedefSira ?? 0); // beklenti-göreli: hedefini aşan küçük kulüp sandıkta kredi alır
   const taraftar = state.gauges.taraftar;
   const mali = maliKarne(state, baslangicBorc ?? state.economy.borc);
   const itibar = state.gauges.itibar;

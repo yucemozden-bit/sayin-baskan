@@ -226,8 +226,9 @@ export const TUNING = {
     BORC_KOMPOUND: 0.02,       // borç ANAPARA bileşiği: faizi ödesen bile borç ~%2/yıl büyür (öde, sürüncemede bırakma) — gentle, spiral yok
     // LİG SIRA İKRAMİYESİ (2026-07-23, kullanıcı: "şampiyon çok, 2. biraz az... tüm sıralara para"):
     // sezon sonu finiş ikramiyesi — 1. sıra TABAN, son sıra TABAN×SON_ORAN, aradaki sıralar LİNEER azalır.
-    // Tier ölçekli (büyük kulüp ligi daha çok öder → başarı maaş yükünü karşılar, kazanan kulüp mali nefes alır).
-    SIRA_ODUL: { TABAN: { kucuk: 3, orta: 4, buyuk: 45, dev: 58, efsane: 75 }, SON_ORAN: 0.12, LIG2: 0.4 },
+    // TIER'DAN BAĞIMSIZ (2026-07-23, kullanıcı: "kulüp seçimiyle alakası yok, tüm oyun modlarında aynı olmalı"):
+    // TEK taban — küçük/orta/büyük fark etmez, aynı havuz ödenir; ödülü yalnız BİTİRİLEN SIRA belirler.
+    SIRA_ODUL: { TABAN: 5, SON_ORAN: 0.12, LIG2: 0.4 },
     // SERVET VERGİSİ (bakiye tavanı): kasa tier tamponunu aşarsa fazlası vergilenir → hazine milyarlarda
     // kalmaz ("yatır ya da kaybet"). Kâr vergisi AKIŞI, bu STOKU sınırlar → ikisi birlikte gerçek tavan.
     SERVET_VERGISI: { ESIK: { kucuk: 60, orta: 160, buyuk: 380, dev: 750, efsane: 1050 }, ORAN: 0.30 },
@@ -572,6 +573,14 @@ export const TUNING = {
 
   // — Seçim (Bible-16, 16.1) —
   ELECTION: {
+    // BEKLENTİ-GÖRELİ SPORTİF ÖDÜL (2026-07-23): ligSkor MUTLAK sıradır → küme-kal kulübü hedefini
+    // aşsa da (ölçüm: hedef 15., biten 11.3) sandıkta ~41 puan alıp 5/5 seçim kaybediyordu. Hedefi AŞMA
+    // ödüllendirilir, hedefin mütevazılığıyla (hedef/18) ölçeklenir → şampiyonluk beklentili kulüpte
+    // (hedef=1) ödül SIFIR, büyük/dev/efsane dengesi DEĞİŞMEZ. Altında kalmak zaten mutlak skorla cezalı.
+    // Ödül YALNIZ küme-kal beklentili kulübe (hedef ≥ MIN_HEDEF) uygulanır: üst-yarı kulübünde 5.6. sıra
+    // zaten mutlak skorda (72.9) hakkını alıyor; asıl çarpıklık, 11. sıranın 41 puan aldığı küme-kal kulübünde.
+    // Böylece orta/büyük oy matematiği BİT-AYNI kalır (kalibre bantlar korunur), yalnız küçük tier düzelir.
+    BEKLENTI_MIN_HEDEF: 12, BEKLENTI_K: 14, BEKLENTI_CAP: 45,
     MALI_GAUGE_W: 0.28,         // mali karne: (mali_gauge − 50) × 0.28 [nakit-biriktirme ezici olmasın]
     MALI_DEBT_CAP: 6,           // borç-kapatma delta katkısı ±6 ile sınırlı (finans ezici olmasın)
     BORCSUZ_MALI_BONUS: 8,      // seçim mali karnesi: borçsuz kulüpte flat +8 (borçsuzluk sandıkta ödüllenir)

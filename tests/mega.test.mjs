@@ -492,9 +492,11 @@ console.log('\n── Batan Dev tek dönem bandı ──');
   // LİG SIRA İKRAMİYESİ + İFLAS HEADROOM (2026-07-23, kullanıcı istekleri): "kazanmak para getirsin" +
   // iflas eşiği gevşet. İkisi de GÜÇLÜ KADROLU-borçlu kulübü (Batan Dev) doğrudan kayırır — dev kulüp
   // sahada kazanıp ikramiyeyle borcu eritiyor → kurtarma artık çoğunlukla başarılı (ölçülen ~%87).
-  // Bant 40-72→70-96 (senaryo bilinçli kolaylaştı; hâlâ garantisiz — ~1/8 başarısız). İstenirse
-  // sertleştirme düğmeleri: ECONOMY.SIRA_ODUL.TABAN[dev/efsane] · ECONOMY.IFLAS_MULT.
-  check('METRİK: Batan Dev tek dönem kazanma %70-96 (nötr oyunla)', crash === 0 && pct >= 70 && pct <= 96, `%${pct.toFixed(0)} (${win}/${N})${crash ? ` · ${crash} crash` : ''}`);
+  // Bant 40-72→70-96 (senaryo bilinçli kolaylaştı; hâlâ garantisiz — ~1/8 başarısız).
+  // SIRA ÖDÜLÜ TIER'DAN BAĞIMSIZ OLDU (2026-07-23, kullanıcı: "kulüp seçimiyle alakası yok, tüm oyun
+  // modlarında aynı"): dev/efsane'ye giden büyük ikramiye kalktı → Batan Dev'in kurtarma kolaylığı da
+  // kalktı, senaryo ikramiye-ÖNCESİ zorluğuna döndü. Bant 70-96 → 40-72 (eski kalibrasyon geri).
+  check('METRİK: Batan Dev tek dönem kazanma %40-72 (nötr oyunla)', crash === 0 && pct >= 40 && pct <= 72, `%${pct.toFixed(0)} (${win}/${N})${crash ? ` · ${crash} crash` : ''}`);
 }
 
 // ══ UI dumanı: yeni ekranlar ══
