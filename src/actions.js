@@ -1312,6 +1312,13 @@ function finishWeekTail(G, lateMove) {
   // KİMYA DOĞAL OTURMA (kullanıcı isteği): birlikte oynadıkça hafif (+0.1/maç), kazandıkça daha çok
   // (+0.5 toplam) oturur — transfer sarsıntısının (−4) doğal panzehiri. Deterministik, rand yok.
   if (G.kimya && myRes) G.kimya.kimya = clamp(G.kimya.kimya + 0.1 + (myRes === 'W' ? 0.4 : 0), 0, 100);
+  // TAKTİK UYUM DOĞAL OTURMA (2026-07-23, kullanıcı: "Taktik uyum neden sürekli 0"):
+  // uyumHafta yalnızca AZALIYORDU — TD değişimi/kovma → 0 (Bible-10 cezası), telkin spam'ı → −1 — ve
+  // HİÇBİR yerde artmıyordu. Bir kez sıfırlanınca kalıcı 0'da kalıp TaktikUyum'u (min(100, uyumHafta×
+  // TAKTIK_WEEK)) tamamen öldürüyordu: ceza "geçici" olarak tasarlanmışken kalıcı hasara dönüşmüştü.
+  // Artık her oynanan hafta +1 birikir, KURULUŞ değeri TAKTIK_UYUM_MAX'a kadar (tavan = 12 ⇒ normal
+  // başlangıç dengesi birebir aynı; yalnız cezadan toparlanma eklendi). Deterministik, rand YOK.
+  if (G.taktik && myRes) G.taktik.uyumHafta = Math.min(TUNING.TAKTIK_UYUM_MAX ?? 12, (G.taktik.uyumHafta || 0) + (TUNING.TAKTIK_UYUM_HAFTALIK ?? 1));
   // 🏁 KİLOMETRE TAŞLARI (motivasyon): kariyerin büyük sayıları TEK SEFERLİK kutlanır — "bir sonraki
   // taşa az kaldı" çekimi. Değer taşları kariyer başı BAZA göre (büyük kulüpte anında patlamasın).
   if (myRes) {

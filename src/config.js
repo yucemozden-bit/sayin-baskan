@@ -17,6 +17,11 @@ export const TUNING = {
   CLAMP: { uygunluk: [0.65, 1], moral: [0.88, 1.12], form: [0.90, 1.10], kond: [0.82, 1.05] },
   STAR_THRESHOLD: 80, STAR_BONUS_MAX: 8, BALANCE_MIN: 0.85,
   KIMYA_WEEK: 1.5, KIMYA_TRANSFER: -1, KIMYA_TD: -10, TAKTIK_WEEK: 6, // transfer sarsıntısı −4→−3→−1 (kullanıcı: "kimyayı toplamak imkansız")
+  // TaktikUyum TOPARLANMASI (2026-07-23): TD değişimi/kovma uyumHafta'yı 0'lar, telkin spam'ı −1 düşürür;
+  // eskiden hiçbir yerde ARTMADIĞI için ceza kalıcı hasara dönüşüp TaktikUyum sürekli 0 kalıyordu.
+  // Her oynanan hafta +HAFTALIK birikip MAX'a (kuruluş değeri) döner → ceza artık geçici.
+  // MAX=12 kuruluş değerine eşit ⇒ normal başlangıç dengesi birebir aynı, yalnız toparlanma eklendi.
+  TAKTIK_UYUM_MAX: 12, TAKTIK_UYUM_HAFTALIK: 1,
   // — Maç —
   // GÜÇ ETKİSİ (2026-07, kullanıcı isteği): takım gücü galibiyeti daha güçlü belirlesin.
   // K 1.6→3.0 (güç farkı → xG payı dikleşir), LUCK daraldı (şans gücü daha az boğar), gol sabit (2.6).
