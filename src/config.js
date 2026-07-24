@@ -54,7 +54,10 @@ export const TUNING = {
   // kalma %80'e fırladı, bant %12-56 — iyi oynayanı da uçuruyor; fren dibe hedefli kalmalı).
   FORM_D: { W: 8, D: 2, L: -8 }, MORALE_D: { W: 4, D: 0, L: -5 }, RED_CARD_P: 0.08,
   DIP_FREN: { form: 40, moral: 50 },
-  DEV_U24_MAX: 1.15 /*×antrenman sv — gençler DAHA HIZLI gelişsin (kullanıcı isteği: 0.8→1.15)*/, AGE_DECAY_START: 31, DEV_DECAY_RATE: 0.6,
+  DEV_U24_MAX: 1.15 /*×antrenman sv — gençler DAHA HIZLI gelişsin (kullanıcı isteği: 0.8→1.15)*/,
+  // ALT SEVİYE TABANI: genç gelişimi en az bu kadar (antrenman × MAX bunu aşınca etkisiz). antrenman 2:
+  // 2×1.15=2.3 < 3.6 → taban devreye girer; antrenman 4 (orta): 4.6 > 3.6 → DEĞİŞMEZ. Yalnız küçük tesis.
+  DEV_U24_TABAN: 3.6, AGE_DECAY_START: 31, DEV_DECAY_RATE: 0.6,
   // Antrenman tesisi HER SEVİYEDE hissedilir (kullanıcı isteği 2026-07-20 — eski floor(sv/5) yalnız 5 ve 10'da basamaktı):
   DEV_ANT_HAFTALIK: 0.35, // sezon içi gelişim puanı = sv × bu (kesirli birikir — her yükseltme haftalık hızı artırır)
   DEV_GEL_ESIK: 20,       // +1 güç için birikmesi gereken puan

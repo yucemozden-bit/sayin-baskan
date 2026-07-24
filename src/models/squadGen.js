@@ -96,7 +96,13 @@ export function developSquad(squad, facilities, rng = rand) {
     // rand SAYISI oyuncu başına hâlâ ≤1 (uygunluk kümesi genişledi — bilinçli akış kayması).
     if (p.age <= (TUNING.DEV_GEC_YAS ?? 23) && p.overall < p.potential) {
       const hiz = p.age < TUNING.SQUADGEN.YOUTH_AGE ? 1 : 0.5;
-      p.overall = Math.min(p.potential, p.overall + Math.round(rng(0, antrenman * TUNING.DEV_U24_MAX) * hiz));
+      // ALT SEVİYE GENÇ GELİŞİM TABANI (2026-07-24, kullanıcı: "alt seviyedeki genç gelişimini biraz
+      // artıralım"): gelişim tesise DOĞRUSAL bağlıydı → küçük kulüpte antrenman 2 çok yavaş (~1.15/yıl),
+      // kadro güce dönüşmüyordu (ölçüldü: küçük 6 sezon güç 50-54'te çakılı). TABAN, düşük antrenmanı
+      // yukarı çeker; yüksek antrenman (orta 4 / büyük 6) zaten tabanı AŞTIĞI için DEĞİŞMEZ → orta/büyük
+      // tırmanış arkı bit-aynı kalır. rand SAYISI değişmez (aralık genişler, çekiliş 1 → determinizm sağlam).
+      const taban = TUNING.DEV_U24_TABAN ?? 0;
+      p.overall = Math.min(p.potential, p.overall + Math.round(rng(0, Math.max(taban, antrenman * TUNING.DEV_U24_MAX)) * hiz));
     }
     if (p.age > TUNING.AGE_DECAY_START) {
       p.overall = Math.max(30, p.overall - Math.round(rng(0, (p.age - TUNING.AGE_DECAY_START) * TUNING.DEV_DECAY_RATE)));
