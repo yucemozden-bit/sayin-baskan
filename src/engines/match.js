@@ -34,6 +34,27 @@ export function simulateMatch(homeMG, awayMG, rng = random01, opts = {}) {
   return { gH, gA, xgH, xgA, result: gH > gA ? 'W' : gH < gA ? 'L' : 'D' };
 }
 
+// MAÇ ÖNÜ GERÇEK OLASILIK (W/D/L %) — simulateMatch ile AYNI xG/Poisson modelinin ANALİTİK toplamı.
+// (2026-07-24, kullanıcı: "maç önü %1 kabul edilemez"): eski predictLine/cockpit SİGMOİD kullanıyordu
+// ve uçlarda gerçek maçtan sapıyordu (61 vs 114: sigmoid galibiyet %1 ama gerçek Poisson %4.3 — önizleme
+// maçtan KARAMSAR). Artık önizleme = gerçek maç olasılığı. TABAN: hiçbir sonuç OLASILIK_TABAN altında
+// gösterilmez (üst-düzey favoride bile futbolda sürpriz olur) → normalize edilip yüzdeye çevrilir.
+export function macOlasilik(myMG, oppMG) {
+  const K = TUNING.SHARPNESS_K, T = TUNING.BASE_GOALS;
+  const a = Math.pow(Math.max(myMG, 0), K), b = Math.pow(Math.max(oppMG, 0), K);
+  const pay = a / Math.max(a + b, 1e-9);
+  const xa = T * pay, xb = T * (1 - pay);
+  const fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800];
+  const pois = (l, k) => Math.exp(-l) * Math.pow(l, k) / fact[k];
+  let W = 0, D = 0, L = 0;
+  for (let i = 0; i <= 10; i++) for (let j = 0; j <= 10; j++) { const p = pois(xa, i) * pois(xb, j); if (i > j) W += p; else if (i === j) D += p; else L += p; }
+  const tb = TUNING.MATCH?.OLASILIK_TABAN ?? 0.03;
+  let w = Math.max(tb, W), d = Math.max(tb, D), l = Math.max(tb, L);
+  const s = w + d + l; w /= s; d /= s; l /= s;
+  const pW = Math.round(w * 100), pD = Math.round(d * 100);
+  return { W: pW, D: pD, L: Math.max(0, 100 - pW - pD) };
+}
+
 // D5 (v3-H): Maç highlight'ları — gol/kaçan/tansiyon kartları media.json ticker havuzundan.
 // Döner: [{min, side:'biz'|'onlar'|'-', text, type}] dakika sıralı; momentum = xG payı.
 export function generateHighlights(res, { myGoals, oppGoals, xgFor, xgAgn }, media, players = [], rng = random01) {

@@ -8,7 +8,7 @@ import { generateSquad, squadMarketValue, developSquad, youthIntake, uniqueName 
 import { Player } from './models/player.js';
 import { temelGuc, efektifGuc, macGucu, moralMult, formMult, kondMult, computeUygunluk, teknikEkip, atakSavunma } from './engines/power.js';
 import { idealXI } from './models/squad.js';
-import { simulateMatch, postMatch } from './engines/match.js';
+import { simulateMatch, postMatch, macOlasilik } from './engines/match.js';
 import { createLeague, playWeek, standings, simulateLeagueMatch, applyResult, aiDurum } from './engines/league.js';
 import { applyEconomy, payDebt, sponsorSlotWeekly, bilet as ecoBilet } from './engines/economy.js';
 import { generateSponsorOffer } from './engines/sponsorGen.js';
@@ -819,15 +819,9 @@ export function protokolTon(G, ton) {
   return { ok: true };
 }
 
-function predictLine(myMG, oppMG) {
-  // GERÇEKÇİ 3-sonuç modeli (cockpit.nextMatch ile aynı): beraberlik dengede yüksek,
-  // uçlarda taban korur; mağlubiyet kalandan ölçeklenir (favoride %3 beraberlik saçmalığı yok).
-  const d = myMG - oppMG;
-  const e = 1 / (1 + Math.pow(10, -d / TUNING.SIGMOID_DIV));
-  const pD = Math.round(19 + 13 * (1 - Math.abs(2 * e - 1)));
-  const pW = Math.round((100 - pD) * e);
-  return { W: pW, D: pD, L: Math.max(0, 100 - pD - pW) };
-}
+// Maç önü tahmin — GERÇEK maç motorunun (Poisson) olasılığı. Eski sigmoid uçlarda maçtan sapıp
+// %1 gibi karamsar oranlar üretiyordu (kullanıcı: "hiçbir maç %1 olamaz"); artık önizleme = gerçek maç.
+function predictLine(myMG, oppMG) { return macOlasilik(myMG, oppMG); }
 // Devre arası tek cümle DURUM TESPİTİ (xG dürüstlüğü)
 function htTespit(gMy, gOpp, xMy, xOpp) {
   if (gMy > gOpp) return xMy < xOpp ? 'Öndesin ama kurtaran kaleci — oyun rakipte.' : 'Öndesin ve eziyorsun.';

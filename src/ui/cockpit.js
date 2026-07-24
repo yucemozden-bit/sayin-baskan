@@ -4,6 +4,7 @@
 // Not: yaprak bileşenler (gauge/tablo/inbox/vaat) korunur; radikallik DÜZEN + DERİNLİK katmanında.
 import { TUNING } from '../config.js';
 import { standings } from '../engines/league.js';
+import { macOlasilik } from '../engines/match.js';
 import { absHafta } from '../engines/ozel.js';
 import { esc, gaugesBlock, fmt } from './frame.js';
 import { isCriticalWeek, relWord, promiseStatus, powerCtx } from '../actions.js';
@@ -631,13 +632,9 @@ function nextMatch(G, table) {
   const oppId = isHome ? m.away : m.home;
   const oppStr = G.league.table[oppId].strength;
   const eff = G.power?.temel || G.temelGuc;
-  const d = (eff * (isHome ? 1.05 : 1)) - oppStr;
-  // GERÇEKÇİ 3-sonuç modeli: galibiyet payı e; beraberlik dengede yüksek (~%32),
-  // tek-yönlü maçta bile taban (~%19) korur; mağlubiyet kalandan düzgün ölçeklenir.
-  const e = 1 / (1 + Math.pow(10, -d / 26));               // galibiyet payı 0..1
-  const pD = Math.round(19 + 13 * (1 - Math.abs(2 * e - 1))); // beraberlik: 32 (denge) → 19 (uçlar)
-  const pW = Math.round((100 - pD) * e);
-  const pL = Math.max(0, 100 - pD - pW);
+  // GERÇEK maç olasılığı (Poisson) — matchday predictLine ile aynı motor; eski sigmoid uçlarda %1 gibi
+  // maçtan karamsar oranlar veriyordu. Ev faktörü kokpit tahmininde yaklaşık (×1.05); matchday tam macGucu kullanır.
+  const { W: pW, D: pD, L: pL } = macOlasilik(eff * (isHome ? 1.05 : 1), oppStr);
   return { opp: G.league.table[oppId].name, isHome, oppStr, pW, pD, pL, isDerby: oppId === 'o0' };
 }
 

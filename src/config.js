@@ -214,6 +214,7 @@ export const TUNING = {
   // — Maç motoru & sakatlık (Bible-6; tıbbi katsayıları Bible-9) —
   MATCH: {
     POISSON_CAP: 8,             // QA-§6: Poisson λ tavanı (λ>8 kırp)
+    OLASILIK_TABAN: 0.03,       // maç önü önizleme: hiçbir sonuç %3 altında gösterilmez (bkz. match.js macOlasilik) — "hiçbir maç %1 olamaz"
     INJURY_TIBBI_RISK: 0.03,   // risk ×(1 − tibbi×0.03)
     INJURY_FITNESS_DIV: 200,   // risk ×(1 + (100−fitness)/200)
     INJURY_DUR_BASE: 6,        // sakatlık süre tabanı (hafta)
