@@ -326,7 +326,7 @@ export const TUNING = {
     // GAYRİMENKUL PORTFÖYÜ (Gayrimenkul Ofisi ile alınır): sezon başına kira geliri + değerlenme + emlak vergisi.
     // Kulüp kasasındaki para gayrimenkule dönünce servet vergisinden kaçar → kapalı hazineye üretken çıkış.
     GAYRIMENKUL: { AY_PER_SEZON: 2.5, DEGERLENME: 0.02, EMLAK_VERGISI: 0.0075, SATIS_ISKONTO: 0.05, INSAAT_HAFTA: 12 }, // inşaat = 12 OYUN HAFTASI; portal saatiyle değil, oyun haftalarıyla ilerler (ofis kapalıyken de)
-    SPONSOR_BASE: { kucuk: 6, orta: 22, buyuk: 45, dev: 68, efsane: 95 }, // göğüs baz (sezonluk mn) — küçük/orta ×1.5 (daha ağır); büyük zaten devasa, net bandında kalsın
+    SPONSOR_BASE: { kucuk: 7, orta: 24, buyuk: 45, dev: 68, efsane: 95 }, // göğüs baz (sezonluk mn). 2026-07-24 (kullanıcı "sponsor haftalık gelirini bir tık artıralım"): küçük 6→7, orta 22→24 (ekonomiye nefes); BÜYÜK+ DOKUNULMADI (zaten net bandında — 51'e çıkarınca büyük net %36 ile bandı deldi)
     SPONSOR_ITIBAR_BASE: 0.5, SPONSOR_ITIBAR_DIV: 100, // itibarFactor = 0.5 + itibar/100
     SPONSOR_KOL: 0.4, SPONSOR_NAMING: 0.6, NAMING_MIN_STAD: 7,
     SPONSOR_REP_DIV: 150,      // sponsor geliri ×(1 + itibar/150)
