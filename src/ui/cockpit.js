@@ -3,12 +3,13 @@
 // ui/ SADECE state okur; mutasyon actions.js üzerinden (data-act ile main yönlendirir).
 // Not: yaprak bileşenler (gauge/tablo/inbox/vaat) korunur; radikallik DÜZEN + DERİNLİK katmanında.
 import { TUNING } from '../config.js';
-import { standings } from '../engines/league.js';
+import { standings, aiDurum } from '../engines/league.js';
 import { macOlasilik } from '../engines/match.js';
+import { bilet as ecoBilet } from '../engines/economy.js';
 import { absHafta } from '../engines/ozel.js';
 import { esc, gaugesBlock, fmt } from './frame.js';
 import { isCriticalWeek, relWord, promiseStatus, powerCtx } from '../actions.js';
-import { temelBilesenler } from '../engines/power.js';
+import { temelBilesenler, efektifGuc, macGucu } from '../engines/power.js';
 import { DESK_CARDS } from '../engines/director.js';
 import { oppColor, clubPalette, rawClubColor } from './theme.js';
 import { rail as inboxRail, itemActions } from './inbox.js';
@@ -631,10 +632,17 @@ function nextMatch(G, table) {
   const isHome = m.home === 'ME';
   const oppId = isHome ? m.away : m.home;
   const oppStr = G.league.table[oppId].strength;
-  const eff = G.power?.temel || G.temelGuc;
-  // GERÇEK maç olasılığı (Poisson) — matchday predictLine ile aynı motor; eski sigmoid uçlarda %1 gibi
-  // maçtan karamsar oranlar veriyordu. Ev faktörü kokpit tahmininde yaklaşık (×1.05); matchday tam macGucu kullanır.
-  const { W: pW, D: pD, L: pL } = macOlasilik(eff * (isHome ? 1.05 : 1), oppStr);
+  // KOKPİT ÖNİZLEME = MATCHDAY ile BİREBİR (2026-07-24, kullanıcı: "cockpit %72, matchday %76 — aynı maç"):
+  // eskiden kokpit ham temelGüç vs ham rakip gücü (zayıf ×1.05 ev) kullanıyordu; rakibin HAFTALIK FORMUNU
+  // (AI_DURUM) ve gerçek ev avantajını yok sayıyordu → iki ekran farklı oran gösteriyordu. Artık ikisi de
+  // aynı gerçek maç gücünü hesaplar: efektif × ev avantajı (doluluk) · rakip × haftalık durum × ev avantajı.
+  // luck: 1 ŞART — macGucu luck verilmezse rand() çeker; bu bir RENDER fonksiyonu, RNG akışını TÜKETMEMELİ
+  // (determinizm/kayıt bozulur). Önizleme zaten nötr-şansla gösterilmeli (şans maç anında biner).
+  const eff = efektifGuc({ squad: G.squad, coach: G.coach, kimya: G.kimya, taktik: G.taktik, facilities: G.facilities });
+  const myMG = macGucu(eff, { isHome, doluluk: isHome ? ecoBilet(G).doluluk : null, stadyum: G.facilities.stadyum, taraftar: G.gauges.taraftar, luck: 1 });
+  const oppDurum = aiDurum(G.league.table[oppId], G.league.season ?? G.meta.season, wk);
+  const oppMG = macGucu(oppStr * oppDurum, { isHome: !isHome, stadyum: TUNING.MATCH.AI_STAD, taraftar: TUNING.MATCH.AI_TARAFTAR, luck: 1 });
+  const { W: pW, D: pD, L: pL } = macOlasilik(myMG, oppMG);
   return { opp: G.league.table[oppId].name, isHome, oppStr, pW, pD, pL, isDerby: oppId === 'o0' };
 }
 
