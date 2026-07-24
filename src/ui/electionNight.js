@@ -45,7 +45,9 @@ export function render(G) {
 
   // GÖRSEL 5f: dev .led yüzde + iki aday barı + eşik çizgisi + sayım titremesi
   const oyGoster = (e.counting ? e.displayVoteShown : e.displayVote) || 0;
-  const esik = Math.round((G.cfg && G.cfg.WIN_LINE ? G.cfg.WIN_LINE : TUNING.WIN_LINE) * 100);
+  // Kazanma çizgisi: seçim sonucunda hesaplanan gerçek eşiği kullan (küme-kal kulübünde %50'ye iner —
+  // bkz. election.js eleksiyon.kazanmaCizgisi). Sonuç yoksa (canlı sayım öncesi) config tabanına düş.
+  const esik = Math.round((e.kazanmaCizgisi ?? (G.cfg && G.cfg.WIN_LINE ? G.cfg.WIN_LINE : TUNING.WIN_LINE)) * 100);
   const voteTxt = (e.counting || e.done) ? `%${Math.round(oyGoster)}` : '—';
   const adayBar = (e.counting || e.done) ? `<div class="aday-bar">
     <div class="satir"><span>SEN</span><div class="track"><div class="sen" style="width:${Math.min(100, oyGoster)}%"></div><div class="esik-cizgi" style="left:${esik}%"></div></div></div>

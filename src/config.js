@@ -17,6 +17,8 @@ export const TUNING = {
   CLAMP: { uygunluk: [0.65, 1], moral: [0.88, 1.12], form: [0.90, 1.10], kond: [0.82, 1.05] },
   STAR_THRESHOLD: 80, STAR_BONUS_MAX: 8, BALANCE_MIN: 0.85,
   KIMYA_WEEK: 1.5, KIMYA_TRANSFER: -1, KIMYA_TD: -10, TAKTIK_WEEK: 6, // transfer sarsıntısı −4→−3→−1 (kullanıcı: "kimyayı toplamak imkansız")
+  // Kimya doğal oturma hızı (bkz. finishWeekTail): maç başı taban + galibiyet bonusu. Yükseltmek → daha kolay toparlanır.
+  KIMYA_MAC: 0.4, KIMYA_GALIBIYET: 0.8,
   // TaktikUyum TOPARLANMASI (2026-07-23): TD değişimi/kovma uyumHafta'yı 0'lar, telkin spam'ı −1 düşürür;
   // eskiden hiçbir yerde ARTMADIĞI için ceza kalıcı hasara dönüşüp TaktikUyum sürekli 0 kalıyordu.
   // Her oynanan hafta +HAFTALIK birikip MAX'a (kuruluş değeri) döner → ceza artık geçici.
@@ -674,6 +676,10 @@ export const TUNING = {
     // zaten mutlak skorda (72.9) hakkını alıyor; asıl çarpıklık, 11. sıranın 41 puan aldığı küme-kal kulübünde.
     // Böylece orta/büyük oy matematiği BİT-AYNI kalır (kalibre bantlar korunur), yalnız küçük tier düzelir.
     BEKLENTI_MIN_HEDEF: 12, BEKLENTI_K: 14, BEKLENTI_CAP: 45,
+    // KÜÇÜK KAZANMA ÇİZGİSİ İNDİRİMİ (bkz. election.js eleksiyon): küme-kal kulübünde %55→%50. 0 = kapalı.
+    WIN_LINE_KUCUK_INDIRIM: 0.05,
+    // KÜÇÜK KULÜPTE RAKİP ÇEKİCİLİĞİ ÇARPANI (bkz. rakipCekiciligi): 1 = kapalı, <1 = rakip yumuşar.
+    KUCUK_RIVAL_MULT: 0.6,
     MALI_GAUGE_W: 0.28,         // mali karne: (mali_gauge − 50) × 0.28 [nakit-biriktirme ezici olmasın]
     MALI_DEBT_CAP: 6,           // borç-kapatma delta katkısı ±6 ile sınırlı (finans ezici olmasın)
     BORCSUZ_MALI_BONUS: 8,      // seçim mali karnesi: borçsuz kulüpte flat +8 (borçsuzluk sandıkta ödüllenir)

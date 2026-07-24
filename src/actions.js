@@ -1327,9 +1327,11 @@ function finishWeekTail(G, lateMove) {
   }
   // DERBİ BİLANÇOSU — kariyer boyu G/B/M sayacı (Kulüp Kimliği "Ezeli Rekabet" paneli okur; RNG yok)
   if (isDerby && myRes) { G.derbi = G.derbi || { W: 0, D: 0, L: 0 }; G.derbi[myRes] = (G.derbi[myRes] || 0) + 1; }
-  // KİMYA DOĞAL OTURMA (kullanıcı isteği): birlikte oynadıkça hafif (+0.1/maç), kazandıkça daha çok
-  // (+0.5 toplam) oturur — transfer sarsıntısının (−4) doğal panzehiri. Deterministik, rand yok.
-  if (G.kimya && myRes) G.kimya.kimya = clamp(G.kimya.kimya + 0.1 + (myRes === 'W' ? 0.4 : 0), 0, 100);
+  // KİMYA DOĞAL OTURMA: birlikte oynadıkça artar; kazandıkça daha çok — transfer/TD sarsıntısının panzehiri.
+  // HIZLANDIRILDI (2026-07-24, kullanıcı: "takım kimyası çok zor toparlanıyor, daha kolay artsın"):
+  // maç +0.1→+0.25, galibiyet bonusu +0.4→+0.6 (≈2×). Transfer sarsıntısı (−1..−4) birkaç maçta,
+  // TD şoku (−10) ~13 galibiyette kapanır — artık "toplaması imkansız" değil. Deterministik, rand YOK.
+  if (G.kimya && myRes) G.kimya.kimya = clamp(G.kimya.kimya + (TUNING.KIMYA_MAC ?? 0.25) + (myRes === 'W' ? (TUNING.KIMYA_GALIBIYET ?? 0.6) : 0), 0, 100);
   // TAKTİK UYUM DOĞAL OTURMA (2026-07-23, kullanıcı: "Taktik uyum neden sürekli 0"):
   // uyumHafta yalnızca AZALIYORDU — TD değişimi/kovma → 0 (Bible-10 cezası), telkin spam'ı → −1 — ve
   // HİÇBİR yerde artmıyordu. Bir kez sıfırlanınca kalıcı 0'da kalıp TaktikUyum'u (min(100, uyumHafta×
@@ -3417,7 +3419,7 @@ export function runElection(G) {
   const kulisEk = G.rakipKulis ? ` Ben ${G.rakipKulis} sözü veriyorum —` : '';
   const rivalSpeech = `"Sayın delegeler — ${weakTr} ortada.${brokenMeta ? ` '${brokenMeta}' sözü ne oldu?` : ''}${kulisEk} Bu kulüp daha iyisini hak ediyor!"`;
   G.election = {
-    ...r, oyOrani: oy, kazandi: oy > TUNING.WIN_LINE,
+    ...r, oyOrani: oy, kazandi: oy > (r.kazanmaCizgisi ?? TUNING.WIN_LINE), // küme-kal indirimli çizgiyi KORU (eskiden flat WIN_LINE ile eziliyordu → küçük indirimi işlemiyordu)
     revealed: false, revealStep: 0, kept: G.promises.map((p) => ({ id: p.id, kept: p.kept })),
     rivalSpeech, debateSwing: G.debateSwing || 0, debateAnswers: (G.debate && G.debate.answers) || [], debateSkipped: !!(G.debate && G.debate.skipped),
   };

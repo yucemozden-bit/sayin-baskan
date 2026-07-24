@@ -78,7 +78,12 @@ export function rakipCekiciligi(state, { tutulmayanVaat = 0, sportif, taraftar, 
   const pozisyon = Math.max(posMali, posTitle, posPrice);
   // Birikmiş çekicilik (Bible-15 BROKEN.rakip + sızıntılar + kampanya baskısı) — D6 ile bağlandı
   const birikim = (state.rival?.attractiveness || 0) * TUNING.ELECTION.ATTR_W;
-  return clamp(W.zayif * zayifHane + W.ceza * ceza + W.pozisyon * pozisyon + birikim, 0, 100);
+  // KÜÇÜK KULÜPTE RAKİP YUMUŞAR (2026-07-24, kullanıcı: rakip mali zayıflığımı sömürüp −12 veriyor):
+  // küme-kal kulübünde mali/itibar YAPISAL düşük → zayifHane hep büyük → rakip her seçimde aşırı cazip.
+  // Küme-kal hedefli kulüpte çekicilik KUCUK_RIVAL_MULT ile kısılır (rakibin "kurtarıcı" pozunu
+  // yapısal dezavantajdan beslenmesin). Orta/büyük (hedef < MIN_HEDEF) DEĞİŞMEZ.
+  const km = (state.club?.hedefSira ?? 0) >= (R.BEKLENTI_MIN_HEDEF ?? 99) ? (R.KUCUK_RIVAL_MULT ?? 1) : 1;
+  return clamp((W.zayif * zayifHane + W.ceza * ceza + W.pozisyon * pozisyon + birikim) * km, 0, 100);
 }
 
 // ── KONGRE 2.6: DELEGE BLOKLARI ──
@@ -136,5 +141,12 @@ export function eleksiyon(state, { baslangicBorc, tutulmayanVaat = 0 } = {}) {
   const dEtki = state.delege ? delegeEtki(state.delege) : 0;
   const bloklar = state.delege ? blokOylari(comps, state.delege) : null;
   const oy = clamp(oyOrani(comps) + aileBonus + dEtki / 100, 0, 1);
-  return { oyOrani: oy, kazandi: oy > TUNING.WIN_LINE, breakdown: { sportif, taraftar, mali, itibar, soz, rival, aile, aileBonus, dEtki, bloklar } };
+  // KÜÇÜK KULÜP KAZANMA ÇİZGİSİ İNDİRİMİ (2026-07-24, kullanıcı: "taraftar 100'le %53 alıp kaybettim"):
+  // Küme-kal kulübünde mali/itibar YAPISAL düşük (ekonomi dar, itibar tier-reputation'a çapalı) →
+  // rakip HER seçimde en zayıf boyutu (mali) sömürüp cazip çıkıyor, %55 mandayı tutmak neredeyse imkânsız.
+  // Küme-kal hedefli kulüpte çizgi INDIRIM kadar düşer (%55→%50): sahada başarılı küçük kulüp basit
+  // çoğunlukla koltuğu korur. Orta/büyük (hedef < MIN_HEDEF) DEĞİŞMEZ — mandate çıtası aynen durur.
+  const kmInd = (state.club?.hedefSira ?? 0) >= (TUNING.ELECTION.BEKLENTI_MIN_HEDEF ?? 99) ? (TUNING.ELECTION.WIN_LINE_KUCUK_INDIRIM ?? 0) : 0;
+  const esik = TUNING.WIN_LINE - kmInd;
+  return { oyOrani: oy, kazandi: oy > esik, kazanmaCizgisi: esik, breakdown: { sportif, taraftar, mali, itibar, soz, rival, aile, aileBonus, dEtki, bloklar } };
 }
